@@ -14,12 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Code Review
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: DeepSeek Code Review
       uses: hustcer/deepseek-review@v1
       with:
         chat-token: ${{ secrets.CHAT_TOKEN }}
         user-prompt: >
           Please review the following code changes and include a 1 line confucius quote at the top of the review comment, separated from the actual review comment by a horizontal line.
+        github-token: ${{ secrets.PERSONAL_TOKEN }}
