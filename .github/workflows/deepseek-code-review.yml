@@ -19,5 +19,5 @@ jobs:
       with:
         chat-token: ${{ secrets.CHAT_TOKEN }}
         user-prompt: >
-          Please review the following code changes and include a 1 line confucius quote at the top of the review comment, separated from the actual review comment by a horizontal line.
+          Please review the following code changes and include a 1 line confucius quote at the top of the review comment, separated from the actual review comment by a horizontal line. Then, include a 1 line Taoism quote by Laozi or Zhuangzi after the review comment to counter the Confucius quote above, separated from the actual review comment by a horizontal line.
         github-token: ${{ secrets.PERSONAL_TOKEN }}
