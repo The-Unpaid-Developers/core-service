@@ -19,10 +19,10 @@ public class IntegrationFlow {
     private boolean isProducer;
 
     @Nonnull
-    private IntegrationPattern integrationPattern;
+    private IntegrationMethod integrationMethod;
 
     @Nonnull
-    private String frequency;
+    private Frequency frequency;
 
     @Nonnull
     private String purpose;

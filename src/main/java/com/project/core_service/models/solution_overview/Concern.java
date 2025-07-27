@@ -3,7 +3,8 @@ package com.project.core_service.models.solution_overview;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import jakarta.annotation.Nonnull;
+import com.mongodb.lang.NonNull;
+
 import lombok.Data;
 
 @Document
@@ -11,18 +12,18 @@ import lombok.Data;
 public class Concern {
     @Id
     private String id;
-    @Nonnull
+    @NonNull
     private ConcernType type;
 
-    @Nonnull
+    @NonNull
     private String description;
 
-    @Nonnull
+    @NonNull
     private String impact;
 
-    @Nonnull
+    @NonNull
     private String disposition;
 
-    @Nonnull
-    private String status;
+    @NonNull
+    private ConcernStatus status;
 }

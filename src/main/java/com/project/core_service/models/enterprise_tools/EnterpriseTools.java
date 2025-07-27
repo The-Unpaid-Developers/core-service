@@ -13,23 +13,20 @@ public class EnterpriseTools {
     @Id
     private String id;
 
-    // TODO: Impl validation for tool type
-    // ToolName will correspond to a specific tool type
     @NonNull
-    private ToolType toolType;
-
-    @NonNull
-    private ToolName toolName;
+    private Tool tool;
 
     @NonNull
     private OnboardingStatus onboarded;
 
     // Configurations, pipelines, APIs
     // Explanation if tool not onboarded
-    @NonNull
     private String integrationStatus;
 
     // Blockers, non-compliance, risk notes
     @NonNull
     private String issues;
+
+    @NonNull
+    private String solutionOverviewId;
 }

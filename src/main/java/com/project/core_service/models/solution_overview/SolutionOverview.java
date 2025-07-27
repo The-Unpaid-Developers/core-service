@@ -16,17 +16,7 @@ public class SolutionOverview {
     @Id
     private String id;
     @NonNull
-    private String solutionName;
-    @NonNull
-    private String systemCode;
-    @NonNull
-    private String projectName;
-    @NonNull
-    private String solutionReviewCode; // AWG Code
-    @NonNull
-    private String solutionArchitectName;
-    @NonNull
-    private String deliveryProjectManagerName;
+    private SolutionDetails solutionDetails;
 
     @NonNull
     private List<String> itBusinessPartners;
@@ -36,6 +26,9 @@ public class SolutionOverview {
 
     @NonNull
     private ReviewType reviewType;
+
+    @NonNull
+    private ApprovalStatus approvalStatus;
 
     @NonNull
     private ReviewStatus reviewStatus;
@@ -52,7 +45,7 @@ public class SolutionOverview {
     private String valueOutcome;
 
     @NonNull
-    private List<TargetUser> targetUsers;
+    private List<ApplicationUser> applicationUsers;
 
     private List<Concern> concerns;
 }

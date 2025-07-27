@@ -1,9 +1,6 @@
 package com.project.core_service.models.system_component;
 
-import lombok.Data;
+import jakarta.annotation.Nonnull;
 
-@Data
-public class LanguageFramework {
-    private Language language;
-    private Framework framework;
+public record LanguageFramework(@Nonnull Language language, Framework framework) {
 }

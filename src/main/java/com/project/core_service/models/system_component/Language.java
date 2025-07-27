@@ -1,13 +1,7 @@
 package com.project.core_service.models.system_component;
 
-import lombok.Data;
-import lombok.NonNull;
+import jakarta.annotation.Nonnull;
 
-@Data
-public class Language {
-    @NonNull
-    private String name;
-
-    @NonNull
-    private String version;
+// TODO: Nicer way to represent this?
+public record Language(@Nonnull String name, @Nonnull String version) {
 }

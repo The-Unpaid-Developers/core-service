@@ -1,13 +1,5 @@
 package com.project.core_service.models.system_component;
 
-import lombok.Data;
-import lombok.NonNull;
+import jakarta.annotation.Nonnull;
 
-@Data
-public class Framework {
-    @NonNull
-    private String name;
-
-    @NonNull
-    private String version;
-}
+public record Framework(@Nonnull String name, @Nonnull String version) {}

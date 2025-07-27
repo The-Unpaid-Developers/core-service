@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
 
-import jakarta.annotation.Nonnull;
 import lombok.Data;
 
 @Document
@@ -36,9 +35,9 @@ public class SystemComponent {
     private LanguageFramework languageFramework;
 
     // true if owned by us false if owned by vendors
-    private boolean isOwned;
+    private boolean isOwnedByUs;
 
-    private boolean isCicdUsed;
+    private boolean isCICDUsed;
 
     @NonNull
     private CustomizationLevel customizationLevel;
@@ -70,42 +69,5 @@ public class SystemComponent {
     private BackupSite backupSite;
 
     @NonNull
-    private String authenticationMethod;
-
-    @NonNull
-    private String authorizationModel;
-
-    private boolean isAuditLoggingEnabled;
-
-    @Nonnull
-    private String sensitiveDataElements;
-
-    @NonNull
-    private DataEncryptionAtRest dataEncryptionAtRest;
-
-    @NonNull
-    private String encryptionAlgorithmForDataAtRest;
-
-    private boolean hasIpWhitelisting;
-
-    @NonNull
-    private SSLType ssl;
-
-    @NonNull
-    private String payloadEncryptionAlgorithm;
-
-    @NonNull
-    private String digitalCertificate;
-
-    @NonNull
-    private String keyStore;
-
-    @NonNull
-    private String vulnerabilityAssessmentFrequency;
-
-    @NonNull
-    private String penetrationTestingFrequency;
-
-    @NonNull
-    private String externalSystem;
+    private SecurityDetails securityDetails;
 }
