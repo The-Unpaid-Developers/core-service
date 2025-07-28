@@ -4,12 +4,13 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
+import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
 @Document
 @Data
-public class Concern {
+public class Concern implements VersionedSchema {
     @Id
     private String id;
     @NonNull
@@ -26,4 +27,6 @@ public class Concern {
 
     @NonNull
     private ConcernStatus status;
+
+    private int version;
 }

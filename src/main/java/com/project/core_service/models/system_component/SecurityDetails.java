@@ -1,32 +1,34 @@
 package com.project.core_service.models.system_component;
 
+import com.project.core_service.models.shared.Frequency;
+
 import jakarta.annotation.Nonnull;
 
 public record SecurityDetails(
-        @Nonnull String authenticationMethod,
+                @Nonnull String authenticationMethod,
 
-        @Nonnull String authorizationModel,
+                @Nonnull String authorizationModel,
 
-        boolean isAuditLoggingEnabled,
+                boolean isAuditLoggingEnabled,
 
-        @Nonnull String sensitiveDataElements,
+                @Nonnull String sensitiveDataElements,
 
-        @Nonnull DataEncryptionAtRest dataEncryptionAtRest,
+                @Nonnull DataEncryptionAtRest dataEncryptionAtRest,
 
-        @Nonnull String encryptionAlgorithmForDataAtRest,
+                @Nonnull String encryptionAlgorithmForDataAtRest,
 
-        boolean hasIpWhitelisting,
+                boolean hasIpWhitelisting,
 
-        @Nonnull SSLType ssl,
+                @Nonnull SSLType ssl,
 
-        String payloadEncryptionAlgorithm,
+                String payloadEncryptionAlgorithm,
 
-        String digitalCertificate,
+                String digitalCertificate,
 
-        @Nonnull String keyStore,
+                @Nonnull String keyStore,
 
-        @Nonnull VulnerabilityAssessmentFrequency vulnerabilityAssessmentFrequency,
+                @Nonnull Frequency vulnerabilityAssessmentFrequency,
 
-        @Nonnull PenetrationTestFrequency penetrationTestingFrequency) {
+                @Nonnull Frequency penetrationTestingFrequency) {
 
 }

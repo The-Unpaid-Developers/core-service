@@ -11,7 +11,7 @@ import lombok.Data;
 
 @Document
 @Data
-public class DataAsset {
+public class DataAsset implements VersionedSchema {
     @Id
     private String id;
 
@@ -34,4 +34,6 @@ public class DataAsset {
 
     @NonNull
     private String masteredIn;
+
+    private int version;
 }

@@ -1,4 +1,4 @@
-package com.project.core_service.models.integration_flow;
+package com.project.core_service.models.shared;
 
 public enum Frequency {
     REAL_TIME,
@@ -6,5 +6,6 @@ public enum Frequency {
     WEEKLY,
     MONTHLY,
     QUARTERLY,
-    YEARLY
+    BI_ANNUALLY,
+    ANNUALLY
 }
