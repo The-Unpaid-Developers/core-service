@@ -18,8 +18,8 @@ public class IntegrationFlow implements VersionedSchema {
     @NonNull
     private String bsoCodeOfExternalSystem;
 
-    // true if it's a producer, else it's a consumer
-    private boolean isProducer;
+    @NonNull
+    private ExternalSystemRole externalSystemRole;
 
     @NonNull
     private IntegrationMethod integrationMethod;
