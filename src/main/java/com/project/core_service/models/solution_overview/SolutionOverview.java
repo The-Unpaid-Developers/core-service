@@ -8,7 +8,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.mongodb.lang.NonNull;
 import com.project.core_service.models.shared.VersionedSchema;
 
-import jakarta.annotation.Nonnull;
 import lombok.Data;
 
 @Data
@@ -39,7 +38,7 @@ public class SolutionOverview implements VersionedSchema {
     @NonNull
     private BusinessUnit businessUnit;
 
-    @Nonnull
+    @NonNull
     private BusinessDriver businessDriver;
 
     @NonNull
