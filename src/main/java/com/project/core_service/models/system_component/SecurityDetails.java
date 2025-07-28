@@ -3,32 +3,42 @@ package com.project.core_service.models.system_component;
 import com.project.core_service.models.shared.Frequency;
 
 import jakarta.annotation.Nonnull;
+import lombok.Data;
 
-public record SecurityDetails(
-                @Nonnull String authenticationMethod,
+@Data
+public class SecurityDetails {
+    @Nonnull
+    private String authenticationMethod;
 
-                @Nonnull String authorizationModel,
+    @Nonnull
+    private String authorizationModel;
 
-                boolean isAuditLoggingEnabled,
+    private boolean isAuditLoggingEnabled;
 
-                @Nonnull String sensitiveDataElements,
+    @Nonnull
+    private String sensitiveDataElements;
 
-                @Nonnull DataEncryptionAtRest dataEncryptionAtRest,
+    @Nonnull
+    private DataEncryptionAtRest dataEncryptionAtRest;
 
-                @Nonnull String encryptionAlgorithmForDataAtRest,
+    @Nonnull
+    private String encryptionAlgorithmForDataAtRest;
 
-                boolean hasIpWhitelisting,
+    private boolean hasIpWhitelisting;
 
-                @Nonnull SSLType ssl,
+    @Nonnull
+    private SSLType ssl;
 
-                String payloadEncryptionAlgorithm,
+    private String payloadEncryptionAlgorithm;
+    private String digitalCertificate;
 
-                String digitalCertificate,
+    @Nonnull
+    private String keyStore;
 
-                @Nonnull String keyStore,
+    @Nonnull
+    private Frequency vulnerabilityAssessmentFrequency;
 
-                @Nonnull Frequency vulnerabilityAssessmentFrequency,
-
-                @Nonnull Frequency penetrationTestingFrequency) {
+    @Nonnull 
+    private Frequency penetrationTestingFrequency;
 
 }
