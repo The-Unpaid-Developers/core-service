@@ -1,0 +1,23 @@
+services:
+  mongodb:
+    image: docker.io/mongodb/mongodb-community-server:7.0-ubi9
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodbVol:/data/db
+    environment:
+      - MONGODB_INITDB_ROOT_USERNAME=user
+      - MONGODB_INITDB_ROOT_PASSWORD=pass
+  core-service:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: core_service
+    environment:
+      - CONN_STR=mongodb://user:pass@mongodb/solutions
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongodb
+volumes:
+  mongodbVol:
