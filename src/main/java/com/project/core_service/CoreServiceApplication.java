@@ -21,7 +21,7 @@ public class CoreServiceApplication {
 	@Bean
 	CommandLineRunner logEndpoints(RequestMappingHandlerMapping mapping) {
 		return args -> {
-			mapping.getHandlerMethods().forEach((key, value) -> log.debug("Mapped: " + key));
+			mapping.getHandlerMethods().forEach((key, value) -> log.debug("Mapped: {}", key));
 		};
 	}
 }
