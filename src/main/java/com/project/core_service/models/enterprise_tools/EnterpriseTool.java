@@ -10,7 +10,7 @@ import lombok.Data;
 
 @Document
 @Data
-public class EnterpriseTools implements VersionedSchema {
+public class EnterpriseTool implements VersionedSchema {
     @Id
     private String id;
 
