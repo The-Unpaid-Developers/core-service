@@ -3,9 +3,11 @@ package com.project.core_service.models.system_component;
 import com.project.core_service.models.shared.Frequency;
 
 import jakarta.annotation.Nonnull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
 public class SecurityDetails {
     @Nonnull
     private String authenticationMethod;

@@ -3,9 +3,11 @@ package com.project.core_service.models.solution_overview;
 import java.util.List;
 
 import jakarta.annotation.Nonnull;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Data
+@AllArgsConstructor
 public class SolutionDetails {
     @Nonnull
     private String solutionName;
