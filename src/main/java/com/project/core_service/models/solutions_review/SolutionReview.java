@@ -18,11 +18,15 @@ import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.system_component.SystemComponent;
 import com.project.core_service.models.technology_component.TechnologyComponent;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Document(collection = "solutionReviews")
 public class SolutionReview implements VersionedSchema {
     @Id
@@ -35,25 +39,32 @@ public class SolutionReview implements VersionedSchema {
     private SolutionOverview solutionOverview;
 
     @NonNull
-    private List<BusinessCapability> businessCapabilities;
+    @Builder.Default
+    private List<BusinessCapability> businessCapabilities = new ArrayList<>();
 
     @NonNull
-    private List<SystemComponent> systemComponents;
+    @Builder.Default
+    private List<SystemComponent> systemComponents = new ArrayList<>();
 
     @NonNull
-    private List<IntegrationFlow> integrationFlows;
+    @Builder.Default
+    private List<IntegrationFlow> integrationFlows = new ArrayList<>();
 
     @NonNull
-    private List<DataAsset> dataAssets;
+    @Builder.Default
+    private List<DataAsset> dataAssets = new ArrayList<>();
 
     @NonNull
-    private List<TechnologyComponent> technologyComponents;
+    @Builder.Default
+    private List<TechnologyComponent> technologyComponents = new ArrayList<>();
 
     @NonNull
-    private List<EnterpriseTool> enterpriseTools;
+    @Builder.Default
+    private List<EnterpriseTool> enterpriseTools = new ArrayList<>();
 
     @NonNull
-    private List<ProcessCompliant> processCompliances;
+    @Builder.Default
+    private List<ProcessCompliant> processCompliances = new ArrayList<>();
 
     private int version;
 
@@ -69,13 +80,6 @@ public class SolutionReview implements VersionedSchema {
     public SolutionReview(SolutionOverview solutionOverview) {
         this.documentState = DocumentState.DRAFT;
         this.solutionOverview = solutionOverview;
-        this.businessCapabilities = new ArrayList<>();
-        this.systemComponents = new ArrayList<>();
-        this.integrationFlows = new ArrayList<>();
-        this.dataAssets = new ArrayList<>();
-        this.technologyComponents = new ArrayList<>();
-        this.enterpriseTools = new ArrayList<>();
-        this.processCompliances = new ArrayList<>();
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -94,13 +98,13 @@ public class SolutionReview implements VersionedSchema {
             String createdBy) {
         this.documentState = documentState;
         this.solutionOverview = solutionOverview;
-        this.businessCapabilities = businessCapabilities != null ? businessCapabilities : new ArrayList<>();
-        this.systemComponents = systemComponents != null ? systemComponents : new ArrayList<>();
-        this.integrationFlows = integrationFlows != null ? integrationFlows : new ArrayList<>();
-        this.dataAssets = dataAssets != null ? dataAssets : new ArrayList<>();
-        this.technologyComponents = technologyComponents != null ? technologyComponents : new ArrayList<>();
-        this.enterpriseTools = enterpriseTools != null ? enterpriseTools : new ArrayList<>();
-        this.processCompliances = processCompliances != null ? processCompliances : new ArrayList<>();
+        this.businessCapabilities = businessCapabilities != null ? businessCapabilities : this.businessCapabilities;
+        this.systemComponents = systemComponents != null ? systemComponents : this.systemComponents;
+        this.integrationFlows = integrationFlows != null ? integrationFlows : this.integrationFlows;
+        this.dataAssets = dataAssets != null ? dataAssets : this.dataAssets;
+        this.technologyComponents = technologyComponents != null ? technologyComponents : this.technologyComponents;
+        this.enterpriseTools = enterpriseTools != null ? enterpriseTools : this.enterpriseTools;
+        this.processCompliances = processCompliances != null ? processCompliances : this.processCompliances;
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -168,57 +172,36 @@ public class SolutionReview implements VersionedSchema {
 
     // Utility methods for managing lists
     public void addBusinessCapability(BusinessCapability capability) {
-        if (this.businessCapabilities == null) {
-            this.businessCapabilities = new ArrayList<>();
-        }
         this.businessCapabilities.add(capability);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addSystemComponent(SystemComponent component) {
-        if (this.systemComponents == null) {
-            this.systemComponents = new ArrayList<>();
-        }
         this.systemComponents.add(component);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addIntegrationFlow(IntegrationFlow flow) {
-        if (this.integrationFlows == null) {
-            this.integrationFlows = new ArrayList<>();
-        }
         this.integrationFlows.add(flow);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addDataAsset(DataAsset asset) {
-        if (this.dataAssets == null) {
-            this.dataAssets = new ArrayList<>();
-        }
         this.dataAssets.add(asset);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addTechnologyComponent(TechnologyComponent component) {
-        if (this.technologyComponents == null) {
-            this.technologyComponents = new ArrayList<>();
-        }
         this.technologyComponents.add(component);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addEnterpriseTool(EnterpriseTool tool) {
-        if (this.enterpriseTools == null) {
-            this.enterpriseTools = new ArrayList<>();
-        }
         this.enterpriseTools.add(tool);
         this.lastModifiedAt = LocalDateTime.now();
     }
 
     public void addProcessCompliance(ProcessCompliant compliant) {
-        if (this.processCompliances == null) {
-            this.processCompliances = new ArrayList<>();
-        }
         this.processCompliances.add(compliant);
         this.lastModifiedAt = LocalDateTime.now();
     }
@@ -232,8 +215,8 @@ public class SolutionReview implements VersionedSchema {
     // Check if the solution review is complete (all required lists have items)
     public boolean isComplete() {
         return this.solutionOverview != null &&
-                this.businessCapabilities != null && !this.businessCapabilities.isEmpty() &&
-                this.systemComponents != null && !this.systemComponents.isEmpty();
+                !this.businessCapabilities.isEmpty() &&
+                !this.systemComponents.isEmpty();
     }
 
     // VersionedSchema implementation
@@ -246,5 +229,20 @@ public class SolutionReview implements VersionedSchema {
     public void setVersion(int version) {
         this.version = version;
         this.lastModifiedAt = LocalDateTime.now();
+    }
+
+    // Builder pattern factory methods
+    public static SolutionReviewBuilder newDraftBuilder() {
+        return SolutionReview.builder()
+                .documentState(DocumentState.DRAFT)
+                .version(1)
+                .createdAt(LocalDateTime.now())
+                .lastModifiedAt(LocalDateTime.now());
+        // Collections are automatically initialized via @Builder.Default
+    }
+
+    public static SolutionReviewBuilder builderFromSolutionOverview(SolutionOverview solutionOverview) {
+        return newDraftBuilder()
+                .solutionOverview(solutionOverview);
     }
 }

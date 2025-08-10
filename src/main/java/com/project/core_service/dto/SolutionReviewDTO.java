@@ -33,13 +33,28 @@ public class SolutionReviewDTO {
     private String id;
     private DocumentState documentState;
     private SolutionOverview solutionOverview;
-    private List<BusinessCapability> businessCapabilities;
-    private List<SystemComponent> systemComponents;
-    private List<IntegrationFlow> integrationFlows;
-    private List<DataAsset> dataAssets;
-    private List<TechnologyComponent> technologyComponents;
-    private List<EnterpriseTool> enterpriseTools;
-    private List<ProcessCompliant> processCompliances;
+
+    @Builder.Default
+    private List<BusinessCapability> businessCapabilities = new ArrayList<>();
+
+    @Builder.Default
+    private List<SystemComponent> systemComponents = new ArrayList<>();
+
+    @Builder.Default
+    private List<IntegrationFlow> integrationFlows = new ArrayList<>();
+
+    @Builder.Default
+    private List<DataAsset> dataAssets = new ArrayList<>();
+
+    @Builder.Default
+    private List<TechnologyComponent> technologyComponents = new ArrayList<>();
+
+    @Builder.Default
+    private List<EnterpriseTool> enterpriseTools = new ArrayList<>();
+
+    @Builder.Default
+    private List<ProcessCompliant> processCompliances = new ArrayList<>();
+
     private int version;
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
@@ -56,28 +71,28 @@ public class SolutionReviewDTO {
         this.documentState = solutionReview.getDocumentState();
         this.solutionOverview = solutionReview.getSolutionOverview();
 
-        // Defensive copying for lists to prevent external modification
+        // Defensive copying for lists - use defaults if source is null
         this.businessCapabilities = solutionReview.getBusinessCapabilities() != null
                 ? new ArrayList<>(solutionReview.getBusinessCapabilities())
-                : new ArrayList<>();
+                : this.businessCapabilities; // Keep default empty list
         this.systemComponents = solutionReview.getSystemComponents() != null
                 ? new ArrayList<>(solutionReview.getSystemComponents())
-                : new ArrayList<>();
+                : this.systemComponents;
         this.integrationFlows = solutionReview.getIntegrationFlows() != null
                 ? new ArrayList<>(solutionReview.getIntegrationFlows())
-                : new ArrayList<>();
+                : this.integrationFlows;
         this.dataAssets = solutionReview.getDataAssets() != null
                 ? new ArrayList<>(solutionReview.getDataAssets())
-                : new ArrayList<>();
+                : this.dataAssets;
         this.technologyComponents = solutionReview.getTechnologyComponents() != null
                 ? new ArrayList<>(solutionReview.getTechnologyComponents())
-                : new ArrayList<>();
+                : this.technologyComponents;
         this.enterpriseTools = solutionReview.getEnterpriseTools() != null
                 ? new ArrayList<>(solutionReview.getEnterpriseTools())
-                : new ArrayList<>();
+                : this.enterpriseTools;
         this.processCompliances = solutionReview.getProcessCompliances() != null
                 ? new ArrayList<>(solutionReview.getProcessCompliances())
-                : new ArrayList<>();
+                : this.processCompliances;
 
         this.version = solutionReview.getVersion();
         this.createdAt = solutionReview.getCreatedAt();
@@ -93,28 +108,14 @@ public class SolutionReviewDTO {
         entity.setDocumentState(this.documentState);
         entity.setSolutionOverview(this.solutionOverview);
 
-        // Defensive copying for lists to prevent external modification
-        entity.setBusinessCapabilities(this.businessCapabilities != null
-                ? new ArrayList<>(this.businessCapabilities)
-                : new ArrayList<>());
-        entity.setSystemComponents(this.systemComponents != null
-                ? new ArrayList<>(this.systemComponents)
-                : new ArrayList<>());
-        entity.setIntegrationFlows(this.integrationFlows != null
-                ? new ArrayList<>(this.integrationFlows)
-                : new ArrayList<>());
-        entity.setDataAssets(this.dataAssets != null
-                ? new ArrayList<>(this.dataAssets)
-                : new ArrayList<>());
-        entity.setTechnologyComponents(this.technologyComponents != null
-                ? new ArrayList<>(this.technologyComponents)
-                : new ArrayList<>());
-        entity.setEnterpriseTools(this.enterpriseTools != null
-                ? new ArrayList<>(this.enterpriseTools)
-                : new ArrayList<>());
-        entity.setProcessCompliances(this.processCompliances != null
-                ? new ArrayList<>(this.processCompliances)
-                : new ArrayList<>());
+        // Defensive copying for lists - fields are never null due to @Builder.Default
+        entity.setBusinessCapabilities(new ArrayList<>(this.businessCapabilities));
+        entity.setSystemComponents(new ArrayList<>(this.systemComponents));
+        entity.setIntegrationFlows(new ArrayList<>(this.integrationFlows));
+        entity.setDataAssets(new ArrayList<>(this.dataAssets));
+        entity.setTechnologyComponents(new ArrayList<>(this.technologyComponents));
+        entity.setEnterpriseTools(new ArrayList<>(this.enterpriseTools));
+        entity.setProcessCompliances(new ArrayList<>(this.processCompliances));
 
         entity.setVersion(this.version);
         entity.setCreatedAt(this.createdAt);
@@ -125,12 +126,6 @@ public class SolutionReviewDTO {
     }
 
     // Utility methods
-    public boolean isComplete() {
-        return this.solutionOverview != null &&
-                this.businessCapabilities != null && !this.businessCapabilities.isEmpty() &&
-                this.systemComponents != null && !this.systemComponents.isEmpty();
-    }
-
     public boolean isDraft() {
         return this.documentState == DocumentState.DRAFT;
     }
@@ -155,20 +150,13 @@ public class SolutionReviewDTO {
         return new SolutionReviewDTO(solutionReview);
     }
 
-    // Builder pattern example factory methods for common use cases
+    // Builder pattern factory methods for common use cases
     public static SolutionReviewDTOBuilder newDraftBuilder() {
         return SolutionReviewDTO.builder()
                 .documentState(DocumentState.DRAFT)
                 .version(1)
                 .createdAt(LocalDateTime.now())
-                .lastModifiedAt(LocalDateTime.now())
-                .businessCapabilities(new ArrayList<>())
-                .systemComponents(new ArrayList<>())
-                .integrationFlows(new ArrayList<>())
-                .dataAssets(new ArrayList<>())
-                .technologyComponents(new ArrayList<>())
-                .enterpriseTools(new ArrayList<>())
-                .processCompliances(new ArrayList<>());
+                .lastModifiedAt(LocalDateTime.now());
     }
 
     public static SolutionReviewDTOBuilder builderFromSolutionOverview(SolutionOverview solutionOverview) {
@@ -178,17 +166,16 @@ public class SolutionReviewDTO {
                 .solutionOverview(solutionOverview);
     }
 
-    // Validation methods with null safety
     public boolean hasValidSolutionOverview() {
         return this.solutionOverview != null;
     }
 
     public boolean hasBusinessCapabilities() {
-        return this.businessCapabilities != null && !this.businessCapabilities.isEmpty();
+        return !this.businessCapabilities.isEmpty();
     }
 
     public boolean hasSystemComponents() {
-        return this.systemComponents != null && !this.systemComponents.isEmpty();
+        return !this.systemComponents.isEmpty();
     }
 
 }
