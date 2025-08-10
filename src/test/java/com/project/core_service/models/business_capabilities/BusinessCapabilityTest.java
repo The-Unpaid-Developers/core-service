@@ -1,29 +1,21 @@
-package com.project.core_service.models;
+package com.project.core_service.models.business_capabilities;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 
-import com.project.core_service.models.business_capabilities.BusinessCapability;
-import com.project.core_service.models.business_capabilities.L1Capability;
-import com.project.core_service.models.business_capabilities.L2Capability;
-import com.project.core_service.models.business_capabilities.L3Capability;
-
-class BusinessCapabilityTest {
+public class BusinessCapabilityTest {
 
     @Test
     void shouldCreateBusinessCapabilitySuccessfully() {
         BusinessCapability capability = new BusinessCapability(
+                "bc-001",
                 L1Capability.UNKNOWN,
                 L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN);
-        capability.setId("bc-001");
-        capability.setL1Capability(L1Capability.UNKNOWN);
-        capability.setL2Capability(L2Capability.UNKNOWN);
-        capability.setL3Capability(L3Capability.UNKNOWN);
-        capability.setRemarks("Handles UNKNOWN operations");
-        capability.setVersion(1);
+                L3Capability.UNKNOWN,
+                "Handles UNKNOWN operations",
+                1);
 
         assertThat(capability.getId()).isEqualTo("bc-001");
         assertThat(capability.getL1Capability()).isEqualTo(L1Capability.UNKNOWN);
@@ -36,9 +28,12 @@ class BusinessCapabilityTest {
     @Test
     void shouldThrowExceptionWhenSettingNullForNonNullFields() {
         BusinessCapability capability = new BusinessCapability(
+                "bc-001",
                 L1Capability.UNKNOWN,
                 L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN);
+                L3Capability.UNKNOWN,
+                "Handles UNKNOWN operations",
+                1);
 
         assertThatThrownBy(() -> capability.setL1Capability(null))
                 .isInstanceOf(NullPointerException.class);
@@ -51,24 +46,20 @@ class BusinessCapabilityTest {
     @Test
     void shouldRespectEqualsAndHashCode() {
         BusinessCapability a = new BusinessCapability(
+                "bc-001",
                 L1Capability.UNKNOWN,
                 L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN);
-        a.setId("same-id");
-        a.setL1Capability(L1Capability.UNKNOWN);
-        a.setL2Capability(L2Capability.UNKNOWN);
-        a.setL3Capability(L3Capability.UNKNOWN);
-        a.setVersion(1);
+                L3Capability.UNKNOWN,
+                "Handles UNKNOWN operations",
+                1);
 
         BusinessCapability b = new BusinessCapability(
+                "bc-001",
                 L1Capability.UNKNOWN,
                 L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN);
-        b.setId("same-id");
-        b.setL1Capability(L1Capability.UNKNOWN);
-        b.setL2Capability(L2Capability.UNKNOWN);
-        b.setL3Capability(L3Capability.UNKNOWN);
-        b.setVersion(1);
+                L3Capability.UNKNOWN,
+                "Handles UNKNOWN operations",
+                1);
 
         assertThat(a).isEqualTo(b);
         assertThat(a.hashCode()).isEqualTo(b.hashCode());
@@ -77,13 +68,12 @@ class BusinessCapabilityTest {
     @Test
     void toStringShouldContainMeaningfulInfo() {
         BusinessCapability capability = new BusinessCapability(
+                "bc-002",
                 L1Capability.UNKNOWN,
                 L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN);
-        capability.setId("bc-002");
-        capability.setL1Capability(L1Capability.UNKNOWN);
-        capability.setL2Capability(L2Capability.UNKNOWN);
-        capability.setL3Capability(L3Capability.UNKNOWN);
+                L3Capability.UNKNOWN,
+                "",
+                1);
 
         String output = capability.toString();
         assertThat(output).contains("bc-002", "UNKNOWN", "UNKNOWN", "UNKNOWN");
