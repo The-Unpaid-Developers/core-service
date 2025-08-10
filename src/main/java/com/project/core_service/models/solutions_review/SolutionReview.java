@@ -215,7 +215,7 @@ public class SolutionReview implements VersionedSchema {
         this.lastModifiedAt = LocalDateTime.now();
     }
 
-    public void addProcessCompliant(ProcessCompliant compliant) {
+    public void addProcessCompliance(ProcessCompliant compliant) {
         if (this.processCompliances == null) {
             this.processCompliances = new ArrayList<>();
         }
