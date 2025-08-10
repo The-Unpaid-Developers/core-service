@@ -138,11 +138,18 @@ public class SolutionReview implements VersionedSchema {
         }
     }
 
+    // TODO: @yuezhen - implement more complicated lifecycle methods
+    public void removeSubmission() {
+    }
+
     public void approve() {
         if (this.documentState == DocumentState.SUBMITTED) {
             this.documentState = DocumentState.CURRENT;
             this.lastModifiedAt = LocalDateTime.now();
         }
+    }
+
+    public void unapproveCurrent() {
     }
 
     public void markAsOutdated() {
@@ -152,7 +159,8 @@ public class SolutionReview implements VersionedSchema {
         }
     }
 
-    // TODO: @yuezhen - implement more complicated lifecycle methods
+    public void resetAsCurrent() {
+    }
 
     public boolean isDraft() {
         return this.documentState == DocumentState.DRAFT;
