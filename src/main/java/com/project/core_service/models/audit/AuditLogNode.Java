@@ -29,20 +29,16 @@ public class AuditLogNode {
     
     private String changeDescription; // Description of what changed
     
-    private String changedBy; // User who made the change
-    
-    public AuditLogNode(String solutionReviewId, String changeDescription, String changedBy) {
+    public AuditLogNode(String solutionReviewId, String changeDescription) {
         this.solutionReviewId = solutionReviewId;
         this.changeDescription = changeDescription;
-        this.changedBy = changedBy;
         this.timestamp = LocalDateTime.now();
         this.next = null;
     }
     
-    public AuditLogNode(String solutionReviewId, String changeDescription, String changedBy, String next) {
+    public AuditLogNode(String solutionReviewId, String changeDescription, String next) {
         this.solutionReviewId = solutionReviewId;
         this.changeDescription = changeDescription;
-        this.changedBy = changedBy;
         this.timestamp = LocalDateTime.now();
         this.next = next;
     }
