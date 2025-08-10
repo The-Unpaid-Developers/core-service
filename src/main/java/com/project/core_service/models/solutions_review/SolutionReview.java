@@ -53,7 +53,7 @@ public class SolutionReview implements VersionedSchema {
     private List<EnterpriseTool> enterpriseTools;
 
     @NonNull
-    private List<ProcessCompliant> processCompliants;
+    private List<ProcessCompliant> processCompliances;
 
     private int version;
 
@@ -75,7 +75,7 @@ public class SolutionReview implements VersionedSchema {
         this.dataAssets = new ArrayList<>();
         this.technologyComponents = new ArrayList<>();
         this.enterpriseTools = new ArrayList<>();
-        this.processCompliants = new ArrayList<>();
+        this.processCompliances = new ArrayList<>();
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -90,7 +90,7 @@ public class SolutionReview implements VersionedSchema {
             List<DataAsset> dataAssets,
             List<TechnologyComponent> technologyComponents,
             List<EnterpriseTool> enterpriseTools,
-            List<ProcessCompliant> processCompliants,
+            List<ProcessCompliant> processCompliances,
             String createdBy) {
         this.documentState = documentState;
         this.solutionOverview = solutionOverview;
@@ -100,7 +100,7 @@ public class SolutionReview implements VersionedSchema {
         this.dataAssets = dataAssets != null ? dataAssets : new ArrayList<>();
         this.technologyComponents = technologyComponents != null ? technologyComponents : new ArrayList<>();
         this.enterpriseTools = enterpriseTools != null ? enterpriseTools : new ArrayList<>();
-        this.processCompliants = processCompliants != null ? processCompliants : new ArrayList<>();
+        this.processCompliances = processCompliances != null ? processCompliances : new ArrayList<>();
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -118,7 +118,7 @@ public class SolutionReview implements VersionedSchema {
         this.dataAssets = new ArrayList<>(original.dataAssets);
         this.technologyComponents = new ArrayList<>(original.technologyComponents);
         this.enterpriseTools = new ArrayList<>(original.enterpriseTools);
-        this.processCompliants = new ArrayList<>(original.processCompliants);
+        this.processCompliances = new ArrayList<>(original.processCompliances);
         this.version = original.version + 1;
         this.createdAt = original.createdAt;
         this.lastModifiedAt = LocalDateTime.now();
@@ -216,10 +216,10 @@ public class SolutionReview implements VersionedSchema {
     }
 
     public void addProcessCompliant(ProcessCompliant compliant) {
-        if (this.processCompliants == null) {
-            this.processCompliants = new ArrayList<>();
+        if (this.processCompliances == null) {
+            this.processCompliances = new ArrayList<>();
         }
-        this.processCompliants.add(compliant);
+        this.processCompliances.add(compliant);
         this.lastModifiedAt = LocalDateTime.now();
     }
 

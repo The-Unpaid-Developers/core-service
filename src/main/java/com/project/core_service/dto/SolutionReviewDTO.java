@@ -33,7 +33,7 @@ public class SolutionReviewDTO {
     private List<DataAsset> dataAssets;
     private List<TechnologyComponent> technologyComponents;
     private List<EnterpriseTool> enterpriseTools;
-    private List<ProcessCompliant> processCompliants;
+    private List<ProcessCompliant> processCompliances;
     private int version;
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
@@ -51,7 +51,7 @@ public class SolutionReviewDTO {
         this.dataAssets = solutionReview.getDataAssets();
         this.technologyComponents = solutionReview.getTechnologyComponents();
         this.enterpriseTools = solutionReview.getEnterpriseTools();
-        this.processCompliants = solutionReview.getProcessCompliants();
+        this.processCompliances = solutionReview.getProcessCompliances();
         this.version = solutionReview.getVersion();
         this.createdAt = solutionReview.getCreatedAt();
         this.lastModifiedAt = solutionReview.getLastModifiedAt();
@@ -71,7 +71,7 @@ public class SolutionReviewDTO {
         entity.setDataAssets(this.dataAssets);
         entity.setTechnologyComponents(this.technologyComponents);
         entity.setEnterpriseTools(this.enterpriseTools);
-        entity.setProcessCompliants(this.processCompliants);
+        entity.setProcessCompliances(this.processCompliances);
         entity.setVersion(this.version);
         entity.setCreatedAt(this.createdAt);
         entity.setLastModifiedAt(this.lastModifiedAt);
