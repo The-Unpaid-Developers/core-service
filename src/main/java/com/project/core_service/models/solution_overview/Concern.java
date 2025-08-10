@@ -1,5 +1,6 @@
 package com.project.core_service.models.solution_overview;
 
+import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -8,8 +9,9 @@ import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
-@Document
 @Data
+@Document
+@AllArgsConstructor
 public class Concern implements VersionedSchema {
     @Id
     private String id;
