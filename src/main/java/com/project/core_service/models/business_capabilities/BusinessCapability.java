@@ -6,9 +6,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.mongodb.lang.NonNull;
 import com.project.core_service.models.shared.VersionedSchema;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 @Document
+@AllArgsConstructor
 @Data
 public class BusinessCapability implements VersionedSchema {
     @Id

@@ -2,6 +2,7 @@ package com.project.core_service.models.solution_overview;
 
 import java.util.List;
 
+import lombok.AllArgsConstructor;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,6 +13,7 @@ import lombok.Data;
 
 @Data
 @Document
+@AllArgsConstructor
 public class SolutionOverview implements VersionedSchema {
     @Id
     private String id;
