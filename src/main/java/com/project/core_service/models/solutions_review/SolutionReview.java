@@ -1,4 +1,4 @@
-package com.project.core_service.models;
+package com.project.core_service.models.solutions_review;
 
 import java.util.List;
 
@@ -23,6 +23,9 @@ import lombok.Data;
 public class SolutionReview implements VersionedSchema {
     @Id
     private String id;
+
+    @NonNull
+    private DocumentState documentState;
 
     @NonNull
     private SolutionOverview solutionOverview;
