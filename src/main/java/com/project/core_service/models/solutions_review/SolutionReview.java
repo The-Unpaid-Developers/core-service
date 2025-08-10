@@ -131,35 +131,95 @@ public class SolutionReview implements VersionedSchema {
     }
 
     // Utility methods for document state management
+
+    /**
+     * Submits the document for review.
+     * Only documents in DRAFT state can be submitted.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in DRAFT state
+     */
     public void submit() {
-        if (this.documentState == DocumentState.DRAFT) {
-            this.documentState = DocumentState.SUBMITTED;
-            this.lastModifiedAt = LocalDateTime.now();
-        }
+        this.documentState.validateTransition(DocumentState.SUBMITTED);
+        this.documentState = DocumentState.SUBMITTED;
+        this.lastModifiedAt = LocalDateTime.now();
     }
 
-    // TODO: @yuezhen - implement more complicated lifecycle methods
+    /**
+     * Removes submission and returns document to DRAFT state.
+     * Only documents in SUBMITTED state can be returned to draft.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in SUBMITTED
+     *                                                       state
+     */
     public void removeSubmission() {
+        this.documentState.validateTransition(DocumentState.DRAFT);
+        this.documentState = DocumentState.DRAFT;
+        this.lastModifiedAt = LocalDateTime.now();
     }
 
+    /**
+     * Approves the document and sets it as current.
+     * Only documents in SUBMITTED state can be approved.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in SUBMITTED
+     *                                                       state
+     */
     public void approve() {
-        if (this.documentState == DocumentState.SUBMITTED) {
-            this.documentState = DocumentState.CURRENT;
-            this.lastModifiedAt = LocalDateTime.now();
-        }
+        this.documentState.validateTransition(DocumentState.CURRENT);
+        this.documentState = DocumentState.CURRENT;
+        this.lastModifiedAt = LocalDateTime.now();
     }
 
-    public void unapproveCurrent() {
+    /**
+     * UnApproves a current document and returns it to submitted state.
+     * Only documents in CURRENT state can be unapproved.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
+     */
+    public void unApproveCurrent() {
+        this.documentState.validateTransition(DocumentState.SUBMITTED);
+        this.documentState = DocumentState.SUBMITTED;
+        this.lastModifiedAt = LocalDateTime.now();
     }
 
+    /**
+     * Marks the current document as outdated.
+     * Only documents in CURRENT state can be marked as outdated.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
+     */
     public void markAsOutdated() {
-        if (this.documentState == DocumentState.CURRENT) {
-            this.documentState = DocumentState.OUTDATED;
-            this.lastModifiedAt = LocalDateTime.now();
-        }
+        this.documentState.validateTransition(DocumentState.OUTDATED);
+        this.documentState = DocumentState.OUTDATED;
+        this.lastModifiedAt = LocalDateTime.now();
     }
 
+    /**
+     * Resets an outdated document back to current status.
+     * Only documents in OUTDATED state can be reset to current.
+     * 
+     * @throws DocumentState.IllegalStateTransitionException if not in OUTDATED
+     *                                                       state
+     */
     public void resetAsCurrent() {
+        this.documentState.validateTransition(DocumentState.CURRENT);
+        this.documentState = DocumentState.CURRENT;
+        this.lastModifiedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Safely transitions to a new state with validation.
+     * 
+     * @param newState   the target state to transition to
+     * @param modifiedBy the user making the change
+     * @throws DocumentState.IllegalStateTransitionException if transition is
+     *                                                       invalid
+     */
+    public void transitionTo(DocumentState newState, String modifiedBy) {
+        this.documentState.validateTransition(newState);
+        this.documentState = newState;
+        this.lastModifiedAt = LocalDateTime.now();
+        this.lastModifiedBy = modifiedBy;
     }
 
     public boolean isDraft() {
