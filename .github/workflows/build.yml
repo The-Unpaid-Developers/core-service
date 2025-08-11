@@ -4,13 +4,23 @@ on:
   push:
     branches:
       - main
-
+  
 
 jobs:
   build:
     name: Build and analyze
     runs-on: ubuntu-latest
-    
+    services:
+      mongo:
+        image: mongodb/mongodb-community-server:7.0-ubi9
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" 
+          --health-interval 10s 
+          --health-timeout 5s 
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,6 +42,16 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      - name: Wait for MongoDB to be ready
+        run: |
+          for i in {1..30}; do
+            if mongosh --host localhost --eval "db.adminCommand('ping')" &>/dev/null; then
+              echo "MongoDB is up!"
+              break
+            fi
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
