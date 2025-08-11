@@ -42,18 +42,9 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
-      - name: Wait for MongoDB to be ready
-        run: |
-          for i in {1..30}; do
-            if mongosh --host localhost --eval "db.adminCommand('ping')" &>/dev/null; then
-              echo "MongoDB is up!"
-              break
-            fi
-            echo "Waiting for MongoDB..."
-            sleep 2
-          done
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          CONN_STR: mongodb://mongo:27017/solutions
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=The-Unpaid-Developers_core-service_28237062-3794-46a7-97a8-a22d5d957ce5 -Dsonar.projectName='core-service'
