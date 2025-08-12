@@ -280,19 +280,7 @@ public class SolutionReview implements VersionedSchema {
         this.lastModifiedBy = modifiedBy;
     }
 
-    // Check if the solution review is complete (all required lists have items)
-    public boolean isComplete() {
-        return this.solutionOverview != null &&
-                !this.businessCapabilities.isEmpty() &&
-                !this.systemComponents.isEmpty();
-    }
-
     // VersionedSchema implementation
-    @Override
-    public int getVersion() {
-        return this.version;
-    }
-
     @Override
     public void setVersion(int version) {
         this.version = version;
@@ -306,7 +294,6 @@ public class SolutionReview implements VersionedSchema {
                 .version(1)
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now());
-        // Collections are automatically initialized via @Builder.Default
     }
 
     public static SolutionReviewBuilder builderFromSolutionOverview(SolutionOverview solutionOverview) {

@@ -18,35 +18,38 @@ import lombok.AllArgsConstructor;
 public class AuditLogNode {
     @Id
     private String id;
-    
+
     @NonNull
     private String solutionReviewId; // References SolutionReview.id
-    
+
+    @NonNull
+    private String solutionsReviewVersion;
+
     private String next; // References next node's id
-    
+
     @NonNull
     private LocalDateTime timestamp; // When this version was created
-    
+
     private String changeDescription; // Description of what changed
-    
+
     public AuditLogNode(String solutionReviewId, String changeDescription) {
         this.solutionReviewId = solutionReviewId;
         this.changeDescription = changeDescription;
         this.timestamp = LocalDateTime.now();
         this.next = null;
     }
-    
+
     public AuditLogNode(String solutionReviewId, String changeDescription, String next) {
         this.solutionReviewId = solutionReviewId;
         this.changeDescription = changeDescription;
         this.timestamp = LocalDateTime.now();
         this.next = next;
     }
-    
+
     public boolean isTail() {
         return this.next == null;
     }
-    
+
     public boolean hasNext() {
         return this.next != null;
     }

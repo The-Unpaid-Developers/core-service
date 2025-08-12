@@ -2,6 +2,7 @@ package com.project.core_service.models.solutions_review;
 
 import java.util.Set;
 import java.util.EnumSet;
+import com.project.core_service.exceptions.IllegalStateTransitionException;
 
 /**
  * Represents the lifecycle states of a solution review document.
@@ -129,19 +130,6 @@ public enum DocumentState {
                     String.format(
                             "Invalid state transition from %s to %s. Valid transitions from %s are: %s",
                             this, targetState, this, getValidTransitions()));
-        }
-    }
-
-    /**
-     * Custom exception for invalid state transitions.
-     */
-    public static class IllegalStateTransitionException extends RuntimeException {
-        public IllegalStateTransitionException(String message) {
-            super(message);
-        }
-
-        public IllegalStateTransitionException(String message, Throwable cause) {
-            super(message, cause);
         }
     }
 
