@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.project.core_service.models.solutions_review.SolutionReviewTest
--------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.773 s -- in com.project.core_service.models.solutions_review.SolutionReviewTest

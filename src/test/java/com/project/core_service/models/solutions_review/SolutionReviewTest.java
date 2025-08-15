@@ -728,4 +728,281 @@ class SolutionReviewTest {
         assertEquals(3, review.getVersion());
         assertTrue(review.getLastModifiedAt().isAfter(beforeVersionUpdate));
     }
+
+    @Test
+    @DisplayName("getAvailableOperations should return correct operations based on current state")
+    void getAvailableOperationsShouldReturnCorrectOperationsBasedOnCurrentState() {
+        SolutionReview review = new SolutionReview(realSolutionOverview);
+
+        // DRAFT state should have SUBMIT operation available
+        var draftOperations = review.getAvailableOperations();
+        assertEquals(1, draftOperations.size());
+        assertTrue(draftOperations.contains(DocumentState.StateOperation.SUBMIT));
+
+        // Move to SUBMITTED state
+        review.submit();
+        var submittedOperations = review.getAvailableOperations();
+        assertEquals(2, submittedOperations.size());
+        assertTrue(submittedOperations.contains(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertTrue(submittedOperations.contains(DocumentState.StateOperation.APPROVE));
+
+        // Move to CURRENT state
+        review.approve();
+        var currentOperations = review.getAvailableOperations();
+        assertEquals(2, currentOperations.size());
+        assertTrue(currentOperations.contains(DocumentState.StateOperation.UNAPPROVE));
+        assertTrue(currentOperations.contains(DocumentState.StateOperation.MARK_OUTDATED));
+
+        // Move to OUTDATED state
+        review.markAsOutdated();
+        var outdatedOperations = review.getAvailableOperations();
+        assertEquals(1, outdatedOperations.size());
+        assertTrue(outdatedOperations.contains(DocumentState.StateOperation.RESET_CURRENT));
+    }
+
+    @Nested
+    @DisplayName("Additional Coverage Tests")
+    class AdditionalCoverageTests {
+
+        @Test
+        @DisplayName("Should handle default constructor correctly")
+        void shouldHandleDefaultConstructorCorrectly() {
+            SolutionReview review = new SolutionReview();
+
+            assertNull(review.getId());
+            assertNull(review.getDocumentState());
+            assertNull(review.getSolutionOverview());
+            // Lists are initialized as empty lists due to @Builder.Default annotations
+            assertNotNull(review.getBusinessCapabilities());
+            assertNotNull(review.getSystemComponents());
+            assertNotNull(review.getIntegrationFlows());
+            assertNotNull(review.getDataAssets());
+            assertNotNull(review.getTechnologyComponents());
+            assertNotNull(review.getEnterpriseTools());
+            assertNotNull(review.getProcessCompliances());
+            assertTrue(review.getBusinessCapabilities().isEmpty());
+            assertTrue(review.getSystemComponents().isEmpty());
+            assertTrue(review.getIntegrationFlows().isEmpty());
+            assertTrue(review.getDataAssets().isEmpty());
+            assertTrue(review.getTechnologyComponents().isEmpty());
+            assertTrue(review.getEnterpriseTools().isEmpty());
+            assertTrue(review.getProcessCompliances().isEmpty());
+            assertEquals(0, review.getVersion());
+            assertNull(review.getCreatedAt());
+            assertNull(review.getLastModifiedAt());
+            assertNull(review.getCreatedBy());
+            assertNull(review.getLastModifiedBy());
+        }
+
+        @Test
+        @DisplayName("Should handle complete builder correctly")
+        void shouldHandleCompleteBuilderCorrectly() {
+            LocalDateTime beforeBuild = LocalDateTime.now().minusSeconds(1);
+
+            SolutionReview review = SolutionReview.completeBuilder()
+                    .id("complete-test")
+                    .documentState(DocumentState.CURRENT)
+                    .solutionOverview(realSolutionOverview)
+                    .businessCapabilities(Arrays.asList(mockBusinessCapability))
+                    .createdBy("complete.creator")
+                    .lastModifiedBy("complete.modifier")
+                    .build();
+
+            LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
+
+            assertEquals("complete-test", review.getId());
+            assertEquals(DocumentState.CURRENT, review.getDocumentState());
+            assertEquals(realSolutionOverview, review.getSolutionOverview());
+            assertEquals(1, review.getVersion());
+            assertEquals("complete.creator", review.getCreatedBy());
+            assertEquals("complete.modifier", review.getLastModifiedBy());
+            assertTrue(review.getCreatedAt().isAfter(beforeBuild));
+            assertTrue(review.getCreatedAt().isBefore(afterBuild));
+            assertTrue(review.getLastModifiedAt().isAfter(beforeBuild));
+            assertTrue(review.getLastModifiedAt().isBefore(afterBuild));
+            assertEquals(1, review.getBusinessCapabilities().size());
+        }
+
+        @Test
+        @DisplayName("Should handle all setters correctly")
+        void shouldHandleAllSettersCorrectly() {
+            SolutionReview review = new SolutionReview();
+            LocalDateTime testTime = LocalDateTime.now();
+
+            review.setId("setter-test");
+            review.setDocumentState(DocumentState.SUBMITTED);
+            review.setSolutionOverview(realSolutionOverview);
+            review.setBusinessCapabilities(Arrays.asList(mockBusinessCapability));
+            review.setSystemComponents(Arrays.asList(mockSystemComponent));
+            review.setIntegrationFlows(Arrays.asList(mockIntegrationFlow));
+            review.setDataAssets(Arrays.asList(mockDataAsset));
+            review.setTechnologyComponents(Arrays.asList(mockTechnologyComponent));
+            review.setEnterpriseTools(Arrays.asList(mockEnterpriseTool));
+            review.setProcessCompliances(Arrays.asList(mockProcessCompliant));
+            review.setVersion(5);
+            review.setCreatedAt(testTime);
+            review.setLastModifiedAt(testTime);
+            review.setCreatedBy("setter.creator");
+            review.setLastModifiedBy("setter.modifier");
+
+            assertEquals("setter-test", review.getId());
+            assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
+            assertEquals(realSolutionOverview, review.getSolutionOverview());
+            assertEquals(1, review.getBusinessCapabilities().size());
+            assertEquals(1, review.getSystemComponents().size());
+            assertEquals(1, review.getIntegrationFlows().size());
+            assertEquals(1, review.getDataAssets().size());
+            assertEquals(1, review.getTechnologyComponents().size());
+            assertEquals(1, review.getEnterpriseTools().size());
+            assertEquals(1, review.getProcessCompliances().size());
+            assertEquals(5, review.getVersion());
+            assertEquals(testTime, review.getCreatedAt());
+            assertEquals(testTime, review.getLastModifiedAt());
+            assertEquals("setter.creator", review.getCreatedBy());
+            assertEquals("setter.modifier", review.getLastModifiedBy());
+        }
+
+        @Test
+        @DisplayName("Should handle toString correctly")
+        void shouldHandleToStringCorrectly() {
+            SolutionReview review = new SolutionReview(realSolutionOverview);
+
+            String result = review.toString();
+
+            assertNotNull(result);
+            assertTrue(result.contains("SolutionReview"));
+        }
+
+        @Test
+        @DisplayName("Should handle equals and hashCode correctly")
+        void shouldHandleEqualsAndHashCodeCorrectly() {
+            SolutionReview review1 = SolutionReview.builder()
+                    .id("test-equals")
+                    .documentState(DocumentState.DRAFT)
+                    .solutionOverview(realSolutionOverview)
+                    .version(1)
+                    .build();
+
+            SolutionReview review2 = SolutionReview.builder()
+                    .id("test-equals")
+                    .documentState(DocumentState.DRAFT)
+                    .solutionOverview(realSolutionOverview)
+                    .version(1)
+                    .build();
+
+            assertEquals(review1, review2);
+            assertEquals(review1.hashCode(), review2.hashCode());
+
+            // Test inequality
+            review2.setVersion(2);
+            assertNotEquals(review1, review2);
+        }
+
+        @Test
+        @DisplayName("Should handle multiple operations on lists without interference")
+        void shouldHandleMultipleOperationsOnListsWithoutInterference() {
+            SolutionReview review = new SolutionReview(realSolutionOverview);
+            LocalDateTime beforeOperations = review.getLastModifiedAt();
+
+            // Add multiple items to different lists
+            review.addBusinessCapability(mockBusinessCapability);
+            LocalDateTime afterFirstAdd = review.getLastModifiedAt();
+            assertTrue(afterFirstAdd.isAfter(beforeOperations));
+
+            review.addSystemComponent(mockSystemComponent);
+            LocalDateTime afterSecondAdd = review.getLastModifiedAt();
+            assertTrue(afterSecondAdd.isAfter(afterFirstAdd));
+
+            review.addIntegrationFlow(mockIntegrationFlow);
+            review.addDataAsset(mockDataAsset);
+            review.addTechnologyComponent(mockTechnologyComponent);
+            review.addEnterpriseTool(mockEnterpriseTool);
+            review.addProcessCompliance(mockProcessCompliant);
+
+            // Verify all lists have the correct size
+            assertEquals(1, review.getBusinessCapabilities().size());
+            assertEquals(1, review.getSystemComponents().size());
+            assertEquals(1, review.getIntegrationFlows().size());
+            assertEquals(1, review.getDataAssets().size());
+            assertEquals(1, review.getTechnologyComponents().size());
+            assertEquals(1, review.getEnterpriseTools().size());
+            assertEquals(1, review.getProcessCompliances().size());
+
+            // Verify modification time was updated
+            assertTrue(review.getLastModifiedAt().isAfter(afterSecondAdd));
+        }
+
+        @Test
+        @DisplayName("Should handle state transitions with different user modifiers")
+        void shouldHandleStateTransitionsWithDifferentUserModifiers() {
+            SolutionReview review = new SolutionReview(realSolutionOverview);
+            review.setCreatedBy("original.creator");
+
+            // Test transitionTo with different users
+            review.transitionTo(DocumentState.SUBMITTED, "user1");
+            assertEquals("user1", review.getLastModifiedBy());
+            assertEquals("original.creator", review.getCreatedBy()); // Should remain unchanged
+
+            review.transitionTo(DocumentState.DRAFT, "user2");
+            assertEquals("user2", review.getLastModifiedBy());
+            assertEquals("original.creator", review.getCreatedBy()); // Should remain unchanged
+
+            // Test updateModification
+            review.updateModification("user3");
+            assertEquals("user3", review.getLastModifiedBy());
+            assertEquals("original.creator", review.getCreatedBy()); // Should remain unchanged
+        }
+
+        @Test
+        @DisplayName("Should handle edge cases in copy constructor")
+        void shouldHandleEdgeCasesInCopyConstructor() {
+            // Create original with extreme values
+            SolutionReview original = new SolutionReview(realSolutionOverview);
+            original.setVersion(Integer.MAX_VALUE - 1);
+            LocalDateTime veryOldTime = LocalDateTime.of(2000, 1, 1, 0, 0);
+            original.setCreatedAt(veryOldTime);
+            original.setCreatedBy("ancient.creator");
+
+            // Create copy
+            SolutionReview copy = new SolutionReview(original, "new.modifier");
+
+            // Verify version increment works even with large numbers
+            assertEquals(Integer.MAX_VALUE, copy.getVersion());
+            assertEquals(veryOldTime, copy.getCreatedAt()); // Preserved
+            assertEquals("ancient.creator", copy.getCreatedBy()); // Preserved
+            assertEquals("new.modifier", copy.getLastModifiedBy()); // Updated
+            assertTrue(copy.getLastModifiedAt().isAfter(veryOldTime)); // Updated
+        }
+
+        @Test
+        @DisplayName("Should maintain consistency between state methods and enum")
+        void shouldMaintainConsistencyBetweenStateMethodsAndEnum() {
+            SolutionReview review = new SolutionReview(realSolutionOverview);
+
+            // Test all states and their corresponding methods
+            review.setDocumentState(DocumentState.DRAFT);
+            assertTrue(review.isDraft());
+            assertFalse(review.isSubmitted());
+            assertFalse(review.isCurrent());
+            assertFalse(review.isOutdated());
+
+            review.setDocumentState(DocumentState.SUBMITTED);
+            assertFalse(review.isDraft());
+            assertTrue(review.isSubmitted());
+            assertFalse(review.isCurrent());
+            assertFalse(review.isOutdated());
+
+            review.setDocumentState(DocumentState.CURRENT);
+            assertFalse(review.isDraft());
+            assertFalse(review.isSubmitted());
+            assertTrue(review.isCurrent());
+            assertFalse(review.isOutdated());
+
+            review.setDocumentState(DocumentState.OUTDATED);
+            assertFalse(review.isDraft());
+            assertFalse(review.isSubmitted());
+            assertFalse(review.isCurrent());
+            assertTrue(review.isOutdated());
+        }
+    }
 }

@@ -334,4 +334,191 @@ class DocumentStateTest {
         assertEquals("CURRENT", DocumentState.CURRENT.name());
         assertEquals("OUTDATED", DocumentState.OUTDATED.name());
     }
+
+    // Tests for StateOperation functionality
+    @Test
+    @DisplayName("StateOperation should have correct operation names")
+    void stateOperationShouldHaveCorrectOperationNames() {
+        assertEquals("submit document", DocumentState.StateOperation.SUBMIT.getOperationName());
+        assertEquals("remove submission", DocumentState.StateOperation.REMOVE_SUBMISSION.getOperationName());
+        assertEquals("approve document", DocumentState.StateOperation.APPROVE.getOperationName());
+        assertEquals("un-approve document", DocumentState.StateOperation.UNAPPROVE.getOperationName());
+        assertEquals("mark as outdated", DocumentState.StateOperation.MARK_OUTDATED.getOperationName());
+        assertEquals("reset as current", DocumentState.StateOperation.RESET_CURRENT.getOperationName());
+    }
+
+    @Test
+    @DisplayName("StateOperation should have correct target states")
+    void stateOperationShouldHaveCorrectTargetStates() {
+        assertEquals(DocumentState.SUBMITTED, DocumentState.StateOperation.SUBMIT.getTargetState());
+        assertEquals(DocumentState.DRAFT, DocumentState.StateOperation.REMOVE_SUBMISSION.getTargetState());
+        assertEquals(DocumentState.CURRENT, DocumentState.StateOperation.APPROVE.getTargetState());
+        assertEquals(DocumentState.SUBMITTED, DocumentState.StateOperation.UNAPPROVE.getTargetState());
+        assertEquals(DocumentState.OUTDATED, DocumentState.StateOperation.MARK_OUTDATED.getTargetState());
+        assertEquals(DocumentState.CURRENT, DocumentState.StateOperation.RESET_CURRENT.getTargetState());
+    }
+
+    @Test
+    @DisplayName("canExecuteOperation should return correct results for each state")
+    void canExecuteOperationShouldReturnCorrectResultsForEachState() {
+        // DRAFT can only SUBMIT
+        assertTrue(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+        assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
+        assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.RESET_CURRENT));
+
+        // SUBMITTED can REMOVE_SUBMISSION and APPROVE
+        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+        assertTrue(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertTrue(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
+        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.RESET_CURRENT));
+
+        // CURRENT can UNAPPROVE and MARK_OUTDATED
+        assertFalse(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+        assertFalse(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertFalse(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        assertTrue(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
+        assertTrue(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        assertFalse(DocumentState.CURRENT.canExecuteOperation(DocumentState.StateOperation.RESET_CURRENT));
+
+        // OUTDATED can only RESET_CURRENT
+        assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+        assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
+        assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        assertTrue(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.RESET_CURRENT));
+    }
+
+    @Test
+    @DisplayName("getAvailableOperations should return correct operations for each state")
+    void getAvailableOperationsShouldReturnCorrectOperationsForEachState() {
+        var draftOperations = DocumentState.DRAFT.getAvailableOperations();
+        assertEquals(1, draftOperations.size());
+        assertTrue(draftOperations.contains(DocumentState.StateOperation.SUBMIT));
+
+        var submittedOperations = DocumentState.SUBMITTED.getAvailableOperations();
+        assertEquals(2, submittedOperations.size());
+        assertTrue(submittedOperations.contains(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertTrue(submittedOperations.contains(DocumentState.StateOperation.APPROVE));
+
+        var currentOperations = DocumentState.CURRENT.getAvailableOperations();
+        assertEquals(2, currentOperations.size());
+        assertTrue(currentOperations.contains(DocumentState.StateOperation.UNAPPROVE));
+        assertTrue(currentOperations.contains(DocumentState.StateOperation.MARK_OUTDATED));
+
+        var outdatedOperations = DocumentState.OUTDATED.getAvailableOperations();
+        assertEquals(1, outdatedOperations.size());
+        assertTrue(outdatedOperations.contains(DocumentState.StateOperation.RESET_CURRENT));
+    }
+
+    @Test
+    @DisplayName("executeOperation should execute valid operations correctly")
+    void executeOperationShouldExecuteValidOperationsCorrectly() {
+        assertEquals(DocumentState.SUBMITTED,
+                DocumentState.DRAFT.executeOperation(DocumentState.StateOperation.SUBMIT));
+        assertEquals(DocumentState.DRAFT,
+                DocumentState.SUBMITTED.executeOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        assertEquals(DocumentState.CURRENT,
+                DocumentState.SUBMITTED.executeOperation(DocumentState.StateOperation.APPROVE));
+        assertEquals(DocumentState.SUBMITTED,
+                DocumentState.CURRENT.executeOperation(DocumentState.StateOperation.UNAPPROVE));
+        assertEquals(DocumentState.OUTDATED,
+                DocumentState.CURRENT.executeOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        assertEquals(DocumentState.CURRENT,
+                DocumentState.OUTDATED.executeOperation(DocumentState.StateOperation.RESET_CURRENT));
+    }
+
+    @Test
+    @DisplayName("executeOperation should throw exception for invalid operations")
+    void executeOperationShouldThrowExceptionForInvalidOperations() {
+        IllegalStateTransitionException exception1 = assertThrows(
+                IllegalStateTransitionException.class,
+                () -> DocumentState.DRAFT.executeOperation(DocumentState.StateOperation.APPROVE));
+        assertTrue(exception1.getMessage().contains("Cannot approve document"));
+        assertTrue(exception1.getMessage().contains("document state is DRAFT but must be SUBMITTED"));
+
+        IllegalStateTransitionException exception2 = assertThrows(
+                IllegalStateTransitionException.class,
+                () -> DocumentState.CURRENT.executeOperation(DocumentState.StateOperation.SUBMIT));
+        assertTrue(exception2.getMessage().contains("Cannot submit document"));
+        assertTrue(exception2.getMessage().contains("document state is CURRENT but must be DRAFT"));
+
+        IllegalStateTransitionException exception3 = assertThrows(
+                IllegalStateTransitionException.class,
+                () -> DocumentState.OUTDATED.executeOperation(DocumentState.StateOperation.APPROVE));
+        assertTrue(exception3.getMessage().contains("Cannot approve document"));
+        assertTrue(exception3.getMessage().contains("document state is OUTDATED but must be SUBMITTED"));
+    }
+
+    @Test
+    @DisplayName("StateOperation enum should have all expected values")
+    void stateOperationEnumShouldHaveAllExpectedValues() {
+        DocumentState.StateOperation[] operations = DocumentState.StateOperation.values();
+        assertEquals(6, operations.length);
+
+        // Verify all expected operations exist
+        assertNotNull(DocumentState.StateOperation.valueOf("SUBMIT"));
+        assertNotNull(DocumentState.StateOperation.valueOf("REMOVE_SUBMISSION"));
+        assertNotNull(DocumentState.StateOperation.valueOf("APPROVE"));
+        assertNotNull(DocumentState.StateOperation.valueOf("UNAPPROVE"));
+        assertNotNull(DocumentState.StateOperation.valueOf("MARK_OUTDATED"));
+        assertNotNull(DocumentState.StateOperation.valueOf("RESET_CURRENT"));
+    }
+
+    @Test
+    @DisplayName("Should support complete operation-based lifecycle")
+    void shouldSupportCompleteOperationBasedLifecycle() {
+        // Test complete lifecycle using operations
+        DocumentState state = DocumentState.DRAFT;
+
+        // DRAFT -> SUBMITTED
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+        state = state.executeOperation(DocumentState.StateOperation.SUBMIT);
+        assertEquals(DocumentState.SUBMITTED, state);
+
+        // SUBMITTED -> CURRENT
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        state = state.executeOperation(DocumentState.StateOperation.APPROVE);
+        assertEquals(DocumentState.CURRENT, state);
+
+        // CURRENT -> OUTDATED
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+        state = state.executeOperation(DocumentState.StateOperation.MARK_OUTDATED);
+        assertEquals(DocumentState.OUTDATED, state);
+
+        // OUTDATED -> CURRENT
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.RESET_CURRENT));
+        state = state.executeOperation(DocumentState.StateOperation.RESET_CURRENT);
+        assertEquals(DocumentState.CURRENT, state);
+    }
+
+    @Test
+    @DisplayName("Should support rejection scenarios using operations")
+    void shouldSupportRejectionScenariosUsingOperations() {
+        DocumentState state = DocumentState.DRAFT;
+
+        // DRAFT -> SUBMITTED
+        state = state.executeOperation(DocumentState.StateOperation.SUBMIT);
+        assertEquals(DocumentState.SUBMITTED, state);
+
+        // SUBMITTED -> DRAFT (rejection)
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
+        state = state.executeOperation(DocumentState.StateOperation.REMOVE_SUBMISSION);
+        assertEquals(DocumentState.DRAFT, state);
+
+        // Back to SUBMITTED and then CURRENT
+        state = state.executeOperation(DocumentState.StateOperation.SUBMIT);
+        state = state.executeOperation(DocumentState.StateOperation.APPROVE);
+        assertEquals(DocumentState.CURRENT, state);
+
+        // CURRENT -> SUBMITTED (un-approval)
+        assertTrue(state.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
+        state = state.executeOperation(DocumentState.StateOperation.UNAPPROVE);
+        assertEquals(DocumentState.SUBMITTED, state);
+    }
 }
