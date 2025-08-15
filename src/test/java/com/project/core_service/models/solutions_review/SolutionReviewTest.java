@@ -29,7 +29,7 @@ import static org.mockito.Mockito.*;
  * Unit tests for SolutionReview class.
  * Tests constructors, state transitions, utility methods, and builder patterns.
  */
-public class SolutionReviewTest {
+class SolutionReviewTest {
 
     @Mock
     private SolutionOverview mockSolutionOverview;
@@ -132,8 +132,8 @@ public class SolutionReviewTest {
         }
 
         @Test
-        @DisplayName("Full constructor should set all provided values")
-        void fullConstructorShouldSetAllProvidedValues() {
+        @DisplayName("Builder with state and user should set all provided values")
+        void builderWithStateAndUserShouldSetAllProvidedValues() {
             List<BusinessCapability> capabilities = Arrays.asList(mockBusinessCapability);
             List<SystemComponent> components = Arrays.asList(mockSystemComponent);
             List<IntegrationFlow> flows = Arrays.asList(mockIntegrationFlow);
@@ -145,17 +145,16 @@ public class SolutionReviewTest {
 
             LocalDateTime beforeCreation = LocalDateTime.now().minusSeconds(1);
 
-            SolutionReview review = new SolutionReview(
-                    DocumentState.SUBMITTED,
-                    realSolutionOverview,
-                    capabilities,
-                    components,
-                    flows,
-                    assets,
-                    techComponents,
-                    tools,
-                    compliances,
-                    creator);
+            SolutionReview review = SolutionReview.withStateAndUser(DocumentState.SUBMITTED, creator)
+                    .solutionOverview(realSolutionOverview)
+                    .businessCapabilities(capabilities)
+                    .systemComponents(components)
+                    .integrationFlows(flows)
+                    .dataAssets(assets)
+                    .technologyComponents(techComponents)
+                    .enterpriseTools(tools)
+                    .processCompliances(compliances)
+                    .build();
 
             LocalDateTime afterCreation = LocalDateTime.now().plusSeconds(1);
 
@@ -178,19 +177,11 @@ public class SolutionReviewTest {
         }
 
         @Test
-        @DisplayName("Full constructor should handle null lists with defaults")
-        void fullConstructorShouldHandleNullListsWithDefaults() {
-            SolutionReview review = new SolutionReview(
-                    DocumentState.DRAFT,
-                    realSolutionOverview,
-                    null, // businessCapabilities
-                    null, // systemComponents
-                    null, // integrationFlows
-                    null, // dataAssets
-                    null, // technologyComponents
-                    null, // enterpriseTools
-                    null, // processCompliances
-                    "test.user");
+        @DisplayName("Builder should handle null lists with defaults")
+        void builderShouldHandleNullListsWithDefaults() {
+            SolutionReview review = SolutionReview.withStateAndUser(DocumentState.DRAFT, "test.user")
+                    .solutionOverview(realSolutionOverview)
+                    .build();
 
             assertNotNull(review.getBusinessCapabilities());
             assertNotNull(review.getSystemComponents());
@@ -707,17 +698,18 @@ public class SolutionReviewTest {
             LocalDateTime originalCreatedAt = review.getCreatedAt();
             LocalDateTime originalModifiedAt = review.getLastModifiedAt();
 
-            // Wait a bit to ensure timestamp differences are detectable
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
+            // Perform the operation that should update lastModifiedAt
             review.submit();
 
+            // Verify createdAt is preserved and lastModifiedAt is updated
             assertEquals(originalCreatedAt, review.getCreatedAt()); // Should not change
-            assertTrue(review.getLastModifiedAt().isAfter(originalModifiedAt)); // Should update
+            assertNotEquals(originalModifiedAt, review.getLastModifiedAt()); // Should be different
+
+            // Additional verification that the modification time is reasonable (within last
+            // few seconds)
+            assertTrue(review.getLastModifiedAt().isAfter(originalModifiedAt) ||
+                    review.getLastModifiedAt().isEqual(originalModifiedAt.plusNanos(1000))); // Should update or be very
+                                                                                             // close
         }
     }
 

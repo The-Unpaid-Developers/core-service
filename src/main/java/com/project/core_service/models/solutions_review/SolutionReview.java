@@ -93,33 +93,6 @@ public class SolutionReview implements VersionedSchema {
         this.lastModifiedAt = LocalDateTime.now();
     }
 
-    // Full constructor for creating a complete SolutionReview
-    public SolutionReview(DocumentState documentState,
-            SolutionOverview solutionOverview,
-            List<BusinessCapability> businessCapabilities,
-            List<SystemComponent> systemComponents,
-            List<IntegrationFlow> integrationFlows,
-            List<DataAsset> dataAssets,
-            List<TechnologyComponent> technologyComponents,
-            List<EnterpriseTool> enterpriseTools,
-            List<ProcessCompliant> processCompliances,
-            String createdBy) {
-        this.documentState = documentState;
-        this.solutionOverview = solutionOverview;
-        this.businessCapabilities = businessCapabilities != null ? businessCapabilities : new ArrayList<>();
-        this.systemComponents = systemComponents != null ? systemComponents : new ArrayList<>();
-        this.integrationFlows = integrationFlows != null ? integrationFlows : new ArrayList<>();
-        this.dataAssets = dataAssets != null ? dataAssets : new ArrayList<>();
-        this.technologyComponents = technologyComponents != null ? technologyComponents : new ArrayList<>();
-        this.enterpriseTools = enterpriseTools != null ? enterpriseTools : new ArrayList<>();
-        this.processCompliances = processCompliances != null ? processCompliances : new ArrayList<>();
-        this.version = 1; // default till we update schema
-        this.createdAt = LocalDateTime.now();
-        this.lastModifiedAt = LocalDateTime.now();
-        this.createdBy = createdBy;
-        this.lastModifiedBy = createdBy;
-    }
-
     // Copy constructor for creating a new version
     public SolutionReview(SolutionReview original, String modifiedBy) {
         this.documentState = original.documentState;
@@ -315,5 +288,32 @@ public class SolutionReview implements VersionedSchema {
     public static SolutionReviewBuilder builderFromSolutionOverview(SolutionOverview solutionOverview) {
         return newDraftBuilder()
                 .solutionOverview(solutionOverview);
+    }
+
+    /**
+     * Creates a complete SolutionReview with all components.
+     * This replaces the complex constructor with a fluent builder approach.
+     */
+    public static SolutionReviewBuilder completeBuilder() {
+        LocalDateTime now = LocalDateTime.now();
+        return SolutionReview.builder()
+                .version(1)
+                .createdAt(now)
+                .lastModifiedAt(now);
+    }
+
+    /**
+     * Creates a SolutionReview with specific state and user.
+     * Common pattern for creating reviews in specific states.
+     */
+    public static SolutionReviewBuilder withStateAndUser(DocumentState state, String userId) {
+        LocalDateTime now = LocalDateTime.now();
+        return SolutionReview.builder()
+                .documentState(state)
+                .version(1)
+                .createdAt(now)
+                .lastModifiedAt(now)
+                .createdBy(userId)
+                .lastModifiedBy(userId);
     }
 }

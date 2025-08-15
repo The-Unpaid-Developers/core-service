@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * Unit tests for DocumentState enum.
  * Tests all state transition logic, validation methods, and utility functions.
  */
-public class DocumentStateTest {
+class DocumentStateTest {
 
     @Test
     @DisplayName("Should have all expected states defined")
