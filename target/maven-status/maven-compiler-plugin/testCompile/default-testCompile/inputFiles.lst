@@ -1,0 +1,14 @@
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/CoreServiceApplicationTests.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/business_capabilities/BusinessCapabilityTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/data_asset/DataAssetTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/enterprise_tools/EnterpriseToolTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/enterprise_tools/ToolTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/integration_flow/IntegrationFlowTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/process_compliance/ProcessCompliantTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/solution_overview/ConcernTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/solution_overview/SolutionDetailsTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/solution_overview/SolutionOverviewTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/solutions_review/DocumentStateTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/solutions_review/SolutionReviewTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/system_component/SystemComponentTest.java
+/Users/yuezhen/Desktop/fyp/core-service/src/test/java/com/project/core_service/models/technology_component/TechnologyComponentTest.java
