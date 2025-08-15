@@ -2,6 +2,8 @@ package com.project.core_service.models.solutions_review;
 
 import java.util.Set;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.List;
 import com.project.core_service.exceptions.IllegalStateTransitionException;
 
 /**
@@ -178,5 +180,85 @@ public enum DocumentState {
      */
     public boolean isFinalized() {
         return this == CURRENT || this == OUTDATED;
+    }
+
+    /**
+     * Enum defining all possible state transition operations
+     */
+    public enum StateOperation {
+        SUBMIT("submit document", SUBMITTED),
+        REMOVE_SUBMISSION("remove submission", DRAFT),
+        APPROVE("approve document", CURRENT),
+        UNAPPROVE("un-approve document", SUBMITTED),
+        MARK_OUTDATED("mark as outdated", OUTDATED),
+        RESET_CURRENT("reset as current", CURRENT);
+
+        private final String operationName;
+        private final DocumentState targetState;
+
+        StateOperation(String operationName, DocumentState targetState) {
+            this.operationName = operationName;
+            this.targetState = targetState;
+        }
+
+        public String getOperationName() {
+            return operationName;
+        }
+
+        public DocumentState getTargetState() {
+            return targetState;
+        }
+    }
+
+    /**
+     * Map defining which operations are allowed from which states
+     */
+    private static final Map<StateOperation, DocumentState> OPERATION_REQUIREMENTS = Map.of(
+            StateOperation.SUBMIT, DRAFT,
+            StateOperation.REMOVE_SUBMISSION, SUBMITTED,
+            StateOperation.APPROVE, SUBMITTED,
+            StateOperation.UNAPPROVE, CURRENT,
+            StateOperation.MARK_OUTDATED, CURRENT,
+            StateOperation.RESET_CURRENT, OUTDATED);
+
+    /**
+     * Validates if an operation can be executed from this state.
+     * 
+     * @param operation the operation to validate
+     * @return true if the operation is allowed from this state
+     */
+    public boolean canExecuteOperation(StateOperation operation) {
+        DocumentState requiredState = OPERATION_REQUIREMENTS.get(operation);
+        return this == requiredState;
+    }
+
+    /**
+     * Get all operations that are allowed from this state.
+     * 
+     * @return list of operations that can be executed from this state
+     */
+    public List<StateOperation> getAvailableOperations() {
+        return OPERATION_REQUIREMENTS.entrySet().stream()
+                .filter(entry -> entry.getValue() == this)
+                .map(Map.Entry::getKey)
+                .toList();
+    }
+
+    /**
+     * Validates and executes a state transition operation.
+     * 
+     * @param operation the operation to execute
+     * @return the new state after the operation
+     * @throws IllegalStateTransitionException if the operation is not allowed from
+     *                                         this state
+     */
+    public DocumentState executeOperation(StateOperation operation) {
+        DocumentState requiredState = OPERATION_REQUIREMENTS.get(operation);
+        if (this != requiredState) {
+            throw new IllegalStateTransitionException(
+                    String.format("Cannot %s: document state is %s but must be %s",
+                            operation.getOperationName(), this, requiredState));
+        }
+        return operation.getTargetState();
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
+import com.project.core_service.exceptions.IllegalStateTransitionException;
 import com.project.core_service.models.business_capabilities.BusinessCapability;
 import com.project.core_service.models.data_asset.DataAsset;
 import com.project.core_service.models.enterprise_tools.EnterpriseTool;
@@ -80,6 +81,13 @@ public class SolutionReview implements VersionedSchema {
     public SolutionReview(SolutionOverview solutionOverview) {
         this.documentState = DocumentState.DRAFT;
         this.solutionOverview = solutionOverview;
+        this.businessCapabilities = new ArrayList<>();
+        this.systemComponents = new ArrayList<>();
+        this.integrationFlows = new ArrayList<>();
+        this.dataAssets = new ArrayList<>();
+        this.technologyComponents = new ArrayList<>();
+        this.enterpriseTools = new ArrayList<>();
+        this.processCompliances = new ArrayList<>();
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -98,13 +106,13 @@ public class SolutionReview implements VersionedSchema {
             String createdBy) {
         this.documentState = documentState;
         this.solutionOverview = solutionOverview;
-        this.businessCapabilities = businessCapabilities != null ? businessCapabilities : this.businessCapabilities;
-        this.systemComponents = systemComponents != null ? systemComponents : this.systemComponents;
-        this.integrationFlows = integrationFlows != null ? integrationFlows : this.integrationFlows;
-        this.dataAssets = dataAssets != null ? dataAssets : this.dataAssets;
-        this.technologyComponents = technologyComponents != null ? technologyComponents : this.technologyComponents;
-        this.enterpriseTools = enterpriseTools != null ? enterpriseTools : this.enterpriseTools;
-        this.processCompliances = processCompliances != null ? processCompliances : this.processCompliances;
+        this.businessCapabilities = businessCapabilities != null ? businessCapabilities : new ArrayList<>();
+        this.systemComponents = systemComponents != null ? systemComponents : new ArrayList<>();
+        this.integrationFlows = integrationFlows != null ? integrationFlows : new ArrayList<>();
+        this.dataAssets = dataAssets != null ? dataAssets : new ArrayList<>();
+        this.technologyComponents = technologyComponents != null ? technologyComponents : new ArrayList<>();
+        this.enterpriseTools = enterpriseTools != null ? enterpriseTools : new ArrayList<>();
+        this.processCompliances = processCompliances != null ? processCompliances : new ArrayList<>();
         this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
@@ -133,15 +141,33 @@ public class SolutionReview implements VersionedSchema {
     // Utility methods for document state management
 
     /**
+     * Generic method to execute a state transition operation with validation.
+     * 
+     * @param operation the operation to perform
+     * @throws IllegalStateTransitionException if not in the required state
+     */
+    private void executeStateOperation(DocumentState.StateOperation operation) {
+        this.documentState = this.documentState.executeOperation(operation);
+        this.lastModifiedAt = LocalDateTime.now();
+    }
+
+    /**
+     * Get all operations that are currently allowed based on the document state.
+     * 
+     * @return list of operations that can be executed
+     */
+    public List<DocumentState.StateOperation> getAvailableOperations() {
+        return this.documentState.getAvailableOperations();
+    }
+
+    /**
      * Submits the document for review.
      * Only documents in DRAFT state can be submitted.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in DRAFT state
+     * @throws IllegalStateTransitionException if not in DRAFT state
      */
     public void submit() {
-        this.documentState.validateTransition(DocumentState.SUBMITTED);
-        this.documentState = DocumentState.SUBMITTED;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.SUBMIT);
     }
 
     /**
@@ -152,9 +178,7 @@ public class SolutionReview implements VersionedSchema {
      *                                                       state
      */
     public void removeSubmission() {
-        this.documentState.validateTransition(DocumentState.DRAFT);
-        this.documentState = DocumentState.DRAFT;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.REMOVE_SUBMISSION);
     }
 
     /**
@@ -165,9 +189,7 @@ public class SolutionReview implements VersionedSchema {
      *                                                       state
      */
     public void approve() {
-        this.documentState.validateTransition(DocumentState.CURRENT);
-        this.documentState = DocumentState.CURRENT;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.APPROVE);
     }
 
     /**
@@ -177,9 +199,7 @@ public class SolutionReview implements VersionedSchema {
      * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
      */
     public void unApproveCurrent() {
-        this.documentState.validateTransition(DocumentState.SUBMITTED);
-        this.documentState = DocumentState.SUBMITTED;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.UNAPPROVE);
     }
 
     /**
@@ -189,9 +209,7 @@ public class SolutionReview implements VersionedSchema {
      * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
      */
     public void markAsOutdated() {
-        this.documentState.validateTransition(DocumentState.OUTDATED);
-        this.documentState = DocumentState.OUTDATED;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.MARK_OUTDATED);
     }
 
     /**
@@ -202,9 +220,7 @@ public class SolutionReview implements VersionedSchema {
      *                                                       state
      */
     public void resetAsCurrent() {
-        this.documentState.validateTransition(DocumentState.CURRENT);
-        this.documentState = DocumentState.CURRENT;
-        this.lastModifiedAt = LocalDateTime.now();
+        executeStateOperation(DocumentState.StateOperation.RESET_CURRENT);
     }
 
     /**
