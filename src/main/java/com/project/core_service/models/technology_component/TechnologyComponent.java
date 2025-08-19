@@ -5,7 +5,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
@@ -13,7 +12,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 // TODO: Does this overlap with system_component.LanguageFramework?
-public class TechnologyComponent implements VersionedSchema {
+public class TechnologyComponent {
     @Id
     private String id;
 
@@ -26,5 +25,4 @@ public class TechnologyComponent implements VersionedSchema {
     @NonNull
     private Usage usage;
 
-    private int version;
 }

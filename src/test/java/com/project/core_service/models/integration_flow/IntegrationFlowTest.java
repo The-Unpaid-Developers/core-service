@@ -16,7 +16,6 @@ public class IntegrationFlowTest {
         IntegrationMethod method = IntegrationMethod.API;
         Frequency frequency = Frequency.DAILY; // Assuming Frequency is an enum you have
         String purpose = "Data ingestion";
-        int version = 1;
 
         IntegrationFlow flow = new IntegrationFlow(
                 id,
@@ -24,8 +23,7 @@ public class IntegrationFlowTest {
                 role,
                 method,
                 frequency,
-                purpose,
-                version
+                purpose
         );
 
         assertEquals(id, flow.getId());
@@ -34,7 +32,6 @@ public class IntegrationFlowTest {
         assertEquals(method, flow.getIntegrationMethod());
         assertEquals(frequency, flow.getFrequency());
         assertEquals(purpose, flow.getPurpose());
-        assertEquals(version, flow.getVersion());
     }
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
@@ -47,8 +44,7 @@ public class IntegrationFlowTest {
                 ExternalSystemRole.CONSUMER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose",
-                1
+                "Purpose"
         ));
 
         // externalSystemRole null
@@ -58,8 +54,7 @@ public class IntegrationFlowTest {
                 null,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose",
-                1
+                "Purpose"
         ));
 
         // integrationMethod null
@@ -69,8 +64,7 @@ public class IntegrationFlowTest {
                 ExternalSystemRole.PRODUCER,
                 null,
                 Frequency.DAILY,
-                "Purpose",
-                1
+                "Purpose"
         ));
 
         // frequency null
@@ -80,8 +74,7 @@ public class IntegrationFlowTest {
                 ExternalSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 null,
-                "Purpose",
-                1
+                "Purpose"
         ));
 
         // purpose null
@@ -91,8 +84,7 @@ public class IntegrationFlowTest {
                 ExternalSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                null,
-                1
+                null
         ));
     }
     @Test
@@ -106,11 +98,11 @@ public class IntegrationFlowTest {
         int version = 2;
 
         IntegrationFlow f1 = new IntegrationFlow(
-                id, bsoCode, role, method, frequency, purpose, version
+                id, bsoCode, role, method, frequency, purpose
         );
 
         IntegrationFlow f2 = new IntegrationFlow(
-                id, bsoCode, role, method, frequency, purpose, version
+                id, bsoCode, role, method, frequency, purpose
         );
 
         assertEquals(f1, f2);
@@ -125,8 +117,7 @@ public class IntegrationFlowTest {
                 ExternalSystemRole.CONSUMER,
                 IntegrationMethod.EVENT,
                 Frequency.MONTHLY,
-                "Batch processing",
-                3
+                "Batch processing"
         );
 
         String toString = flow.toString();

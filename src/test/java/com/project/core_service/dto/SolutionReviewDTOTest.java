@@ -88,8 +88,8 @@ class SolutionReviewDTOTest {
                 BusinessDriver.BUSINESS_OR_CUSTOMER_GROWTH,
                 "Increase revenue by 10%",
                 Arrays.asList(ApplicationUser.CUSTOMERS, ApplicationUser.EMPLOYEE),
-                new ArrayList<>(),
-                1);
+                new ArrayList<>()
+                );
     }
 
     private SolutionReview createTestSolutionReview() {
@@ -105,7 +105,6 @@ class SolutionReviewDTOTest {
                 .technologyComponents(Arrays.asList(mockTechnologyComponent))
                 .enterpriseTools(Arrays.asList(mockEnterpriseTool))
                 .processCompliances(Arrays.asList(mockProcessCompliant))
-                .version(1)
                 .createdAt(testTime)
                 .lastModifiedAt(testTime)
                 .createdBy("test.creator")
@@ -134,7 +133,6 @@ class SolutionReviewDTOTest {
             assertNotNull(dto.getEnterpriseTools());
             assertNotNull(dto.getProcessCompliances());
             assertTrue(dto.getBusinessCapabilities().isEmpty());
-            assertEquals(0, dto.getVersion());
         }
 
         @Test
@@ -154,7 +152,6 @@ class SolutionReviewDTOTest {
                     new ArrayList<>(),
                     new ArrayList<>(),
                     new ArrayList<>(),
-                    2,
                     testTime,
                     testTime,
                     "creator",
@@ -164,7 +161,6 @@ class SolutionReviewDTOTest {
             assertEquals(DocumentState.SUBMITTED, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(capabilities, dto.getBusinessCapabilities());
-            assertEquals(2, dto.getVersion());
             assertEquals(testTime, dto.getCreatedAt());
             assertEquals(testTime, dto.getLastModifiedAt());
             assertEquals("creator", dto.getCreatedBy());
@@ -179,7 +175,6 @@ class SolutionReviewDTOTest {
             assertEquals(testSolutionReview.getId(), dto.getId());
             assertEquals(testSolutionReview.getDocumentState(), dto.getDocumentState());
             assertEquals(testSolutionReview.getSolutionOverview(), dto.getSolutionOverview());
-            assertEquals(testSolutionReview.getVersion(), dto.getVersion());
             assertEquals(testSolutionReview.getCreatedAt(), dto.getCreatedAt());
             assertEquals(testSolutionReview.getLastModifiedAt(), dto.getLastModifiedAt());
             assertEquals(testSolutionReview.getCreatedBy(), dto.getCreatedBy());
@@ -213,7 +208,6 @@ class SolutionReviewDTOTest {
                     .technologyComponents(new ArrayList<>())
                     .enterpriseTools(new ArrayList<>())
                     .processCompliances(new ArrayList<>())
-                    .version(1)
                     .build();
 
             SolutionReviewDTO dto = new SolutionReviewDTO(reviewWithEmptyLists);
@@ -243,7 +237,6 @@ class SolutionReviewDTOTest {
             assertEquals(dto.getId(), entity.getId());
             assertEquals(dto.getDocumentState(), entity.getDocumentState());
             assertEquals(dto.getSolutionOverview(), entity.getSolutionOverview());
-            assertEquals(dto.getVersion(), entity.getVersion());
             assertEquals(dto.getCreatedAt(), entity.getCreatedAt());
             assertEquals(dto.getLastModifiedAt(), entity.getLastModifiedAt());
             assertEquals(dto.getCreatedBy(), entity.getCreatedBy());
@@ -264,7 +257,6 @@ class SolutionReviewDTOTest {
             assertEquals(testSolutionReview.getId(), convertedEntity.getId());
             assertEquals(testSolutionReview.getDocumentState(), convertedEntity.getDocumentState());
             assertEquals(testSolutionReview.getSolutionOverview(), convertedEntity.getSolutionOverview());
-            assertEquals(testSolutionReview.getVersion(), convertedEntity.getVersion());
             assertEquals(testSolutionReview.getBusinessCapabilities(), convertedEntity.getBusinessCapabilities());
         }
     }
@@ -305,7 +297,6 @@ class SolutionReviewDTOTest {
 
             assertEquals(DocumentState.DRAFT, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
-            assertEquals(1, dto.getVersion());
             assertEquals("test.creator", dto.getCreatedBy());
             assertNotNull(dto.getCreatedAt());
             assertNotNull(dto.getLastModifiedAt());
@@ -322,7 +313,6 @@ class SolutionReviewDTOTest {
 
             assertEquals(DocumentState.DRAFT, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
-            assertEquals(1, dto.getVersion());
             assertEquals("test.creator", dto.getCreatedBy());
         }
 
@@ -440,7 +430,6 @@ class SolutionReviewDTOTest {
                     .technologyComponents(Arrays.asList(mockTechnologyComponent))
                     .enterpriseTools(Arrays.asList(mockEnterpriseTool))
                     .processCompliances(Arrays.asList(mockProcessCompliant))
-                    .version(3)
                     .createdAt(testTime)
                     .lastModifiedAt(testTime)
                     .createdBy("builder.creator")
@@ -452,7 +441,6 @@ class SolutionReviewDTOTest {
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(capabilities, dto.getBusinessCapabilities());
             assertEquals(components, dto.getSystemComponents());
-            assertEquals(3, dto.getVersion());
             assertEquals(testTime, dto.getCreatedAt());
             assertEquals(testTime, dto.getLastModifiedAt());
             assertEquals("builder.creator", dto.getCreatedBy());
@@ -502,7 +490,7 @@ class SolutionReviewDTOTest {
             assertEquals(dto1.hashCode(), dto2.hashCode());
 
             // Test inequality
-            dto2.setVersion(999);
+            dto2.setDocumentState(DocumentState.SUBMITTED);
             assertNotEquals(dto1, dto2);
         }
 
