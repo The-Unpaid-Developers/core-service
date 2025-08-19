@@ -1,8 +1,10 @@
 package com.project.core_service.models.solution_overview;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -14,6 +16,7 @@ import lombok.Data;
 @Data
 @Document
 @AllArgsConstructor
+@Builder
 public class SolutionOverview implements VersionedSchema {
     @Id
     private String id;
@@ -47,7 +50,8 @@ public class SolutionOverview implements VersionedSchema {
     private String valueOutcome;
 
     @NonNull
-    private List<ApplicationUser> applicationUsers;
+    @Builder.Default
+    private List<ApplicationUser> applicationUsers = new ArrayList<>();
 
     private List<Concern> concerns;
 

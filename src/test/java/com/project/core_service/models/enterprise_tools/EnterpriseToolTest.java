@@ -1,16 +1,55 @@
 package com.project.core_service.models.enterprise_tools;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
+
 import java.util.UUID;
 
+@ExtendWith(MockitoExtension.class)
 public class EnterpriseToolTest {
+    @Mock
+    private Tool tool;
+    @Test
+    void builderSetsFieldsCorrectly() {
+
+        EnterpriseTool enterpriseTool = EnterpriseTool.builder()
+                .id("et-123")
+                .tool(tool)
+                .onboarded(OnboardingStatus.TRUE)
+                .integrationStatus("Integrated with core systems")
+                .issues("None")
+                .solutionOverviewId("sol-101")
+                .version(2)
+                .build();
+
+        assertEquals("et-123", enterpriseTool.getId());
+        assertEquals(tool, enterpriseTool.getTool());
+        assertEquals(OnboardingStatus.TRUE, enterpriseTool.getOnboarded());
+        assertEquals("Integrated with core systems", enterpriseTool.getIntegrationStatus());
+        assertEquals("None", enterpriseTool.getIssues());
+        assertEquals("sol-101", enterpriseTool.getSolutionOverviewId());
+        assertEquals(2, enterpriseTool.getVersion());
+    }
 
     @Test
+    void nonNullFieldsShouldThrowOnNull() {
+        assertThrows(NullPointerException.class, () -> {
+            EnterpriseTool.builder()
+                    .id("et-456")
+                    .tool(null) // Should blow up because of @NonNull
+                    .onboarded(OnboardingStatus.TRUE)
+                    .issues("Pending approval")
+                    .solutionOverviewId("sol-202")
+                    .build();
+        });
+    }
+    @Test
     void testEnterpriseToolConstructorAndGetters() {
-        String toolId = UUID.randomUUID().toString();
-        Tool tool = new Tool(toolId, "Datadog", ToolType.OBSERVABILITY, 1);
-
         String enterpriseToolId = UUID.randomUUID().toString();
         EnterpriseTool enterpriseTool = new EnterpriseTool(
                 enterpriseToolId,
@@ -33,8 +72,6 @@ public class EnterpriseToolTest {
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
-        Tool tool = new Tool("tool-001", "Datadog", ToolType.OBSERVABILITY, 1);
-
         assertThrows(NullPointerException.class, () -> new EnterpriseTool(
                 "et-002",
                 null,  // tool
@@ -78,9 +115,6 @@ public class EnterpriseToolTest {
 
     @Test
     void testEnterpriseToolEqualityAndHashCode() {
-        String toolId = UUID.randomUUID().toString();
-        Tool tool = new Tool(toolId, "Datadog", ToolType.OBSERVABILITY, 1);
-
         String enterpriseToolId = UUID.randomUUID().toString();
 
         EnterpriseTool et1 = new EnterpriseTool(
@@ -99,7 +133,7 @@ public class EnterpriseToolTest {
 
     @Test
     void testEnterpriseToolToString() {
-        Tool tool = new Tool("tool-id", "Datadog", ToolType.OBSERVABILITY, 1);
+        when(tool.toString()).thenReturn("MockedTool");
         EnterpriseTool enterpriseTool = new EnterpriseTool(
                 "enterprise-id", tool, OnboardingStatus.TRUE,
                 "Integrated", "No issues", "solution-123", 1
@@ -107,8 +141,7 @@ public class EnterpriseToolTest {
 
         String toStringResult = enterpriseTool.toString();
         assertTrue(toStringResult.contains("enterprise-id"));
-        assertTrue(toStringResult.contains("Datadog"));
-        assertTrue(toStringResult.contains("OBSERVABILITY"));
+        assertTrue(toStringResult.contains("MockedTool"));
         assertTrue(toStringResult.contains("TRUE"));
     }
 }

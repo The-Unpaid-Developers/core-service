@@ -39,6 +39,24 @@ public class SolutionOverviewTest {
         );
         return List.of(dummyConcern);
     }
+    @Test
+    void builderDefaultsApplicationUsersToEmptyList() {
+        SolutionOverview overview = SolutionOverview.builder()
+                .id("id-003")
+                .solutionDetails(dummySolutionDetails())
+                .itBusinessPartners(dummyBusinessPartners())
+                .reviewedBy("ReviewerName")
+                .reviewType(ReviewType.NEW_BUILD)
+                .approvalStatus(ApprovalStatus.PENDING)
+                .reviewStatus(ReviewStatus.DRAFT)
+                .businessUnit(BusinessUnit.UNKNOWN)
+                .businessDriver(BusinessDriver.OPERATIONAL_EFFICIENCY)
+                .valueOutcome("Some outcome")
+                .build();
+
+        assertNotNull(overview.getApplicationUsers());
+        assertTrue(overview.getApplicationUsers().isEmpty());
+    }
 
     @Test
     void testConstructorAndGetters() {
