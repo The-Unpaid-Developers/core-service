@@ -95,6 +95,7 @@ class SolutionReviewDTOTest {
         LocalDateTime testTime = LocalDateTime.now();
         return SolutionReview.builder()
                 .id("sr-001")
+                .systemCode("sys-001")
                 .documentState(DocumentState.DRAFT)
                 .solutionOverview(realSolutionOverview)
                 .businessCapabilities(Arrays.asList(mockBusinessCapability))
@@ -205,6 +206,7 @@ class SolutionReviewDTOTest {
         void shouldHandleEmptyListsInSolutionReviewEntityGracefully() {
             SolutionReview reviewWithEmptyLists = SolutionReview.builder()
                     .id("sr-empty-lists")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(new ArrayList<>())
