@@ -10,7 +10,6 @@ public class SolutionOverviewTest {
     private SolutionDetails dummySolutionDetails() {
         return new SolutionDetails(
                 "SolutionName",
-                "SYS001",
                 "ProjectName",
                 "AWG001",
                 "Architect",

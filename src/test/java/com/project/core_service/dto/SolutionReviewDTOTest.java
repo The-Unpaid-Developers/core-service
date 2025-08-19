@@ -68,7 +68,6 @@ class SolutionReviewDTOTest {
     private SolutionOverview createTestSolutionOverview() {
         SolutionDetails solutionDetails = new SolutionDetails(
                 "Test Solution",
-                "SYS001",
                 "Test Project",
                 "AWG001",
                 "John Architect",
@@ -145,6 +144,7 @@ class SolutionReviewDTOTest {
 
             SolutionReviewDTO dto = new SolutionReviewDTO(
                     "dto-001",
+                    "sys-001",
                     DocumentState.SUBMITTED,
                     realSolutionOverview,
                     capabilities,
@@ -161,6 +161,7 @@ class SolutionReviewDTOTest {
                     "modifier");
 
             assertEquals("dto-001", dto.getId());
+            assertEquals("sys-001", dto.getSystemCode());
             assertEquals(DocumentState.SUBMITTED, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(capabilities, dto.getBusinessCapabilities());

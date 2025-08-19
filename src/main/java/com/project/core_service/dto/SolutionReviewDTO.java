@@ -31,6 +31,7 @@ import lombok.AllArgsConstructor;
 @Builder
 public class SolutionReviewDTO {
     private String id;
+    private String systemCode;
     private DocumentState documentState;
     private SolutionOverview solutionOverview;
 
@@ -68,6 +69,7 @@ public class SolutionReviewDTO {
         }
 
         this.id = solutionReview.getId();
+        this.systemCode = solutionReview.getSystemCode();
         this.documentState = solutionReview.getDocumentState();
         this.solutionOverview = solutionReview.getSolutionOverview();
 
