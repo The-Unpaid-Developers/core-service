@@ -1,6 +1,7 @@
 package com.project.core_service.models.system_component;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -13,6 +14,7 @@ import lombok.Data;
 @Document
 @Data
 @AllArgsConstructor
+@Builder
 public class SystemComponent implements VersionedSchema {
     @Id
     private String id;
