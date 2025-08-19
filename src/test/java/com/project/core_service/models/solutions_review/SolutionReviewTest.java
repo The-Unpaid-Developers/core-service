@@ -66,7 +66,6 @@ class SolutionReviewTest {
     private SolutionOverview createTestSolutionOverview() {
         SolutionDetails solutionDetails = new SolutionDetails(
                 "Test Solution",
-                "SYS001",
                 "Test Project",
                 "AWG001",
                 "John Architect",
@@ -146,6 +145,7 @@ class SolutionReviewTest {
             LocalDateTime beforeCreation = LocalDateTime.now().minusSeconds(1);
 
             SolutionReview review = SolutionReview.withStateAndUser(DocumentState.SUBMITTED, creator)
+                    .systemCode("SYS-001")
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
                     .systemComponents(components)
@@ -160,6 +160,7 @@ class SolutionReviewTest {
 
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
+            assertEquals("SYS-001", review.getSystemCode());
             assertEquals(capabilities, review.getBusinessCapabilities());
             assertEquals(components, review.getSystemComponents());
             assertEquals(flows, review.getIntegrationFlows());
@@ -180,9 +181,11 @@ class SolutionReviewTest {
         @DisplayName("Builder should handle null lists with defaults")
         void builderShouldHandleNullListsWithDefaults() {
             SolutionReview review = SolutionReview.withStateAndUser(DocumentState.DRAFT, "test.user")
+                    .systemCode("sys-001")
                     .solutionOverview(realSolutionOverview)
                     .build();
 
+            assertNotNull(review.getSystemCode());
             assertNotNull(review.getBusinessCapabilities());
             assertNotNull(review.getSystemComponents());
             assertNotNull(review.getIntegrationFlows());
@@ -568,12 +571,14 @@ class SolutionReviewTest {
             LocalDateTime beforeBuild = LocalDateTime.now().minusSeconds(1);
 
             SolutionReview review = SolutionReview.newDraftBuilder()
+                    .systemCode("sys-001")
                     .solutionOverview(realSolutionOverview)
                     .createdBy("test.creator")
                     .build();
 
             LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(1, review.getVersion());
@@ -590,9 +595,11 @@ class SolutionReviewTest {
         @DisplayName("builderFromSolutionOverview() should create builder with solution overview")
         void builderFromSolutionOverviewShouldCreateBuilderWithSolutionOverview() {
             SolutionReview review = SolutionReview.builderFromSolutionOverview(realSolutionOverview)
+                    .systemCode("sys-001")
                     .createdBy("test.creator")
                     .build();
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(1, review.getVersion());
@@ -606,6 +613,7 @@ class SolutionReviewTest {
             List<SystemComponent> components = Arrays.asList(mockSystemComponent);
 
             SolutionReview review = SolutionReview.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.SUBMITTED)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
@@ -614,6 +622,7 @@ class SolutionReviewTest {
                     .createdBy("test.builder")
                     .build();
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(capabilities, review.getBusinessCapabilities());
@@ -801,6 +810,7 @@ class SolutionReviewTest {
 
             SolutionReview review = SolutionReview.completeBuilder()
                     .id("complete-test")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.CURRENT)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(Arrays.asList(mockBusinessCapability))
@@ -811,6 +821,7 @@ class SolutionReviewTest {
             LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
 
             assertEquals("complete-test", review.getId());
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.CURRENT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(1, review.getVersion());
@@ -878,6 +889,7 @@ class SolutionReviewTest {
         void shouldHandleEqualsAndHashCodeCorrectly() {
             SolutionReview review1 = SolutionReview.builder()
                     .id("test-equals")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
                     .version(1)
@@ -885,6 +897,7 @@ class SolutionReviewTest {
 
             SolutionReview review2 = SolutionReview.builder()
                     .id("test-equals")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
                     .version(1)
