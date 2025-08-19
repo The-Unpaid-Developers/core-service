@@ -58,8 +58,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         assertEquals("sc-001", sc.getId());
@@ -83,7 +82,6 @@ public class SystemComponentTest {
         assertEquals(ScalabilityMethod.HORIZONTAL_AUTO, sc.getScalabilityMethod());
         assertEquals(BackupSite.CLOUD_MULTI_AZ, sc.getBackupSite());
         assertEquals(dummySecurityDetails(), sc.getSecurityDetails());
-        assertEquals(7, sc.getVersion());
     }
 
     @Test
@@ -112,8 +110,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         assertThrows(NullPointerException.class, () -> new SystemComponent(
@@ -137,8 +134,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         // Repeat for each @NonNull field: role, hostedOn, hostingRegion, solutionType,
@@ -167,8 +163,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         assertThrows(NullPointerException.class, () -> new SystemComponent(
@@ -192,8 +187,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         // Continue for all others similarly...
@@ -222,8 +216,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         SystemComponent sc2 = new SystemComponent(
@@ -247,8 +240,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         assertEquals(sc1, sc2);
@@ -278,8 +270,7 @@ public class SystemComponentTest {
                 10000,
                 ScalabilityMethod.HYBRID,
                 BackupSite.ALTERNATE_DATA_CENTRE,
-                dummySecurityDetails(),
-                9
+                dummySecurityDetails()
         );
 
         String toString = sc.toString();

@@ -13,8 +13,7 @@ public class ConcernTest {
                 "Data breach risk",
                 "High impact on confidentiality",
                 "Mitigation plan required",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         );
 
         assertEquals("concern-001", concern.getId());
@@ -23,7 +22,6 @@ public class ConcernTest {
         assertEquals("High impact on confidentiality", concern.getImpact());
         assertEquals("Mitigation plan required", concern.getDisposition());
         assertEquals(ConcernStatus.UNKNOWN, concern.getStatus());
-        assertEquals(1, concern.getVersion());
     }
 
     @Test
@@ -34,8 +32,7 @@ public class ConcernTest {
                 "Description",
                 "Impact",
                 "Disposition",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         ));
 
         assertThrows(NullPointerException.class, () -> new Concern(
@@ -44,8 +41,7 @@ public class ConcernTest {
                 null, // description
                 "Impact",
                 "Disposition",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         ));
 
         assertThrows(NullPointerException.class, () -> new Concern(
@@ -54,8 +50,7 @@ public class ConcernTest {
                 "Description",
                 null, // impact
                 "Disposition",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         ));
 
         assertThrows(NullPointerException.class, () -> new Concern(
@@ -64,8 +59,7 @@ public class ConcernTest {
                 "Description",
                 "Impact",
                 null, // disposition
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         ));
 
         assertThrows(NullPointerException.class, () -> new Concern(
@@ -74,8 +68,7 @@ public class ConcernTest {
                 "Description",
                 "Impact",
                 "Disposition",
-                null, // status
-                1
+                null // status
         ));
     }
 
@@ -87,8 +80,7 @@ public class ConcernTest {
                 "Data breach risk",
                 "High impact on confidentiality",
                 "Mitigation plan required",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         );
 
         Concern c2 = new Concern(
@@ -97,8 +89,7 @@ public class ConcernTest {
                 "Data breach risk",
                 "High impact on confidentiality",
                 "Mitigation plan required",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         );
 
         assertEquals(c1, c2);
@@ -113,8 +104,7 @@ public class ConcernTest {
                 "Data breach risk",
                 "High impact on confidentiality",
                 "Mitigation plan required",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         );
 
         String toString = concern.toString();

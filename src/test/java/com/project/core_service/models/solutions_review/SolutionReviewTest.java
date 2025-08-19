@@ -86,8 +86,8 @@ class SolutionReviewTest {
                 BusinessDriver.BUSINESS_OR_CUSTOMER_GROWTH,
                 "Increase revenue by 10%",
                 Arrays.asList(ApplicationUser.CUSTOMERS, ApplicationUser.EMPLOYEE),
-                new ArrayList<>(),
-                1);
+                new ArrayList<>()
+                );
     }
 
     @Nested
@@ -105,7 +105,6 @@ class SolutionReviewTest {
 
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
-            assertEquals(1, review.getVersion());
             assertNotNull(review.getCreatedAt());
             assertNotNull(review.getLastModifiedAt());
             assertTrue(review.getCreatedAt().isAfter(beforeCreation));
@@ -167,7 +166,6 @@ class SolutionReviewTest {
             assertEquals(techComponents, review.getTechnologyComponents());
             assertEquals(tools, review.getEnterpriseTools());
             assertEquals(compliances, review.getProcessCompliances());
-            assertEquals(1, review.getVersion());
             assertEquals(creator, review.getCreatedBy());
             assertEquals(creator, review.getLastModifiedBy());
             assertTrue(review.getCreatedAt().isAfter(beforeCreation));
@@ -204,7 +202,6 @@ class SolutionReviewTest {
         @DisplayName("Copy constructor should create new version with incremented version")
         void copyConstructorShouldCreateNewVersionWithIncrementedVersion() {
             SolutionReview original = new SolutionReview(realSolutionOverview);
-            original.setVersion(5);
             original.setCreatedBy("original.creator");
             original.addBusinessCapability(mockBusinessCapability);
 
@@ -217,7 +214,6 @@ class SolutionReviewTest {
 
             assertEquals(original.getDocumentState(), copy.getDocumentState());
             assertEquals(original.getSolutionOverview(), copy.getSolutionOverview());
-            assertEquals(6, copy.getVersion()); // incremented
             assertEquals("original.creator", copy.getCreatedBy()); // preserved
             assertEquals(modifier, copy.getLastModifiedBy()); // updated
             assertEquals(original.getCreatedAt(), copy.getCreatedAt()); // preserved
@@ -544,18 +540,6 @@ class SolutionReviewTest {
             assertTrue(review.getLastModifiedAt().isAfter(beforeUpdate));
         }
 
-        @Test
-        @DisplayName("setVersion() should update version and modification time")
-        void setVersionShouldUpdateVersionAndModificationTime() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
-            LocalDateTime beforeUpdate = review.getLastModifiedAt();
-            int newVersion = 5;
-
-            review.setVersion(newVersion);
-
-            assertEquals(newVersion, review.getVersion());
-            assertTrue(review.getLastModifiedAt().isAfter(beforeUpdate));
-        }
     }
 
     @Nested
@@ -576,7 +560,6 @@ class SolutionReviewTest {
 
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
-            assertEquals(1, review.getVersion());
             assertEquals("test.creator", review.getCreatedBy());
             assertNotNull(review.getCreatedAt());
             assertNotNull(review.getLastModifiedAt());
@@ -595,7 +578,6 @@ class SolutionReviewTest {
 
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
-            assertEquals(1, review.getVersion());
             assertEquals("test.creator", review.getCreatedBy());
         }
 
@@ -610,7 +592,6 @@ class SolutionReviewTest {
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
                     .systemComponents(components)
-                    .version(2)
                     .createdBy("test.builder")
                     .build();
 
@@ -618,7 +599,6 @@ class SolutionReviewTest {
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(capabilities, review.getBusinessCapabilities());
             assertEquals(components, review.getSystemComponents());
-            assertEquals(2, review.getVersion());
             assertEquals("test.builder", review.getCreatedBy());
 
             // Verify other lists are initialized with defaults
@@ -714,22 +694,6 @@ class SolutionReviewTest {
     }
 
     @Test
-    @DisplayName("Should implement VersionedSchema correctly")
-    void shouldImplementVersionedSchemaCorrectly() {
-        SolutionReview review = new SolutionReview(realSolutionOverview);
-
-        // Test inherited getVersion() method
-        assertEquals(1, review.getVersion());
-
-        // Test setVersion() implementation
-        LocalDateTime beforeVersionUpdate = review.getLastModifiedAt();
-        review.setVersion(3);
-
-        assertEquals(3, review.getVersion());
-        assertTrue(review.getLastModifiedAt().isAfter(beforeVersionUpdate));
-    }
-
-    @Test
     @DisplayName("getAvailableOperations should return correct operations based on current state")
     void getAvailableOperationsShouldReturnCorrectOperationsBasedOnCurrentState() {
         SolutionReview review = new SolutionReview(realSolutionOverview);
@@ -787,7 +751,6 @@ class SolutionReviewTest {
             assertTrue(review.getTechnologyComponents().isEmpty());
             assertTrue(review.getEnterpriseTools().isEmpty());
             assertTrue(review.getProcessCompliances().isEmpty());
-            assertEquals(0, review.getVersion());
             assertNull(review.getCreatedAt());
             assertNull(review.getLastModifiedAt());
             assertNull(review.getCreatedBy());
@@ -813,7 +776,6 @@ class SolutionReviewTest {
             assertEquals("complete-test", review.getId());
             assertEquals(DocumentState.CURRENT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
-            assertEquals(1, review.getVersion());
             assertEquals("complete.creator", review.getCreatedBy());
             assertEquals("complete.modifier", review.getLastModifiedBy());
             assertTrue(review.getCreatedAt().isAfter(beforeBuild));
@@ -839,7 +801,6 @@ class SolutionReviewTest {
             review.setTechnologyComponents(Arrays.asList(mockTechnologyComponent));
             review.setEnterpriseTools(Arrays.asList(mockEnterpriseTool));
             review.setProcessCompliances(Arrays.asList(mockProcessCompliant));
-            review.setVersion(5);
             review.setCreatedAt(testTime);
             review.setLastModifiedAt(testTime);
             review.setCreatedBy("setter.creator");
@@ -855,7 +816,6 @@ class SolutionReviewTest {
             assertEquals(1, review.getTechnologyComponents().size());
             assertEquals(1, review.getEnterpriseTools().size());
             assertEquals(1, review.getProcessCompliances().size());
-            assertEquals(5, review.getVersion());
             assertEquals(testTime, review.getCreatedAt());
             assertEquals(testTime, review.getLastModifiedAt());
             assertEquals("setter.creator", review.getCreatedBy());
@@ -880,21 +840,19 @@ class SolutionReviewTest {
                     .id("test-equals")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
-                    .version(1)
                     .build();
 
             SolutionReview review2 = SolutionReview.builder()
                     .id("test-equals")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
-                    .version(1)
                     .build();
 
             assertEquals(review1, review2);
             assertEquals(review1.hashCode(), review2.hashCode());
 
             // Test inequality
-            review2.setVersion(2);
+            review2.setDocumentState(DocumentState.SUBMITTED);
             assertNotEquals(review1, review2);
         }
 
@@ -958,7 +916,6 @@ class SolutionReviewTest {
         void shouldHandleEdgeCasesInCopyConstructor() {
             // Create original with extreme values
             SolutionReview original = new SolutionReview(realSolutionOverview);
-            original.setVersion(Integer.MAX_VALUE - 1);
             LocalDateTime veryOldTime = LocalDateTime.of(2000, 1, 1, 0, 0);
             original.setCreatedAt(veryOldTime);
             original.setCreatedBy("ancient.creator");
@@ -967,7 +924,6 @@ class SolutionReviewTest {
             SolutionReview copy = new SolutionReview(original, "new.modifier");
 
             // Verify version increment works even with large numbers
-            assertEquals(Integer.MAX_VALUE, copy.getVersion());
             assertEquals(veryOldTime, copy.getCreatedAt()); // Preserved
             assertEquals("ancient.creator", copy.getCreatedBy()); // Preserved
             assertEquals("new.modifier", copy.getLastModifiedBy()); // Updated

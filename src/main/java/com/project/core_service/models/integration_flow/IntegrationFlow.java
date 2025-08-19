@@ -6,14 +6,13 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
 import com.project.core_service.models.shared.Frequency;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
 @Document
 @Data
 @AllArgsConstructor
-public class IntegrationFlow implements VersionedSchema {
+public class IntegrationFlow {
     @Id
     private String id;
 
@@ -32,5 +31,4 @@ public class IntegrationFlow implements VersionedSchema {
     @NonNull
     private String purpose;
 
-    private int version;
 }

@@ -18,8 +18,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         );
 
         assertThat(asset.getId()).isEqualTo("da-001");
@@ -29,7 +28,6 @@ class DataAssetTest {
         assertThat(asset.getOwnedByBusinessUnit()).isEqualTo("Retail Banking");
         assertThat(asset.getDataEntities()).containsExactly("Customer", "Transaction");
         assertThat(asset.getMasteredIn()).isEqualTo("Core Banking System");
-        assertThat(asset.getVersion()).isEqualTo(1);
     }
 
     @Test
@@ -41,8 +39,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -52,8 +49,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -63,8 +59,7 @@ class DataAssetTest {
             null,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -74,8 +69,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             null,
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -85,8 +79,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             "Retail Banking",
             null,
-            "Core Banking System",
-            1
+            "Core Banking System"
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -96,8 +89,7 @@ class DataAssetTest {
             Classification.CONFIDENTIAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            null,
-            1
+            null
         )).isInstanceOf(NullPointerException.class);
     }
 
@@ -110,8 +102,7 @@ class DataAssetTest {
             Classification.INTERNAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         );
 
         DataAsset b = new DataAsset(
@@ -121,8 +112,7 @@ class DataAssetTest {
             Classification.INTERNAL,
             "Retail Banking",
             List.of("Customer", "Transaction"),
-            "Core Banking System",
-            1
+            "Core Banking System"
         );
 
         assertThat(a).isEqualTo(b);
@@ -138,8 +128,7 @@ class DataAssetTest {
             Classification.PUBLIC,
             "Human Resources",
             List.of("Employee", "Payroll"),
-            "HRMS",
-            1
+            "HRMS"
         );
 
         String output = asset.toString();
