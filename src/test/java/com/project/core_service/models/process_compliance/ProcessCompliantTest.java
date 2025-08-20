@@ -11,14 +11,12 @@ public class ProcessCompliantTest {
                 .standardGuideline(StandardGuideline.ACCESS_CONTROL_STANDARDS)
                 .compliant(Compliant.TRUE)
                 .description("Access control checks in place")
-                .version(1)
                 .build();
 
         assertEquals("pc-123", process.getId());
         assertEquals(StandardGuideline.ACCESS_CONTROL_STANDARDS, process.getStandardGuideline());
         assertEquals(Compliant.TRUE, process.getCompliant());
         assertEquals("Access control checks in place", process.getDescription());
-        assertEquals(1, process.getVersion());
     }
 
     @Test

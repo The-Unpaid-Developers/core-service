@@ -18,7 +18,6 @@ class DataAssetTest {
                 .dataClassification(Classification.CONFIDENTIAL)
                 .ownedByBusinessUnit("sales")
                 .masteredIn("db-core")
-                .version(1)
                 .build();
 
         assertEquals("123", asset.getId());
@@ -26,7 +25,6 @@ class DataAssetTest {
         assertEquals("finance", asset.getDataDomain());
         assertEquals("sales", asset.getOwnedByBusinessUnit());
         assertEquals("db-core", asset.getMasteredIn());
-        assertEquals(1, asset.getVersion());
     }
 
     @Test

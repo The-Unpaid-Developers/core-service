@@ -24,7 +24,6 @@ public class EnterpriseToolTest {
                 .integrationStatus("Integrated with core systems")
                 .issues("None")
                 .solutionOverviewId("sol-101")
-                .version(2)
                 .build();
 
         assertEquals("et-123", enterpriseTool.getId());
@@ -33,7 +32,6 @@ public class EnterpriseToolTest {
         assertEquals("Integrated with core systems", enterpriseTool.getIntegrationStatus());
         assertEquals("None", enterpriseTool.getIssues());
         assertEquals("sol-101", enterpriseTool.getSolutionOverviewId());
-        assertEquals(2, enterpriseTool.getVersion());
     }
 
     @Test
