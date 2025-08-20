@@ -16,7 +16,6 @@ public class IntegrationFlowTest {
                 .integrationMethod(IntegrationMethod.API)
                 .frequency(Frequency.ANNUALLY) // using your suggested value
                 .purpose("Data sync with external system")
-                .version(1)
                 .build();
 
         assertEquals("if-123", flow.getId());
@@ -25,7 +24,6 @@ public class IntegrationFlowTest {
         assertEquals(IntegrationMethod.API, flow.getIntegrationMethod());
         assertEquals(Frequency.ANNUALLY, flow.getFrequency());
         assertEquals("Data sync with external system", flow.getPurpose());
-        assertEquals(1, flow.getVersion());
     }
 
     @Test

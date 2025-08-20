@@ -36,14 +36,12 @@ public class BusinessCapabilityTest {
                 .l2Capability(l2)
                 .l3Capability(l3)
                 .remarks("Core payment capability")
-                .version(1)
                 .build();
 
         assertEquals("cap-123", bc.getId());
         assertEquals(l1, bc.getL1Capability());
         assertEquals(l2, bc.getL2Capability());
         assertEquals(l3, bc.getL3Capability());
-        assertEquals(1, bc.getVersion());
     }
 
     @Test

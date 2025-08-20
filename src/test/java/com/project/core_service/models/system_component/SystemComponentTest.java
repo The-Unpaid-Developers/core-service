@@ -58,7 +58,6 @@ public class SystemComponentTest {
                 .scalabilityMethod(ScalabilityMethod.VERTICAL_AUTO)
                 .backupSite(BackupSite.CLOUD_MULTI_AZ)
                 .securityDetails(dummySecurityDetails())
-                .version(42)
                 .build();
 
         assertEquals("sc-101", component.getId());
@@ -82,7 +81,6 @@ public class SystemComponentTest {
         assertEquals(ScalabilityMethod.VERTICAL_AUTO, component.getScalabilityMethod());
         assertEquals(BackupSite.CLOUD_MULTI_AZ, component.getBackupSite());
         assertEquals(dummySecurityDetails(), component.getSecurityDetails());
-        assertEquals(42, component.getVersion());
     }
     @Test
     void testConstructorAndGetters() {

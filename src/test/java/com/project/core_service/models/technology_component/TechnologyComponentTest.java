@@ -11,7 +11,6 @@ public class TechnologyComponentTest {
                 .productName("PostgreSQL")
                 .productVersion("15.3")
                 .usage(Usage.PREREQUISITE_INSTALLATION)
-                .version(1)
                 .build();
 
         assertNotNull(component);
@@ -19,7 +18,6 @@ public class TechnologyComponentTest {
         assertEquals("PostgreSQL", component.getProductName());
         assertEquals("15.3", component.getProductVersion());
         assertEquals(Usage.PREREQUISITE_INSTALLATION, component.getUsage());
-        assertEquals(1, component.getVersion());
     }
     @Test
     void testBuilderWithNullNonNullFieldThrowsException() {
@@ -29,7 +27,6 @@ public class TechnologyComponentTest {
                     .productName(null) // productName is @NonNull
                     .productVersion("1.0")
                     .usage(Usage.PREREQUISITE_INSTALLATION)
-                    .version(3)
                     .build();
         });
     }
