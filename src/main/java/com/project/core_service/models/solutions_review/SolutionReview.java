@@ -81,9 +81,9 @@ public class SolutionReview implements VersionedSchema {
     private String lastModifiedBy;
 
     // Constructor for creating a new SolutionReview
-    public SolutionReview(SolutionOverview solutionOverview) {
+    public SolutionReview(String systemCode, SolutionOverview solutionOverview) {
         this.documentState = DocumentState.DRAFT;
-        this.systemCode = "";
+        this.systemCode = systemCode;
         this.solutionOverview = solutionOverview;
         this.businessCapabilities = new ArrayList<>();
         this.systemComponents = new ArrayList<>();
