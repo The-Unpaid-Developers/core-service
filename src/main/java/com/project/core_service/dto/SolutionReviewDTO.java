@@ -16,10 +16,8 @@ import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.models.system_component.SystemComponent;
 import com.project.core_service.models.technology_component.TechnologyComponent;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import jakarta.annotation.Nonnull;
+import lombok.*;
 
 /**
  * Data Transfer Object for SolutionReview
@@ -31,6 +29,8 @@ import lombok.AllArgsConstructor;
 @Builder
 public class SolutionReviewDTO {
     private String id;
+    @Nonnull
+    private String systemCode;
     private DocumentState documentState;
     private SolutionOverview solutionOverview;
 
@@ -68,6 +68,7 @@ public class SolutionReviewDTO {
         }
 
         this.id = solutionReview.getId();
+        this.systemCode = solutionReview.getSystemCode();
         this.documentState = solutionReview.getDocumentState();
         this.solutionOverview = solutionReview.getSolutionOverview();
 
@@ -105,6 +106,7 @@ public class SolutionReviewDTO {
     public SolutionReview toEntity() {
         SolutionReview entity = new SolutionReview();
         entity.setId(this.id);
+        entity.setSystemCode(this.systemCode);
         entity.setDocumentState(this.documentState);
         entity.setSolutionOverview(this.solutionOverview);
 
@@ -151,18 +153,20 @@ public class SolutionReviewDTO {
     }
 
     // Builder pattern factory methods for common use cases
-    public static SolutionReviewDTOBuilder newDraftBuilder() {
+    public static SolutionReviewDTOBuilder newDraftBuilder(String systemCode) {
         return SolutionReviewDTO.builder()
+                .systemCode(systemCode)
                 .documentState(DocumentState.DRAFT)
                 .version(1)
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now());
     }
 
-    public static SolutionReviewDTOBuilder builderFromSolutionOverview(SolutionOverview solutionOverview) {
+    public static SolutionReviewDTOBuilder builderFromSolutionOverview(String systemCode, SolutionOverview solutionOverview) {
+        Objects.requireNonNull(systemCode, "SystemCode cannot be null");
         Objects.requireNonNull(solutionOverview, "SolutionOverview cannot be null");
 
-        return newDraftBuilder()
+        return newDraftBuilder(systemCode)
                 .solutionOverview(solutionOverview);
     }
 

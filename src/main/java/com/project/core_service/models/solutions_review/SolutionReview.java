@@ -34,6 +34,9 @@ public class SolutionReview implements VersionedSchema {
     private String id;
 
     @NonNull
+    private String systemCode;
+
+    @NonNull
     private DocumentState documentState;
 
     @NonNull
@@ -78,8 +81,9 @@ public class SolutionReview implements VersionedSchema {
     private String lastModifiedBy;
 
     // Constructor for creating a new SolutionReview
-    public SolutionReview(SolutionOverview solutionOverview) {
+    public SolutionReview(String systemCode, SolutionOverview solutionOverview) {
         this.documentState = DocumentState.DRAFT;
+        this.systemCode = systemCode;
         this.solutionOverview = solutionOverview;
         this.businessCapabilities = new ArrayList<>();
         this.systemComponents = new ArrayList<>();
@@ -97,6 +101,7 @@ public class SolutionReview implements VersionedSchema {
     public SolutionReview(SolutionReview original, String modifiedBy) {
         this.documentState = original.documentState;
         this.solutionOverview = original.solutionOverview;
+        this.systemCode = original.systemCode;
         this.businessCapabilities = new ArrayList<>(original.businessCapabilities);
         this.systemComponents = new ArrayList<>(original.systemComponents);
         this.integrationFlows = new ArrayList<>(original.integrationFlows);
@@ -147,7 +152,7 @@ public class SolutionReview implements VersionedSchema {
      * Removes submission and returns document to DRAFT state.
      * Only documents in SUBMITTED state can be returned to draft.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in SUBMITTED
+     * @throws IllegalStateTransitionException if not in SUBMITTED
      *                                                       state
      */
     public void removeSubmission() {
@@ -158,7 +163,7 @@ public class SolutionReview implements VersionedSchema {
      * Approves the document and sets it as current.
      * Only documents in SUBMITTED state can be approved.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in SUBMITTED
+     * @throws IllegalStateTransitionException if not in SUBMITTED
      *                                                       state
      */
     public void approve() {
@@ -169,7 +174,7 @@ public class SolutionReview implements VersionedSchema {
      * UnApproves a current document and returns it to submitted state.
      * Only documents in CURRENT state can be unapproved.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
+     * @throws IllegalStateTransitionException if not in CURRENT state
      */
     public void unApproveCurrent() {
         executeStateOperation(DocumentState.StateOperation.UNAPPROVE);
@@ -179,7 +184,7 @@ public class SolutionReview implements VersionedSchema {
      * Marks the current document as outdated.
      * Only documents in CURRENT state can be marked as outdated.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in CURRENT state
+     * @throws IllegalStateTransitionException if not in CURRENT state
      */
     public void markAsOutdated() {
         executeStateOperation(DocumentState.StateOperation.MARK_OUTDATED);
@@ -189,7 +194,7 @@ public class SolutionReview implements VersionedSchema {
      * Resets an outdated document back to current status.
      * Only documents in OUTDATED state can be reset to current.
      * 
-     * @throws DocumentState.IllegalStateTransitionException if not in OUTDATED
+     * @throws IllegalStateTransitionException if not in OUTDATED
      *                                                       state
      */
     public void resetAsCurrent() {
@@ -201,7 +206,7 @@ public class SolutionReview implements VersionedSchema {
      * 
      * @param newState   the target state to transition to
      * @param modifiedBy the user making the change
-     * @throws DocumentState.IllegalStateTransitionException if transition is
+     * @throws IllegalStateTransitionException if transition is
      *                                                       invalid
      */
     public void transitionTo(DocumentState newState, String modifiedBy) {
