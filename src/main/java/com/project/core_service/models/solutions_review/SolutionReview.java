@@ -14,7 +14,6 @@ import com.project.core_service.models.data_asset.DataAsset;
 import com.project.core_service.models.enterprise_tools.EnterpriseTool;
 import com.project.core_service.models.integration_flow.IntegrationFlow;
 import com.project.core_service.models.process_compliance.ProcessCompliant;
-import com.project.core_service.models.shared.VersionedSchema;
 import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.system_component.SystemComponent;
 import com.project.core_service.models.technology_component.TechnologyComponent;
@@ -29,7 +28,7 @@ import lombok.AllArgsConstructor;
 @AllArgsConstructor
 @Builder
 @Document(collection = "solutionReviews")
-public class SolutionReview implements VersionedSchema {
+public class SolutionReview {
     @Id
     private String id;
 
@@ -70,8 +69,6 @@ public class SolutionReview implements VersionedSchema {
     @Builder.Default
     private List<ProcessCompliant> processCompliances = new ArrayList<>();
 
-    private int version;
-
     private LocalDateTime createdAt;
 
     private LocalDateTime lastModifiedAt;
@@ -92,7 +89,6 @@ public class SolutionReview implements VersionedSchema {
         this.technologyComponents = new ArrayList<>();
         this.enterpriseTools = new ArrayList<>();
         this.processCompliances = new ArrayList<>();
-        this.version = 1; // default till we update schema
         this.createdAt = LocalDateTime.now();
         this.lastModifiedAt = LocalDateTime.now();
     }
@@ -109,7 +105,6 @@ public class SolutionReview implements VersionedSchema {
         this.technologyComponents = new ArrayList<>(original.technologyComponents);
         this.enterpriseTools = new ArrayList<>(original.enterpriseTools);
         this.processCompliances = new ArrayList<>(original.processCompliances);
-        this.version = original.version + 1;
         this.createdAt = original.createdAt;
         this.lastModifiedAt = LocalDateTime.now();
         this.createdBy = original.createdBy;
@@ -274,18 +269,12 @@ public class SolutionReview implements VersionedSchema {
         this.lastModifiedBy = modifiedBy;
     }
 
-    // VersionedSchema implementation
-    @Override
-    public void setVersion(int version) {
-        this.version = version;
-        this.lastModifiedAt = LocalDateTime.now();
-    }
+
 
     // Builder pattern factory methods
     public static SolutionReviewBuilder newDraftBuilder() {
         return SolutionReview.builder()
                 .documentState(DocumentState.DRAFT)
-                .version(1)
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now());
     }
@@ -302,7 +291,6 @@ public class SolutionReview implements VersionedSchema {
     public static SolutionReviewBuilder completeBuilder() {
         LocalDateTime now = LocalDateTime.now();
         return SolutionReview.builder()
-                .version(1)
                 .createdAt(now)
                 .lastModifiedAt(now);
     }
@@ -315,7 +303,6 @@ public class SolutionReview implements VersionedSchema {
         LocalDateTime now = LocalDateTime.now();
         return SolutionReview.builder()
                 .documentState(state)
-                .version(1)
                 .createdAt(now)
                 .lastModifiedAt(now)
                 .createdBy(userId)

@@ -11,14 +11,12 @@ public class ToolTest {
         Tool tool = new Tool(
                 "tool-001",
                 "Jira",
-                ToolType.DEVOPS,
-                1
+                ToolType.DEVOPS
         );
 
         assertThat(tool.getId()).isEqualTo("tool-001");
         assertThat(tool.getName()).isEqualTo("Jira");
         assertThat(tool.getType()).isEqualTo(ToolType.DEVOPS);
-        assertThat(tool.getVersion()).isEqualTo(1);
     }
 
     @Test
@@ -26,15 +24,13 @@ public class ToolTest {
         assertThatThrownBy(() -> new Tool(
                 "tool-001",
                 null, // name
-                ToolType.DEVOPS,
-                1
+                ToolType.DEVOPS
         )).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new Tool(
                 "tool-001",
                 "Jira",
-                null, // type
-                1
+                null // type
         )).isInstanceOf(NullPointerException.class);
     }
 
@@ -43,15 +39,13 @@ public class ToolTest {
         Tool a = new Tool(
                 "tool-002",
                 "Jira",
-                ToolType.DEVOPS,
-                1
+                ToolType.DEVOPS
         );
 
         Tool b = new Tool(
                 "tool-002",
                 "Jira",
-                ToolType.DEVOPS,
-                1
+                ToolType.DEVOPS
         );
 
         assertThat(a).isEqualTo(b);
@@ -63,8 +57,7 @@ public class ToolTest {
         Tool tool = new Tool(
                 "tool-003",
                 "Confluence",
-                ToolType.DEVOPS,
-                1
+                ToolType.DEVOPS
         );
 
         String output = tool.toString();

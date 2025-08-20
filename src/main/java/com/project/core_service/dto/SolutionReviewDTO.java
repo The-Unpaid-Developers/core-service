@@ -55,7 +55,6 @@ public class SolutionReviewDTO {
     @Builder.Default
     private List<ProcessCompliant> processCompliances = new ArrayList<>();
 
-    private int version;
     private LocalDateTime createdAt;
     private LocalDateTime lastModifiedAt;
     private String createdBy;
@@ -95,7 +94,6 @@ public class SolutionReviewDTO {
                 ? new ArrayList<>(solutionReview.getProcessCompliances())
                 : this.processCompliances;
 
-        this.version = solutionReview.getVersion();
         this.createdAt = solutionReview.getCreatedAt();
         this.lastModifiedAt = solutionReview.getLastModifiedAt();
         this.createdBy = solutionReview.getCreatedBy();
@@ -119,7 +117,6 @@ public class SolutionReviewDTO {
         entity.setEnterpriseTools(new ArrayList<>(this.enterpriseTools));
         entity.setProcessCompliances(new ArrayList<>(this.processCompliances));
 
-        entity.setVersion(this.version);
         entity.setCreatedAt(this.createdAt);
         entity.setLastModifiedAt(this.lastModifiedAt);
         entity.setCreatedBy(this.createdBy);
@@ -157,7 +154,6 @@ public class SolutionReviewDTO {
         return SolutionReviewDTO.builder()
                 .systemCode(systemCode)
                 .documentState(DocumentState.DRAFT)
-                .version(1)
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now());
     }

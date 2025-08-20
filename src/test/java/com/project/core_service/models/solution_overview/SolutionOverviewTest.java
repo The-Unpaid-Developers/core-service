@@ -33,8 +33,7 @@ public class SolutionOverviewTest {
                 "desc",
                 "impact",
                 "disposition",
-                ConcernStatus.UNKNOWN,
-                1
+                ConcernStatus.UNKNOWN
         );
         return List.of(dummyConcern);
     }
@@ -72,8 +71,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.OPERATIONAL_EFFICIENCY,
                 "Expected value outcome",
                 dummyApplicationUsers(),
-                dummyConcerns(),
-                1
+                dummyConcerns()
         );
 
         assertEquals("id-001", overview.getId());
@@ -89,7 +87,6 @@ public class SolutionOverviewTest {
         assertEquals("Expected value outcome", overview.getValueOutcome());
         assertEquals(dummyApplicationUsers(), overview.getApplicationUsers());
         assertEquals(dummyConcerns(), overview.getConcerns());
-        assertEquals(1, overview.getVersion());
     }
 
     @Test
@@ -111,8 +108,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -128,8 +124,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -145,8 +140,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -162,8 +156,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -179,8 +172,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -196,8 +188,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -213,8 +204,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -230,8 +220,7 @@ public class SolutionOverviewTest {
                 null,
                 "Value",
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -247,8 +236,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 null,
                 applicationUsers,
-                null,
-                1
+                null
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionOverview(
@@ -264,8 +252,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.RISK_MANAGEMENT,
                 "Value",
                 null,
-                null,
-                1
+                null
         ));
     }
 
@@ -284,8 +271,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.OPERATIONAL_EFFICIENCY,
                 "Expected value outcome",
                 dummyApplicationUsers(),
-                dummyConcerns(),
-                1
+                dummyConcerns()
         );
 
         SolutionOverview so2 = new SolutionOverview(
@@ -301,8 +287,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.OPERATIONAL_EFFICIENCY,
                 "Expected value outcome",
                 dummyApplicationUsers(),
-                dummyConcerns(),
-                1
+                dummyConcerns()
         );
 
         assertEquals(so1, so2);
@@ -324,8 +309,7 @@ public class SolutionOverviewTest {
                 BusinessDriver.REGULATORY,
                 "Outcome value",
                 dummyApplicationUsers(),
-                dummyConcerns(),
-                1
+                dummyConcerns()
         );
 
         String toString = overview.toString();
