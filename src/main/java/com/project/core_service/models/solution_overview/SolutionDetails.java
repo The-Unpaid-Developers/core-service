@@ -12,8 +12,6 @@ public class SolutionDetails {
     @Nonnull
     private String solutionName;
     @Nonnull
-    private String systemCode;
-    @Nonnull
     private String projectName;
     @Nonnull
     private String solutionReviewCode; // AWG Code

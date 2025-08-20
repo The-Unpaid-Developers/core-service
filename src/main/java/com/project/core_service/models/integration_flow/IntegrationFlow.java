@@ -1,6 +1,7 @@
 package com.project.core_service.models.integration_flow;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -12,6 +13,7 @@ import lombok.Data;
 @Document
 @Data
 @AllArgsConstructor
+@Builder
 public class IntegrationFlow {
     @Id
     private String id;
