@@ -1,7 +1,9 @@
 package com.project.core_service.models.data_asset;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import lombok.Builder;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -13,6 +15,7 @@ import lombok.Data;
 @Document
 @Data
 @AllArgsConstructor
+@Builder
 public class DataAsset {
     @Id
     private String id;
@@ -32,7 +35,8 @@ public class DataAsset {
     private String ownedByBusinessUnit;
 
     @NonNull
-    private List<String> dataEntities;
+    @Builder.Default
+    private List<String> dataEntities = new ArrayList<>();
 
     @NonNull
     private String masteredIn;

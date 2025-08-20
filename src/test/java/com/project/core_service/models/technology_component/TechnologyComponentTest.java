@@ -4,7 +4,35 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class TechnologyComponentTest {
+    @Test
+    void testBuilderCreatesTechnologyComponent() {
+        TechnologyComponent component = TechnologyComponent.builder()
+                .id("tech-001")
+                .productName("PostgreSQL")
+                .productVersion("15.3")
+                .usage(Usage.PREREQUISITE_INSTALLATION)
+                .version(1)
+                .build();
 
+        assertNotNull(component);
+        assertEquals("tech-001", component.getId());
+        assertEquals("PostgreSQL", component.getProductName());
+        assertEquals("15.3", component.getProductVersion());
+        assertEquals(Usage.PREREQUISITE_INSTALLATION, component.getUsage());
+        assertEquals(1, component.getVersion());
+    }
+    @Test
+    void testBuilderWithNullNonNullFieldThrowsException() {
+        assertThrows(NullPointerException.class, () -> {
+            TechnologyComponent.builder()
+                    .id("tech-003")
+                    .productName(null) // productName is @NonNull
+                    .productVersion("1.0")
+                    .usage(Usage.PREREQUISITE_INSTALLATION)
+                    .version(3)
+                    .build();
+        });
+    }
     @Test
     void testConstructorAndGetters() {
         TechnologyComponent tc = new TechnologyComponent(

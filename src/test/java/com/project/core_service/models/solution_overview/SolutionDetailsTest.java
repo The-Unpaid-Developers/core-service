@@ -11,7 +11,6 @@ public class SolutionDetailsTest {
     void testConstructorAndGetters() {
         SolutionDetails details = new SolutionDetails(
                 "Awesome Solution",
-                "SYS001",
                 "Project Phoenix",
                 "AWG123",
                 "Alice Architect",
@@ -20,7 +19,6 @@ public class SolutionDetailsTest {
         );
 
         assertEquals("Awesome Solution", details.getSolutionName());
-        assertEquals("SYS001", details.getSystemCode());
         assertEquals("Project Phoenix", details.getProjectName());
         assertEquals("AWG123", details.getSolutionReviewCode());
         assertEquals("Alice Architect", details.getSolutionArchitectName());
@@ -34,7 +32,6 @@ public class SolutionDetailsTest {
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 null,
-                "SYS001",
                 "Project Phoenix",
                 "AWG123",
                 "Alice Architect",
@@ -42,19 +39,9 @@ public class SolutionDetailsTest {
                 partners
         ));
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                null,
-                "Project Phoenix",
-                "AWG123",
-                "Alice Architect",
-                "Bob PM",
-                partners
-        ));
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 "Solution",
-                "SYS001",
                 null,
                 "AWG123",
                 "Alice Architect",
@@ -64,7 +51,6 @@ public class SolutionDetailsTest {
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 "Solution",
-                "SYS001",
                 "Project Phoenix",
                 null,
                 "Alice Architect",
@@ -74,7 +60,6 @@ public class SolutionDetailsTest {
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 "Solution",
-                "SYS001",
                 "Project Phoenix",
                 "AWG123",
                 null,
@@ -84,7 +69,6 @@ public class SolutionDetailsTest {
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 "Solution",
-                "SYS001",
                 "Project Phoenix",
                 "AWG123",
                 "Alice Architect",
@@ -94,7 +78,6 @@ public class SolutionDetailsTest {
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 "Solution",
-                "SYS001",
                 "Project Phoenix",
                 "AWG123",
                 "Alice Architect",
@@ -107,7 +90,6 @@ public class SolutionDetailsTest {
     void testEqualsAndHashCode() {
         SolutionDetails sd1 = new SolutionDetails(
                 "SolutionX",
-                "SYS002",
                 "Project Delta",
                 "AWG456",
                 "Eve Architect",
@@ -117,7 +99,6 @@ public class SolutionDetailsTest {
 
         SolutionDetails sd2 = new SolutionDetails(
                 "SolutionX",
-                "SYS002",
                 "Project Delta",
                 "AWG456",
                 "Eve Architect",
@@ -133,7 +114,6 @@ public class SolutionDetailsTest {
     void testToStringContainsKeyFields() {
         SolutionDetails details = new SolutionDetails(
                 "SolutionY",
-                "SYS003",
                 "Project Gamma",
                 "AWG789",
                 "Dave Architect",
@@ -143,7 +123,6 @@ public class SolutionDetailsTest {
 
         String toString = details.toString();
         assertTrue(toString.contains("SolutionY"));
-        assertTrue(toString.contains("SYS003"));
         assertTrue(toString.contains("Project Gamma"));
         assertTrue(toString.contains("AWG789"));
         assertTrue(toString.contains("Dave Architect"));

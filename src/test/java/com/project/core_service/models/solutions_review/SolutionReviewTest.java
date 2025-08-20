@@ -66,7 +66,6 @@ class SolutionReviewTest {
     private SolutionOverview createTestSolutionOverview() {
         SolutionDetails solutionDetails = new SolutionDetails(
                 "Test Solution",
-                "SYS001",
                 "Test Project",
                 "AWG001",
                 "John Architect",
@@ -98,11 +97,13 @@ class SolutionReviewTest {
         @DisplayName("Simple constructor should create draft with default values")
         void simpleConstructorShouldCreateDraftWithDefaults() {
             LocalDateTime beforeCreation = LocalDateTime.now().minusSeconds(1);
+            String systemCode = "sys-001";
 
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview(systemCode, realSolutionOverview);
 
             LocalDateTime afterCreation = LocalDateTime.now().plusSeconds(1);
 
+            assertEquals(systemCode, review.getSystemCode());
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertNotNull(review.getCreatedAt());
@@ -144,7 +145,9 @@ class SolutionReviewTest {
 
             LocalDateTime beforeCreation = LocalDateTime.now().minusSeconds(1);
 
+            String systemCode = "sys-001";
             SolutionReview review = SolutionReview.withStateAndUser(DocumentState.SUBMITTED, creator)
+                    .systemCode(systemCode)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
                     .systemComponents(components)
@@ -159,6 +162,7 @@ class SolutionReviewTest {
 
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
+            assertEquals(systemCode, review.getSystemCode());
             assertEquals(capabilities, review.getBusinessCapabilities());
             assertEquals(components, review.getSystemComponents());
             assertEquals(flows, review.getIntegrationFlows());
@@ -178,9 +182,11 @@ class SolutionReviewTest {
         @DisplayName("Builder should handle null lists with defaults")
         void builderShouldHandleNullListsWithDefaults() {
             SolutionReview review = SolutionReview.withStateAndUser(DocumentState.DRAFT, "test.user")
+                    .systemCode("sys-001")
                     .solutionOverview(realSolutionOverview)
                     .build();
 
+            assertNotNull(review.getSystemCode());
             assertNotNull(review.getBusinessCapabilities());
             assertNotNull(review.getSystemComponents());
             assertNotNull(review.getIntegrationFlows());
@@ -201,7 +207,8 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Copy constructor should create new version with incremented version")
         void copyConstructorShouldCreateNewVersionWithIncrementedVersion() {
-            SolutionReview original = new SolutionReview(realSolutionOverview);
+            String systemCode = "sys-001";
+            SolutionReview original = new SolutionReview(systemCode, realSolutionOverview);
             original.setCreatedBy("original.creator");
             original.addBusinessCapability(mockBusinessCapability);
 
@@ -212,6 +219,7 @@ class SolutionReviewTest {
 
             LocalDateTime afterCopy = LocalDateTime.now().plusSeconds(1);
 
+            assertEquals(original.getSystemCode(), copy.getSystemCode());
             assertEquals(original.getDocumentState(), copy.getDocumentState());
             assertEquals(original.getSolutionOverview(), copy.getSolutionOverview());
             assertEquals("original.creator", copy.getCreatedBy()); // preserved
@@ -234,7 +242,7 @@ class SolutionReviewTest {
 
         @BeforeEach
         void setUp() {
-            review = new SolutionReview(realSolutionOverview);
+            review = new SolutionReview("sys-001", realSolutionOverview);
         }
 
         @Test
@@ -379,7 +387,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("isDraft() should return true only for DRAFT state")
         void isDraftShouldReturnTrueOnlyForDraftState() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
             assertTrue(review.isDraft());
             assertFalse(review.isSubmitted());
@@ -390,7 +398,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("isSubmitted() should return true only for SUBMITTED state")
         void isSubmittedShouldReturnTrueOnlyForSubmittedState() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.submit();
 
             assertFalse(review.isDraft());
@@ -402,7 +410,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("isCurrent() should return true only for CURRENT state")
         void isCurrentShouldReturnTrueOnlyForCurrentState() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.submit();
             review.approve();
 
@@ -415,7 +423,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("isOutdated() should return true only for OUTDATED state")
         void isOutdatedShouldReturnTrueOnlyForOutdatedState() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.submit();
             review.approve();
             review.markAsOutdated();
@@ -435,7 +443,7 @@ class SolutionReviewTest {
 
         @BeforeEach
         void setUp() {
-            review = new SolutionReview(realSolutionOverview);
+            review = new SolutionReview("sys-001", realSolutionOverview);
         }
 
         @Test
@@ -530,7 +538,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("updateModification() should update modification time and modifier")
         void updateModificationShouldUpdateModificationTimeAndModifier() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             LocalDateTime beforeUpdate = review.getLastModifiedAt();
             String modifier = "test.modifier";
 
@@ -552,12 +560,14 @@ class SolutionReviewTest {
             LocalDateTime beforeBuild = LocalDateTime.now().minusSeconds(1);
 
             SolutionReview review = SolutionReview.newDraftBuilder()
+                    .systemCode("sys-001")
                     .solutionOverview(realSolutionOverview)
                     .createdBy("test.creator")
                     .build();
 
             LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals("test.creator", review.getCreatedBy());
@@ -573,9 +583,11 @@ class SolutionReviewTest {
         @DisplayName("builderFromSolutionOverview() should create builder with solution overview")
         void builderFromSolutionOverviewShouldCreateBuilderWithSolutionOverview() {
             SolutionReview review = SolutionReview.builderFromSolutionOverview(realSolutionOverview)
+                    .systemCode("sys-001")
                     .createdBy("test.creator")
                     .build();
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.DRAFT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals("test.creator", review.getCreatedBy());
@@ -588,6 +600,7 @@ class SolutionReviewTest {
             List<SystemComponent> components = Arrays.asList(mockSystemComponent);
 
             SolutionReview review = SolutionReview.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.SUBMITTED)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
@@ -595,6 +608,7 @@ class SolutionReviewTest {
                     .createdBy("test.builder")
                     .build();
 
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals(capabilities, review.getBusinessCapabilities());
@@ -618,7 +632,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should handle rapid state transitions correctly")
         void shouldHandleRapidStateTransitionsCorrectly() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
             // Complete lifecycle
             review.submit();
@@ -643,7 +657,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should maintain data integrity during copy operations")
         void shouldMaintainDataIntegrityDuringCopyOperations() {
-            SolutionReview original = new SolutionReview(realSolutionOverview);
+            SolutionReview original = new SolutionReview("sys-001", realSolutionOverview);
             original.addBusinessCapability(mockBusinessCapability);
             original.addSystemComponent(mockSystemComponent);
 
@@ -662,7 +676,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should handle null modifiers gracefully")
         void shouldHandleNullModifiersGracefully() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
             assertDoesNotThrow(() -> review.transitionTo(DocumentState.SUBMITTED, null));
             assertNull(review.getLastModifiedBy());
@@ -674,7 +688,8 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should preserve timestamps correctly across operations")
         void shouldPreserveTimestampsCorrectlyAcrossOperations() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
+
             LocalDateTime originalCreatedAt = review.getCreatedAt();
             LocalDateTime originalModifiedAt = review.getLastModifiedAt();
 
@@ -696,7 +711,7 @@ class SolutionReviewTest {
     @Test
     @DisplayName("getAvailableOperations should return correct operations based on current state")
     void getAvailableOperationsShouldReturnCorrectOperationsBasedOnCurrentState() {
-        SolutionReview review = new SolutionReview(realSolutionOverview);
+        SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
         // DRAFT state should have SUBMIT operation available
         var draftOperations = review.getAvailableOperations();
@@ -764,6 +779,7 @@ class SolutionReviewTest {
 
             SolutionReview review = SolutionReview.completeBuilder()
                     .id("complete-test")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.CURRENT)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(Arrays.asList(mockBusinessCapability))
@@ -774,6 +790,7 @@ class SolutionReviewTest {
             LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
 
             assertEquals("complete-test", review.getId());
+            assertEquals("sys-001", review.getSystemCode());
             assertEquals(DocumentState.CURRENT, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals("complete.creator", review.getCreatedBy());
@@ -825,7 +842,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should handle toString correctly")
         void shouldHandleToStringCorrectly() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
             String result = review.toString();
 
@@ -838,12 +855,14 @@ class SolutionReviewTest {
         void shouldHandleEqualsAndHashCodeCorrectly() {
             SolutionReview review1 = SolutionReview.builder()
                     .id("test-equals")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
                     .build();
 
             SolutionReview review2 = SolutionReview.builder()
                     .id("test-equals")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .solutionOverview(realSolutionOverview)
                     .build();
@@ -859,7 +878,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should handle multiple operations on lists without interference")
         void shouldHandleMultipleOperationsOnListsWithoutInterference() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             LocalDateTime beforeOperations = review.getLastModifiedAt();
 
             // Add multiple items to different lists
@@ -893,7 +912,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should handle state transitions with different user modifiers")
         void shouldHandleStateTransitionsWithDifferentUserModifiers() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.setCreatedBy("original.creator");
 
             // Test transitionTo with different users
@@ -915,7 +934,7 @@ class SolutionReviewTest {
         @DisplayName("Should handle edge cases in copy constructor")
         void shouldHandleEdgeCasesInCopyConstructor() {
             // Create original with extreme values
-            SolutionReview original = new SolutionReview(realSolutionOverview);
+            SolutionReview original = new SolutionReview("sys-001", realSolutionOverview);
             LocalDateTime veryOldTime = LocalDateTime.of(2000, 1, 1, 0, 0);
             original.setCreatedAt(veryOldTime);
             original.setCreatedBy("ancient.creator");
@@ -933,7 +952,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("Should maintain consistency between state methods and enum")
         void shouldMaintainConsistencyBetweenStateMethodsAndEnum() {
-            SolutionReview review = new SolutionReview(realSolutionOverview);
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
             // Test all states and their corresponding methods
             review.setDocumentState(DocumentState.DRAFT);
