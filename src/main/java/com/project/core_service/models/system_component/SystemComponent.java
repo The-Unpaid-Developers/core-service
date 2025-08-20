@@ -7,7 +7,6 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
 import com.project.core_service.models.shared.Frequency;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
@@ -15,7 +14,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
-public class SystemComponent implements VersionedSchema {
+public class SystemComponent {
     @Id
     private String id;
 
@@ -76,6 +75,4 @@ public class SystemComponent implements VersionedSchema {
 
     @NonNull
     private SecurityDetails securityDetails;
-
-    private int version;
 }

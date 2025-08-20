@@ -58,7 +58,6 @@ public class SystemComponentTest {
                 .scalabilityMethod(ScalabilityMethod.VERTICAL_AUTO)
                 .backupSite(BackupSite.CLOUD_MULTI_AZ)
                 .securityDetails(dummySecurityDetails())
-                .version(42)
                 .build();
 
         assertEquals("sc-101", component.getId());
@@ -82,7 +81,6 @@ public class SystemComponentTest {
         assertEquals(ScalabilityMethod.VERTICAL_AUTO, component.getScalabilityMethod());
         assertEquals(BackupSite.CLOUD_MULTI_AZ, component.getBackupSite());
         assertEquals(dummySecurityDetails(), component.getSecurityDetails());
-        assertEquals(42, component.getVersion());
     }
     @Test
     void testConstructorAndGetters() {
@@ -107,8 +105,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         assertEquals("sc-001", sc.getId());
@@ -132,7 +129,6 @@ public class SystemComponentTest {
         assertEquals(ScalabilityMethod.HORIZONTAL_AUTO, sc.getScalabilityMethod());
         assertEquals(BackupSite.CLOUD_MULTI_AZ, sc.getBackupSite());
         assertEquals(dummySecurityDetails(), sc.getSecurityDetails());
-        assertEquals(7, sc.getVersion());
     }
 
     @Test
@@ -161,8 +157,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         assertThrows(NullPointerException.class, () -> new SystemComponent(
@@ -186,8 +181,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         // Repeat for each @NonNull field: role, hostedOn, hostingRegion, solutionType,
@@ -216,8 +210,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         assertThrows(NullPointerException.class, () -> new SystemComponent(
@@ -241,8 +234,7 @@ public class SystemComponentTest {
                 2000,
                 ScalabilityMethod.MANUAL,
                 BackupSite.NONE,
-                securityDetails,
-                1
+                securityDetails
         ));
 
         // Continue for all others similarly...
@@ -271,8 +263,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         SystemComponent sc2 = new SystemComponent(
@@ -296,8 +287,7 @@ public class SystemComponentTest {
                 5000,
                 ScalabilityMethod.HORIZONTAL_AUTO,
                 BackupSite.CLOUD_MULTI_AZ,
-                dummySecurityDetails(),
-                7
+                dummySecurityDetails()
         );
 
         assertEquals(sc1, sc2);
@@ -327,8 +317,7 @@ public class SystemComponentTest {
                 10000,
                 ScalabilityMethod.HYBRID,
                 BackupSite.ALTERNATE_DATA_CENTRE,
-                dummySecurityDetails(),
-                9
+                dummySecurityDetails()
         );
 
         String toString = sc.toString();

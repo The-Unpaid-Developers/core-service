@@ -11,14 +11,12 @@ public class ProcessCompliantTest {
                 .standardGuideline(StandardGuideline.ACCESS_CONTROL_STANDARDS)
                 .compliant(Compliant.TRUE)
                 .description("Access control checks in place")
-                .version(1)
                 .build();
 
         assertEquals("pc-123", process.getId());
         assertEquals(StandardGuideline.ACCESS_CONTROL_STANDARDS, process.getStandardGuideline());
         assertEquals(Compliant.TRUE, process.getCompliant());
         assertEquals("Access control checks in place", process.getDescription());
-        assertEquals(1, process.getVersion());
     }
 
     @Test
@@ -38,32 +36,30 @@ public class ProcessCompliantTest {
                 "pc-001",
                 StandardGuideline.CRYPTOGRAPHY_STANDARDS,
                 Compliant.TRUE,
-                "Encryption must follow company cryptographic standards.",
-                1
+                "Encryption must follow company cryptographic standards."
         );
 
         assertEquals("pc-001", processCompliant.getId());
         assertEquals(StandardGuideline.CRYPTOGRAPHY_STANDARDS, processCompliant.getStandardGuideline());
         assertEquals(Compliant.TRUE, processCompliant.getCompliant());
         assertEquals("Encryption must follow company cryptographic standards.", processCompliant.getDescription());
-        assertEquals(1, processCompliant.getVersion());
     }
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
         // StandardGuideline null
         assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                "pc-002", null, Compliant.TRUE, "Description", 1
+                "pc-002", null, Compliant.TRUE, "Description"
         ));
 
         // Compliant null
         assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                "pc-003", StandardGuideline.CRYPTOGRAPHY_STANDARDS, null, "Description", 1
+                "pc-003", StandardGuideline.CRYPTOGRAPHY_STANDARDS, null, "Description"
         ));
 
         // Description null
         assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                "pc-004", StandardGuideline.CRYPTOGRAPHY_STANDARDS, Compliant.TRUE, null, 1
+                "pc-004", StandardGuideline.CRYPTOGRAPHY_STANDARDS, Compliant.TRUE, null
         ));
     }
 
@@ -73,16 +69,14 @@ public class ProcessCompliantTest {
                 "pc-001",
                 StandardGuideline.CRYPTOGRAPHY_STANDARDS,
                 Compliant.TRUE,
-                "Encryption must follow company cryptographic standards.",
-                1
+                "Encryption must follow company cryptographic standards."
         );
 
         ProcessCompliant pc2 = new ProcessCompliant(
                 "pc-001",
                 StandardGuideline.CRYPTOGRAPHY_STANDARDS,
                 Compliant.TRUE,
-                "Encryption must follow company cryptographic standards.",
-                1
+                "Encryption must follow company cryptographic standards."
         );
 
         assertEquals(pc1, pc2);
@@ -95,8 +89,7 @@ public class ProcessCompliantTest {
                 "pc-001",
                 StandardGuideline.CRYPTOGRAPHY_STANDARDS,
                 Compliant.TRUE,
-                "Encryption must follow company cryptographic standards.",
-                1
+                "Encryption must follow company cryptographic standards."
         );
 
         String toStringResult = processCompliant.toString();

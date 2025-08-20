@@ -5,14 +5,13 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
 @Data
 @Document
 @AllArgsConstructor
-public class Concern implements VersionedSchema {
+public class Concern {
     @Id
     private String id;
     @NonNull
@@ -30,5 +29,4 @@ public class Concern implements VersionedSchema {
     @NonNull
     private ConcernStatus status;
 
-    private int version;
 }

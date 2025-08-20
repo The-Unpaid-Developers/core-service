@@ -6,7 +6,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
@@ -14,7 +13,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 @Builder
-public class EnterpriseTool implements VersionedSchema {
+public class EnterpriseTool {
     @Id
     private String id;
 
@@ -35,5 +34,4 @@ public class EnterpriseTool implements VersionedSchema {
     @NonNull
     private String solutionOverviewId;
 
-    private int version;
 }

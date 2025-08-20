@@ -6,7 +6,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
-import com.project.core_service.models.shared.VersionedSchema;
 
 import lombok.Data;
 
@@ -14,7 +13,7 @@ import lombok.Data;
 @Document
 @AllArgsConstructor
 @Builder
-public class ProcessCompliant implements VersionedSchema {
+public class ProcessCompliant {
     @Id
     private String id;
 
@@ -27,5 +26,4 @@ public class ProcessCompliant implements VersionedSchema {
     @NonNull
     private String description;
 
-    private int version;
 }
