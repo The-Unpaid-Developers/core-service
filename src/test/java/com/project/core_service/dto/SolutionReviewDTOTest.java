@@ -299,13 +299,15 @@ class SolutionReviewDTOTest {
         void shouldCreateDraftBuilderWithCorrectDefaults() {
             LocalDateTime beforeBuild = LocalDateTime.now().minusSeconds(1);
 
-            SolutionReviewDTO dto = SolutionReviewDTO.newDraftBuilder()
+            String systemCode = "sys-001";
+            SolutionReviewDTO dto = SolutionReviewDTO.newDraftBuilder(systemCode)
                     .solutionOverview(realSolutionOverview)
                     .createdBy("test.creator")
                     .build();
 
             LocalDateTime afterBuild = LocalDateTime.now().plusSeconds(1);
 
+            assertEquals(systemCode, dto.getSystemCode());
             assertEquals(DocumentState.DRAFT, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(1, dto.getVersion());
@@ -319,10 +321,12 @@ class SolutionReviewDTOTest {
         @Test
         @DisplayName("Should create builder from solution overview")
         void shouldCreateBuilderFromSolutionOverview() {
-            SolutionReviewDTO dto = SolutionReviewDTO.builderFromSolutionOverview(realSolutionOverview)
+            String systemCode = "sys-001";
+            SolutionReviewDTO dto = SolutionReviewDTO.builderFromSolutionOverview(systemCode,realSolutionOverview)
                     .createdBy("test.creator")
                     .build();
 
+            assertEquals(systemCode, dto.getSystemCode());
             assertEquals(DocumentState.DRAFT, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(1, dto.getVersion());
@@ -330,12 +334,16 @@ class SolutionReviewDTOTest {
         }
 
         @Test
-        @DisplayName("Should throw NullPointerException when builderFromSolutionOverview called with null")
+        @DisplayName("Should throw NullPointerException when systemCode called with null")
         void shouldThrowNullPointerExceptionWhenBuilderFromSolutionOverviewCalledWithNull() {
             NullPointerException exception = assertThrows(
                     NullPointerException.class,
-                    () -> SolutionReviewDTO.builderFromSolutionOverview(null));
-            assertEquals("SolutionOverview cannot be null", exception.getMessage());
+                    () -> SolutionReviewDTO.builderFromSolutionOverview(null,null));
+            assertEquals("SystemCode cannot be null", exception.getMessage());
+            NullPointerException exception2 = assertThrows(
+                    NullPointerException.class,
+                    () -> SolutionReviewDTO.builderFromSolutionOverview("sys-001",null));
+            assertEquals("SolutionOverview cannot be null", exception2.getMessage());
         }
     }
 
@@ -347,15 +355,19 @@ class SolutionReviewDTOTest {
         @DisplayName("Should return correct state query results")
         void shouldReturnCorrectStateQueryResults() {
             SolutionReviewDTO draftDto = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.DRAFT)
                     .build();
             SolutionReviewDTO submittedDto = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.SUBMITTED)
                     .build();
             SolutionReviewDTO currentDto = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.CURRENT)
                     .build();
             SolutionReviewDTO outdatedDto = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .documentState(DocumentState.OUTDATED)
                     .build();
 
@@ -384,9 +396,11 @@ class SolutionReviewDTOTest {
         @DisplayName("Should return correct hasValidSolutionOverview result")
         void shouldReturnCorrectHasValidSolutionOverviewResult() {
             SolutionReviewDTO dtoWithOverview = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .solutionOverview(realSolutionOverview)
                     .build();
             SolutionReviewDTO dtoWithoutOverview = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .solutionOverview(null)
                     .build();
 
@@ -398,9 +412,11 @@ class SolutionReviewDTOTest {
         @DisplayName("Should return correct hasBusinessCapabilities result")
         void shouldReturnCorrectHasBusinessCapabilitiesResult() {
             SolutionReviewDTO dtoWithCapabilities = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .businessCapabilities(Arrays.asList(mockBusinessCapability))
                     .build();
             SolutionReviewDTO dtoWithoutCapabilities = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .build(); // Uses default empty list
 
             assertTrue(dtoWithCapabilities.hasBusinessCapabilities());
@@ -411,9 +427,11 @@ class SolutionReviewDTOTest {
         @DisplayName("Should return correct hasSystemComponents result")
         void shouldReturnCorrectHasSystemComponentsResult() {
             SolutionReviewDTO dtoWithComponents = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .systemComponents(Arrays.asList(mockSystemComponent))
                     .build();
             SolutionReviewDTO dtoWithoutComponents = SolutionReviewDTO.builder()
+                    .systemCode("sys-001")
                     .build(); // Uses default empty list
 
             assertTrue(dtoWithComponents.hasSystemComponents());
@@ -434,6 +452,7 @@ class SolutionReviewDTOTest {
 
             SolutionReviewDTO dto = SolutionReviewDTO.builder()
                     .id("builder-test")
+                    .systemCode("sys-001")
                     .documentState(DocumentState.CURRENT)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
@@ -451,6 +470,7 @@ class SolutionReviewDTOTest {
                     .build();
 
             assertEquals("builder-test", dto.getId());
+            assertEquals("sys-001", dto.getSystemCode());
             assertEquals(DocumentState.CURRENT, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(capabilities, dto.getBusinessCapabilities());
@@ -467,8 +487,10 @@ class SolutionReviewDTOTest {
         void shouldUseDefaultValuesForListsWhenNotSpecifiedInBuilder() {
             SolutionReviewDTO dto = SolutionReviewDTO.builder()
                     .id("default-test")
+                    .systemCode("sys-001")
                     .build();
 
+            assertNotNull(dto.getSystemCode());
             assertNotNull(dto.getBusinessCapabilities());
             assertNotNull(dto.getSystemComponents());
             assertNotNull(dto.getIntegrationFlows());
