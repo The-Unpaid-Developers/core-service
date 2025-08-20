@@ -4,7 +4,34 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProcessCompliantTest {
+    @Test
+    void builderSetsFieldsCorrectly() {
+        ProcessCompliant process = ProcessCompliant.builder()
+                .id("pc-123")
+                .standardGuideline(StandardGuideline.ACCESS_CONTROL_STANDARDS)
+                .compliant(Compliant.TRUE)
+                .description("Access control checks in place")
+                .version(1)
+                .build();
 
+        assertEquals("pc-123", process.getId());
+        assertEquals(StandardGuideline.ACCESS_CONTROL_STANDARDS, process.getStandardGuideline());
+        assertEquals(Compliant.TRUE, process.getCompliant());
+        assertEquals("Access control checks in place", process.getDescription());
+        assertEquals(1, process.getVersion());
+    }
+
+    @Test
+    void nonNullFieldsShouldThrowOnNull() {
+        assertThrows(NullPointerException.class, () -> {
+            ProcessCompliant.builder()
+                    .id("pc-456")
+                    .standardGuideline(null) // should fail due to @NonNull
+                    .compliant(Compliant.TRUE)
+                    .description("Missing guideline should break")
+                    .build();
+        });
+    }
     @Test
     void testProcessCompliantConstructorAndGetters() {
         ProcessCompliant processCompliant = new ProcessCompliant(

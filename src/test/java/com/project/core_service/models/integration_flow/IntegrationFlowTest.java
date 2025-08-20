@@ -7,7 +7,40 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.UUID;
 
 public class IntegrationFlowTest {
+    @Test
+    void builderSetsFieldsCorrectly() {
+        IntegrationFlow flow = IntegrationFlow.builder()
+                .id("if-123")
+                .bsoCodeOfExternalSystem("BSO-999")
+                .externalSystemRole(ExternalSystemRole.CONSUMER)
+                .integrationMethod(IntegrationMethod.API)
+                .frequency(Frequency.ANNUALLY) // using your suggested value
+                .purpose("Data sync with external system")
+                .version(1)
+                .build();
 
+        assertEquals("if-123", flow.getId());
+        assertEquals("BSO-999", flow.getBsoCodeOfExternalSystem());
+        assertEquals(ExternalSystemRole.CONSUMER, flow.getExternalSystemRole());
+        assertEquals(IntegrationMethod.API, flow.getIntegrationMethod());
+        assertEquals(Frequency.ANNUALLY, flow.getFrequency());
+        assertEquals("Data sync with external system", flow.getPurpose());
+        assertEquals(1, flow.getVersion());
+    }
+
+    @Test
+    void nonNullFieldsShouldThrowOnNull() {
+        assertThrows(NullPointerException.class, () -> {
+            IntegrationFlow.builder()
+                    .id("if-456")
+                    .bsoCodeOfExternalSystem(null) // should fail because of @NonNull
+                    .externalSystemRole(ExternalSystemRole.PRODUCER)
+                    .integrationMethod(IntegrationMethod.FILE)
+                    .frequency(Frequency.ANNUALLY)
+                    .purpose("File transfer with external system")
+                    .build();
+        });
+    }
     @Test
     void testConstructorAndGetters() {
         String id = UUID.randomUUID().toString();

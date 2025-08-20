@@ -2,13 +2,61 @@ package com.project.core_service.models.data_asset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 class DataAssetTest {
+    @Test
+    void builderSetsFieldsCorrectly() {
+        DataAsset asset = DataAsset.builder()
+                .id("123")
+                .solutionOverviewId("sol-1")
+                .dataDomain("finance")
+                .dataClassification(Classification.CONFIDENTIAL)
+                .ownedByBusinessUnit("sales")
+                .masteredIn("db-core")
+                .version(1)
+                .build();
 
+        assertEquals("123", asset.getId());
+        assertEquals(Classification.CONFIDENTIAL, asset.getDataClassification());
+        assertEquals("finance", asset.getDataDomain());
+        assertEquals("sales", asset.getOwnedByBusinessUnit());
+        assertEquals("db-core", asset.getMasteredIn());
+        assertEquals(1, asset.getVersion());
+    }
+
+    @Test
+    void builderDefaultsDataEntitiesToEmptyList() {
+        DataAsset asset = DataAsset.builder()
+                .id("456")
+                .solutionOverviewId("sol-2")
+                .dataDomain("hr")
+                .dataClassification(Classification.INTERNAL)
+                .ownedByBusinessUnit("hr")
+                .masteredIn("db-hr")
+                .build();
+
+        assertNotNull(asset.getDataEntities());
+        assertTrue(asset.getDataEntities().isEmpty());
+    }
+
+    @Test
+    void nonNullFieldsShouldThrowOnNull() {
+        assertThrows(NullPointerException.class, () -> {
+            DataAsset.builder()
+                    .id("789")
+                    .solutionOverviewId(null) // @NonNull should blow up
+                    .dataDomain("ops")
+                    .dataClassification(Classification.PUBLIC)
+                    .ownedByBusinessUnit("ops")
+                    .masteredIn("db-ops")
+                    .build();
+        });
+    }
     @Test
     void shouldCreateDataAssetSuccessfully() {
         DataAsset asset = new DataAsset(

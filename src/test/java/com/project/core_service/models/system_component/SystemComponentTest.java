@@ -34,7 +34,56 @@ public class SystemComponentTest {
                 Frequency.ANNUALLY
         );
     }
+    @Test
+    void builderSetsFieldsCorrectly() {
+        SystemComponent component = SystemComponent.builder()
+                .id("sc-101")
+                .name("Order Service")
+                .status(ComponentStatus.NEW)
+                .role(ComponentRole.BACK_END)
+                .hostedOn(Location.CLOUD)
+                .hostingRegion(HostingRegion.GLOBAL)
+                .solutionType(SolutionType.SAAS)
+                .languageFramework(dummyLanguageFramework())
+                .isOwnedByUs(false)
+                .isCICDUsed(true)
+                .customizationLevel(CustomizationLevel.NONE)
+                .upgradeStrategy(UpgradeStrategy.VENDOR_LED)
+                .upgradeFrequency(Frequency.ANNUALLY)
+                .isSubscription(true)
+                .isInternetFacing(false)
+                .availabilityRequirement(AvailabilityRequirement.MEDIUM)
+                .latencyRequirement(250)
+                .throughputRequirement(10000)
+                .scalabilityMethod(ScalabilityMethod.VERTICAL_AUTO)
+                .backupSite(BackupSite.CLOUD_MULTI_AZ)
+                .securityDetails(dummySecurityDetails())
+                .version(42)
+                .build();
 
+        assertEquals("sc-101", component.getId());
+        assertEquals("Order Service", component.getName());
+        assertEquals(ComponentStatus.NEW, component.getStatus());
+        assertEquals(ComponentRole.BACK_END, component.getRole());
+        assertEquals(Location.CLOUD, component.getHostedOn());
+        assertEquals(HostingRegion.GLOBAL, component.getHostingRegion());
+        assertEquals(SolutionType.SAAS, component.getSolutionType());
+        assertEquals(dummyLanguageFramework(), component.getLanguageFramework());
+        assertFalse(component.isOwnedByUs());
+        assertTrue(component.isCICDUsed());
+        assertEquals(CustomizationLevel.NONE, component.getCustomizationLevel());
+        assertEquals(UpgradeStrategy.VENDOR_LED, component.getUpgradeStrategy());
+        assertEquals(Frequency.ANNUALLY, component.getUpgradeFrequency());
+        assertTrue(component.isSubscription());
+        assertFalse(component.isInternetFacing());
+        assertEquals(AvailabilityRequirement.MEDIUM, component.getAvailabilityRequirement());
+        assertEquals(250, component.getLatencyRequirement());
+        assertEquals(10000, component.getThroughputRequirement());
+        assertEquals(ScalabilityMethod.VERTICAL_AUTO, component.getScalabilityMethod());
+        assertEquals(BackupSite.CLOUD_MULTI_AZ, component.getBackupSite());
+        assertEquals(dummySecurityDetails(), component.getSecurityDetails());
+        assertEquals(42, component.getVersion());
+    }
     @Test
     void testConstructorAndGetters() {
         SystemComponent sc = new SystemComponent(
