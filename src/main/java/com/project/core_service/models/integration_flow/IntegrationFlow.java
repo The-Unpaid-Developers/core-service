@@ -19,10 +19,10 @@ public class IntegrationFlow {
     private String id;
 
     @NonNull
-    private String bsoCodeOfExternalSystem;
+    private String counterpartSystemCode;
 
     @NonNull
-    private ExternalSystemRole externalSystemRole;
+    private CounterpartSystemRole counterpartSystemRole;
 
     @NonNull
     private IntegrationMethod integrationMethod;
