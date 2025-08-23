@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
     container_name: core_service
     environment:
-      - CONN_STR=mongodb://user:pass@mongodb/solutions
+      - CONN_STR=mongodb://user:pass@mongodb/solutions?authSource=admin
     ports:
       - "8080:8080"
     depends_on:

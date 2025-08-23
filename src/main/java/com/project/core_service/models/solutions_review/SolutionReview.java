@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.mongodb.lang.NonNull;
@@ -39,33 +40,41 @@ public class SolutionReview {
     private DocumentState documentState;
 
     @NonNull
+    @DBRef
     private SolutionOverview solutionOverview;
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<BusinessCapability> businessCapabilities = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<SystemComponent> systemComponents = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<IntegrationFlow> integrationFlows = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<DataAsset> dataAssets = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<TechnologyComponent> technologyComponents = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<EnterpriseTool> enterpriseTools = new ArrayList<>();
 
     @NonNull
+    @DBRef
     @Builder.Default
     private List<ProcessCompliant> processCompliances = new ArrayList<>();
 

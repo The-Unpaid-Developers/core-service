@@ -135,20 +135,4 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         body.put("message", ex.getMessage());
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
-
-    /**
-     * Handles file upload errors where the file exceeds the maximum allowed size.
-     *
-     * @param ex the {@link MaxUploadSizeExceededException}
-     * @return a {@link ResponseEntity} with error details
-     */
-    @ExceptionHandler({MaxUploadSizeExceededException.class})
-    public ResponseEntity<Object> handleMaxSizeException(MaxUploadSizeExceededException ex) {
-        HttpStatus status = HttpStatus.EXPECTATION_FAILED;
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
-        body.put("message", "File too large!");
-        return new ResponseEntity<>(body, new HttpHeaders(), status);
-    }
 }
