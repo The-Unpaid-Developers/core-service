@@ -75,4 +75,16 @@ public class SystemComponent {
 
     @NonNull
     private SecurityDetails securityDetails;
+
+    public static SystemComponentBuilder newComponentBuilder(String name) {
+        return new SystemComponentBuilder()
+                .name(name)
+                .status(ComponentStatus.NEW)
+                .latencyRequirement(-1)
+                .throughputRequirement(-1)
+                .isInternetFacing(false)
+                .isSubscription(false)
+                .isOwnedByUs(true)
+                .isCICDUsed(true);
+    }
 }
