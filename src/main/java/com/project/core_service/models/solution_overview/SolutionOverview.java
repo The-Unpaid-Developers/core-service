@@ -22,11 +22,7 @@ public class SolutionOverview {
     @NonNull
     private SolutionDetails solutionDetails;
 
-    @NonNull
-    private List<String> itBusinessPartners;
-
-    @NonNull
-    private String reviewedBy; // Potentially User if we are modelling user
+    private String reviewedBy;
 
     @NonNull
     private ReviewType reviewType;
@@ -64,7 +60,6 @@ public class SolutionOverview {
         return new SolutionOverviewBuilder()
                 .id(existing.getId())
                 .solutionDetails(existing.getSolutionDetails())
-                .itBusinessPartners(existing.getItBusinessPartners())
                 .reviewedBy(existing.getReviewedBy())
                 .reviewType(existing.getReviewType())
                 .approvalStatus(existing.getApprovalStatus())

@@ -29,10 +29,6 @@ class SolutionOverviewTest {
         return List.of(ApplicationUser.EMPLOYEE, ApplicationUser.CUSTOMERS);
     }
 
-    private List<String> dummyBusinessPartners() {
-        return List.of("PartnerA", "PartnerB");
-    }
-
     private List<Concern> dummyConcerns() {
         Concern dummyConcern = new Concern(
                 "concern-001",
@@ -53,7 +49,6 @@ class SolutionOverviewTest {
             SolutionOverview overview = new SolutionOverview(
                     "id-001",
                     dummySolutionDetails(),
-                    dummyBusinessPartners(),
                     "ReviewerName",
                     ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING,
@@ -68,7 +63,6 @@ class SolutionOverviewTest {
 
             assertEquals("id-001", overview.getId());
             assertEquals(dummySolutionDetails(), overview.getSolutionDetails());
-            assertEquals(dummyBusinessPartners(), overview.getItBusinessPartners());
             assertEquals("ReviewerName", overview.getReviewedBy());
             assertEquals(ReviewType.NEW_BUILD, overview.getReviewType());
             assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
@@ -84,74 +78,67 @@ class SolutionOverviewTest {
         @Test
         void shouldThrowExceptionWhenNullForNonNullFields() {
             SolutionDetails details = dummySolutionDetails();
-            List<String> partners = dummyBusinessPartners();
             List<ApplicationUser> users = dummyApplicationUsers();
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null1", null, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null1", null, "Reviewer", ReviewType.NEW_BUILD,
+                    ApprovalStatus.PENDING, ReviewStatus.DRAFT,
+                    "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
+                    "Value", users, null
+            ));
+
+
+            assertThrows(NullPointerException.class, () -> new SolutionOverview(
+                    "id-null3", details,  null, ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null2", details, null, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null4", details,  "Reviewer", null,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null3", details, partners, null, ReviewType.NEW_BUILD,
-                    ApprovalStatus.PENDING, ReviewStatus.DRAFT,
-                    "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
-                    "Value", users, null
-            ));
-
-            assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null4", details, partners, "Reviewer", null,
-                    ApprovalStatus.PENDING, ReviewStatus.DRAFT,
-                    "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
-                    "Value", users, null
-            ));
-
-            assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null5", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null5", details,  "Reviewer", ReviewType.NEW_BUILD,
                     null, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null6", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null6", details,  "Reviewer", ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, null,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null7", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null7", details,  "Reviewer", ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", null, BusinessDriver.RISK_MANAGEMENT,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null8", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null8", details,  "Reviewer", ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, null,
                     "Value", users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null9", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null9", details,  "Reviewer", ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     null, users, null
             ));
 
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null10", details, partners, "Reviewer", ReviewType.NEW_BUILD,
+                    "id-null10", details,  "Reviewer", ReviewType.NEW_BUILD,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
                     "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
                     "Value", null, null
@@ -167,7 +154,6 @@ class SolutionOverviewTest {
             SolutionOverview overview = SolutionOverview.builder()
                     .id("id-003")
                     .solutionDetails(dummySolutionDetails())
-                    .itBusinessPartners(dummyBusinessPartners())
                     .reviewedBy("ReviewerName")
                     .reviewType(ReviewType.NEW_BUILD)
                     .approvalStatus(ApprovalStatus.PENDING)
@@ -188,7 +174,6 @@ class SolutionOverviewTest {
                 SolutionOverview overview = SolutionOverview.newDraftBuilder()
                         .id("id-014")
                         .solutionDetails(dummySolutionDetails())
-                        .itBusinessPartners(dummyBusinessPartners())
                         .reviewedBy("ReviewerDraft")
                         .businessUnit(BusinessUnit.UNKNOWN)
                         .businessDriver(BusinessDriver.RISK_MANAGEMENT)
@@ -210,7 +195,6 @@ class SolutionOverviewTest {
                 SolutionOverview original = new SolutionOverview(
                         "id-020",
                         dummySolutionDetails(),
-                        dummyBusinessPartners(),
                         "ReviewerX",
                         ReviewType.NEW_BUILD,
                         ApprovalStatus.PENDING,
@@ -236,7 +220,6 @@ class SolutionOverviewTest {
                 SolutionOverview original = new SolutionOverview(
                         "id-021",
                         dummySolutionDetails(),
-                        dummyBusinessPartners(),
                         "ReviewerEnh",
                         ReviewType.NEW_BUILD,
                         ApprovalStatus.PENDING,
@@ -254,7 +237,6 @@ class SolutionOverviewTest {
                 // copied fields
                 assertEquals(original.getId(), enhancement.getId());
                 assertEquals(original.getSolutionDetails(), enhancement.getSolutionDetails());
-                assertEquals(original.getItBusinessPartners(), enhancement.getItBusinessPartners());
                 assertEquals(original.getReviewedBy(), enhancement.getReviewedBy());
                 assertEquals(original.getBusinessUnit(), enhancement.getBusinessUnit());
                 assertEquals(original.getBusinessDriver(), enhancement.getBusinessDriver());
@@ -274,7 +256,6 @@ class SolutionOverviewTest {
                 SolutionOverview approved = SolutionOverview.newApprovedBuilder()
                         .id("id-022")
                         .solutionDetails(dummySolutionDetails())
-                        .itBusinessPartners(dummyBusinessPartners())
                         .reviewedBy("ApproverY")
                         .businessUnit(BusinessUnit.UNKNOWN)
                         .businessDriver(BusinessDriver.REGULATORY)
@@ -299,7 +280,7 @@ class SolutionOverviewTest {
         @Test
         void shouldBeEqualWhenAllFieldsMatch() {
             SolutionOverview so1 = new SolutionOverview(
-                    "id-012", dummySolutionDetails(), dummyBusinessPartners(),
+                    "id-012", dummySolutionDetails(),
                     "ReviewerName", ReviewType.NEW_BUILD, ApprovalStatus.PENDING,
                     ReviewStatus.DRAFT, "No conditions",
                     BusinessUnit.UNKNOWN, BusinessDriver.OPERATIONAL_EFFICIENCY,
@@ -307,7 +288,7 @@ class SolutionOverviewTest {
             );
 
             SolutionOverview so2 = new SolutionOverview(
-                    "id-012", dummySolutionDetails(), dummyBusinessPartners(),
+                    "id-012", dummySolutionDetails(),
                     "ReviewerName", ReviewType.NEW_BUILD, ApprovalStatus.PENDING,
                     ReviewStatus.DRAFT, "No conditions",
                     BusinessUnit.UNKNOWN, BusinessDriver.OPERATIONAL_EFFICIENCY,
@@ -321,14 +302,14 @@ class SolutionOverviewTest {
         @Test
         void shouldNotBeEqualWhenDifferentIds() {
             SolutionOverview so1 = new SolutionOverview(
-                    "id-A", dummySolutionDetails(), dummyBusinessPartners(),
+                    "id-A", dummySolutionDetails(),
                     "Reviewer", ReviewType.NEW_BUILD, ApprovalStatus.PENDING,
                     ReviewStatus.DRAFT, "Cond", BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT, "Outcome", dummyApplicationUsers(), dummyConcerns()
             );
 
             SolutionOverview so2 = new SolutionOverview(
-                    "id-B", dummySolutionDetails(), dummyBusinessPartners(),
+                    "id-B", dummySolutionDetails(),
                     "Reviewer", ReviewType.NEW_BUILD, ApprovalStatus.PENDING,
                     ReviewStatus.DRAFT, "Cond", BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT, "Outcome", dummyApplicationUsers(), dummyConcerns()
@@ -343,7 +324,7 @@ class SolutionOverviewTest {
         @Test
         void shouldContainKeyFields() {
             SolutionOverview overview = new SolutionOverview(
-                    "id-013", dummySolutionDetails(), dummyBusinessPartners(),
+                    "id-013", dummySolutionDetails(),
                     "ReviewerName", ReviewType.ENHANCEMENT, ApprovalStatus.APPROVED,
                     ReviewStatus.COMPLETED, "Conditions exist", BusinessUnit.UNKNOWN,
                     BusinessDriver.REGULATORY, "Outcome value",
