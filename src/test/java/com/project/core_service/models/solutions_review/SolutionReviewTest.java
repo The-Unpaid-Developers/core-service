@@ -75,7 +75,6 @@ class SolutionReviewTest {
         return new SolutionOverview(
                 "overview-1",
                 solutionDetails,
-                Arrays.asList("Partner1", "Partner2"),
                 "john.reviewer",
                 ReviewType.NEW_BUILD,
                 ApprovalStatus.PENDING,
