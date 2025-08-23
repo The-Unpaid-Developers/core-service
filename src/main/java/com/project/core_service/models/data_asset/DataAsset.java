@@ -20,9 +20,6 @@ public class DataAsset {
     @Id
     private String id;
 
-    @NonNull
-    private String solutionOverviewId;
-
     // TODO: Potential Enum, but we don't have all the deps name :(
     @NonNull
     private String dataDomain;

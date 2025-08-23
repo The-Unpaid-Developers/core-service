@@ -31,7 +31,4 @@ public class EnterpriseTool {
     @NonNull
     private String issues;
 
-    @NonNull
-    private String solutionOverviewId;
-
 }
