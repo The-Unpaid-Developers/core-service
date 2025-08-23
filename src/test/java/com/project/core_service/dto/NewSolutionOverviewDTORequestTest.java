@@ -4,9 +4,6 @@ import com.project.core_service.models.solution_overview.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Nested;
@@ -20,7 +17,7 @@ class NewSolutionOverviewRequestDTOTest {
                 "AWG123",
                 "ArchitectZ",
                 "ManagerQ",
-                List.of("Nested1", "Nested2")
+                "Nested1"
         );
     }
 
@@ -144,25 +141,6 @@ class NewSolutionOverviewRequestDTOTest {
                             null
                     )
             );
-        }
-    }
-
-    @Nested
-    @DisplayName("Defensive copy / mutation tests")
-    class DefensiveCopyTests {
-
-        @Test
-        void mutatingSolutionDetailsListShouldNotAffectOverview() {
-            List<String> nested = new ArrayList<>(List.of("N1", "N2"));
-            SolutionDetails details = new SolutionDetails("S", "P", "AWG001", "Arch", "Mgr", nested);
-
-            NewSolutionOverviewRequestDTO dto = dummyDTO(details, "Outcome");
-            SolutionOverview overview = dto.toNewDraftEntity();
-
-            nested.add("N3");
-
-            assertEquals(List.of("N1", "N2"), overview.getSolutionDetails().getItBusinessPartners(),
-                    "Nested partners expected to remain unchanged");
         }
     }
 }

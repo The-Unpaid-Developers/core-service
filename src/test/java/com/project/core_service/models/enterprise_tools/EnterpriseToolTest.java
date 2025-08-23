@@ -21,14 +21,14 @@ public class EnterpriseToolTest {
                 .id("et-123")
                 .tool(tool)
                 .onboarded(OnboardingStatus.TRUE)
-                .integrationStatus("Integrated with core systems")
+                .integrationDetails("Integrated with core systems")
                 .issues("None")
                 .build();
 
         assertEquals("et-123", enterpriseTool.getId());
         assertEquals(tool, enterpriseTool.getTool());
         assertEquals(OnboardingStatus.TRUE, enterpriseTool.getOnboarded());
-        assertEquals("Integrated with core systems", enterpriseTool.getIntegrationStatus());
+        assertEquals("Integrated with core systems", enterpriseTool.getIntegrationDetails());
         assertEquals("None", enterpriseTool.getIssues());
     }
 
@@ -57,7 +57,7 @@ public class EnterpriseToolTest {
         assertEquals(enterpriseToolId, enterpriseTool.getId());
         assertEquals(tool, enterpriseTool.getTool());
         assertEquals(OnboardingStatus.TRUE, enterpriseTool.getOnboarded());
-        assertEquals("Fully integrated with all pipelines", enterpriseTool.getIntegrationStatus());
+        assertEquals("Fully integrated with all pipelines", enterpriseTool.getIntegrationDetails());
         assertEquals("No issues detected", enterpriseTool.getIssues());
     }
 

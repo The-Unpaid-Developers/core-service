@@ -18,6 +18,8 @@ public class IntegrationFlow {
     @Id
     private String id;
 
+    private String componentName;
+
     @NonNull
     private String counterpartSystemCode;
 

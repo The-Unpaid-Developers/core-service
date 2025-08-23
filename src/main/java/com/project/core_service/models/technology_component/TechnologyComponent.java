@@ -18,6 +18,8 @@ public class TechnologyComponent {
     @Id
     private String id;
 
+    private String componentName;
+
     @NonNull
     private String productName;
 
