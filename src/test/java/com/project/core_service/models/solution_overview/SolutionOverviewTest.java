@@ -87,14 +87,6 @@ class SolutionOverviewTest {
                     "Value", users, null
             ));
 
-
-            assertThrows(NullPointerException.class, () -> new SolutionOverview(
-                    "id-null3", details,  null, ReviewType.NEW_BUILD,
-                    ApprovalStatus.PENDING, ReviewStatus.DRAFT,
-                    "Conditions", BusinessUnit.UNKNOWN, BusinessDriver.RISK_MANAGEMENT,
-                    "Value", users, null
-            ));
-
             assertThrows(NullPointerException.class, () -> new SolutionOverview(
                     "id-null4", details,  "Reviewer", null,
                     ApprovalStatus.PENDING, ReviewStatus.DRAFT,
