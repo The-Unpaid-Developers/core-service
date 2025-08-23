@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -76,7 +75,7 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      */
     @ExceptionHandler({NotFoundException.class})
     public ResponseEntity<Object> handleNotFoundException(NotFoundException ex) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        HttpStatus status = HttpStatus.NOT_FOUND;
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", new Date());
         body.put("status", status);
@@ -133,6 +132,21 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         body.put("timestamp", new Date());
         body.put("status", status);
         body.put("message", ex.getMessage());
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
+     * Universal fallback handler for all uncaught exceptions.
+     * This prevents raw stack traces from being exposed to the client.
+     * Always returns a generic error response.
+     */
+    @ExceptionHandler({Exception.class})
+    public ResponseEntity<Object> handleExceptions(Exception ex) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", new Date());
+        body.put("status", status);
+        body.put("message", "Unexpected Server Error");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 }
