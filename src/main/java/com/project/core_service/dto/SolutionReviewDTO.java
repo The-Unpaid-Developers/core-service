@@ -72,25 +72,25 @@ public class SolutionReviewDTO {
         this.solutionOverview = solutionReview.getSolutionOverview();
 
         // Defensive copying for lists - use defaults if source is null
-        this.businessCapabilities = solutionReview.getBusinessCapabilities().isEmpty()
+        this.businessCapabilities = solutionReview.getBusinessCapabilities() != null
                 ? new ArrayList<>(solutionReview.getBusinessCapabilities())
                 : this.businessCapabilities; // Keep default empty list
-        this.systemComponents = solutionReview.getSystemComponents().isEmpty()
+        this.systemComponents = solutionReview.getSystemComponents() != null
                 ? new ArrayList<>(solutionReview.getSystemComponents())
                 : this.systemComponents;
-        this.integrationFlows = solutionReview.getIntegrationFlows().isEmpty()
+        this.integrationFlows = solutionReview.getIntegrationFlows() != null
                 ? new ArrayList<>(solutionReview.getIntegrationFlows())
                 : this.integrationFlows;
-        this.dataAssets = solutionReview.getDataAssets().isEmpty()
+        this.dataAssets = solutionReview.getDataAssets() != null
                 ? new ArrayList<>(solutionReview.getDataAssets())
                 : this.dataAssets;
-        this.technologyComponents = solutionReview.getTechnologyComponents().isEmpty()
+        this.technologyComponents = solutionReview.getTechnologyComponents() != null
                 ? new ArrayList<>(solutionReview.getTechnologyComponents())
                 : this.technologyComponents;
-        this.enterpriseTools = solutionReview.getEnterpriseTools().isEmpty()
+        this.enterpriseTools = solutionReview.getEnterpriseTools() != null
                 ? new ArrayList<>(solutionReview.getEnterpriseTools())
                 : this.enterpriseTools;
-        this.processCompliances = solutionReview.getProcessCompliances().isEmpty()
+        this.processCompliances = solutionReview.getProcessCompliances() != null
                 ? new ArrayList<>(solutionReview.getProcessCompliances())
                 : this.processCompliances;
 
