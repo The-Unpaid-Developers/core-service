@@ -13,7 +13,6 @@ class DataAssetTest {
     void builderSetsFieldsCorrectly() {
         DataAsset asset = DataAsset.builder()
                 .id("123")
-                .solutionOverviewId("sol-1")
                 .dataDomain("finance")
                 .dataClassification(Classification.CONFIDENTIAL)
                 .ownedByBusinessUnit("sales")
@@ -31,7 +30,6 @@ class DataAssetTest {
     void builderDefaultsDataEntitiesToEmptyList() {
         DataAsset asset = DataAsset.builder()
                 .id("456")
-                .solutionOverviewId("sol-2")
                 .dataDomain("hr")
                 .dataClassification(Classification.INTERNAL)
                 .ownedByBusinessUnit("hr")
@@ -47,11 +45,9 @@ class DataAssetTest {
         assertThrows(NullPointerException.class, () -> {
             DataAsset.builder()
                     .id("789")
-                    .solutionOverviewId(null) // @NonNull should blow up
                     .dataDomain("ops")
                     .dataClassification(Classification.PUBLIC)
                     .ownedByBusinessUnit("ops")
-                    .masteredIn("db-ops")
                     .build();
         });
     }
@@ -59,7 +55,6 @@ class DataAssetTest {
     void shouldCreateDataAssetSuccessfully() {
         DataAsset asset = new DataAsset(
             "da-001",
-            "sol-001",
             "Finance",
             Classification.CONFIDENTIAL,
             "Retail Banking",
@@ -68,7 +63,6 @@ class DataAssetTest {
         );
 
         assertThat(asset.getId()).isEqualTo("da-001");
-        assertThat(asset.getSolutionOverviewId()).isEqualTo("sol-001");
         assertThat(asset.getDataDomain()).isEqualTo("Finance");
         assertThat(asset.getDataClassification()).isEqualTo(Classification.CONFIDENTIAL);
         assertThat(asset.getOwnedByBusinessUnit()).isEqualTo("Retail Banking");
@@ -79,18 +73,7 @@ class DataAssetTest {
     @Test
     void shouldThrowExceptionWhenSettingNullForNonNullFields() {
         assertThatThrownBy(() -> new DataAsset(
-            "da-001", // id
-            null,     // solutionOverviewId
-            "Finance",
-            Classification.CONFIDENTIAL,
-            "Retail Banking",
-            List.of("Customer", "Transaction"),
-            "Core Banking System"
-        )).isInstanceOf(NullPointerException.class);
-
-        assertThatThrownBy(() -> new DataAsset(
             "da-001",
-            "sol-001",
             null,
             Classification.CONFIDENTIAL,
             "Retail Banking",
@@ -100,7 +83,6 @@ class DataAssetTest {
 
         assertThatThrownBy(() -> new DataAsset(
             "da-001",
-            "sol-001",
             "Finance",
             null,
             "Retail Banking",
@@ -110,7 +92,6 @@ class DataAssetTest {
 
         assertThatThrownBy(() -> new DataAsset(
             "da-001",
-            "sol-001",
             "Finance",
             Classification.CONFIDENTIAL,
             null,
@@ -120,7 +101,6 @@ class DataAssetTest {
 
         assertThatThrownBy(() -> new DataAsset(
             "da-001",
-            "sol-001",
             "Finance",
             Classification.CONFIDENTIAL,
             "Retail Banking",
@@ -130,7 +110,6 @@ class DataAssetTest {
 
         assertThatThrownBy(() -> new DataAsset(
             "da-001",
-            "sol-001",
             "Finance",
             Classification.CONFIDENTIAL,
             "Retail Banking",
@@ -143,7 +122,6 @@ class DataAssetTest {
     void shouldRespectEqualsAndHashCode() {
         DataAsset a = new DataAsset(
             "same-id",
-            "sol-001",
             "Finance",
             Classification.INTERNAL,
             "Retail Banking",
@@ -153,7 +131,6 @@ class DataAssetTest {
 
         DataAsset b = new DataAsset(
             "same-id",
-            "sol-001",
             "Finance",
             Classification.INTERNAL,
             "Retail Banking",
@@ -169,7 +146,6 @@ class DataAssetTest {
     void toStringShouldContainMeaningfulInfo() {
         DataAsset asset = new DataAsset(
             "da-002",
-            "sol-002",
             "HR",
             Classification.PUBLIC,
             "Human Resources",
@@ -180,7 +156,6 @@ class DataAssetTest {
         String output = asset.toString();
         assertThat(output).contains(
             "da-002",
-            "sol-002",
             "HR",
             "PUBLIC",
             "Human Resources",
