@@ -5,9 +5,6 @@ import jakarta.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 @AllArgsConstructor
 public class NewSolutionOverviewRequestDTO {
@@ -30,7 +27,7 @@ public class NewSolutionOverviewRequestDTO {
                 solutionDetails.getSolutionReviewCode(),
                 solutionDetails.getSolutionArchitectName(),
                 solutionDetails.getDeliveryProjectManagerName(),
-                new ArrayList<>(solutionDetails.getItBusinessPartners()) // copy list
+                solutionDetails.getItBusinessPartner() // copy list
         );
         return SolutionOverview.newDraftBuilder()
                 .solutionDetails(copiedDetails)
