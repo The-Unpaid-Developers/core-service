@@ -619,6 +619,46 @@ class SolutionReviewTest {
             assertNotNull(review.getProcessCompliances());
             assertTrue(review.getIntegrationFlows().isEmpty());
         }
+
+        @Test
+        @DisplayName("fromExisting should copy fields but reset id and lastModifiedAt")
+        void fromExistingShouldCopyFieldsButResetIdAndLastModifiedAt() {
+            // Arrange: create an existing review
+            SolutionReview existing = new SolutionReview("sys-123", realSolutionOverview);
+            existing.setDocumentState(DocumentState.CURRENT);
+
+            // Act: build a new review from existing
+            SolutionReview copied = SolutionReview.fromExisting(existing, null).build();
+
+            // Assert: id and timestamps are reset
+            assertNull(copied.getId(), "id should be null for a new copy");
+            assertNotNull(copied.getLastModifiedAt(), "lastModifiedAt should be set");
+            assertNotEquals(existing.getLastModifiedAt(), copied.getLastModifiedAt());
+
+            // Assert: systemCode and overview carried over
+            assertEquals(existing.getSystemCode(), copied.getSystemCode());
+            assertNotEquals(existing.getSolutionOverview(), copied.getSolutionOverview());
+
+            // Assert: documentState reset to DRAFT
+            assertEquals(DocumentState.DRAFT, copied.getDocumentState());
+
+            // Assert: lists are deep copied
+            assertNotSame(existing.getBusinessCapabilities(), copied.getBusinessCapabilities());
+            assertEquals(existing.getBusinessCapabilities(), copied.getBusinessCapabilities());
+            assertNotSame(existing.getSystemComponents(), copied.getSystemComponents());
+            assertEquals(existing.getSystemComponents(), copied.getSystemComponents());
+            assertNotSame(existing.getIntegrationFlows(), copied.getIntegrationFlows());
+            assertEquals(existing.getIntegrationFlows(), copied.getIntegrationFlows());
+            assertNotSame(existing.getDataAssets(), copied.getDataAssets());
+            assertEquals(existing.getDataAssets(), copied.getDataAssets());
+            assertNotSame(existing.getTechnologyComponents(), copied.getTechnologyComponents());
+            assertEquals(existing.getTechnologyComponents(), copied.getTechnologyComponents());
+            assertNotSame(existing.getEnterpriseTools(), copied.getEnterpriseTools());
+            assertEquals(existing.getEnterpriseTools(), copied.getEnterpriseTools());
+            assertNotSame(existing.getProcessCompliances(), copied.getProcessCompliances());
+            assertEquals(existing.getProcessCompliances(), copied.getProcessCompliances());
+        }
+
     }
 
     @Nested

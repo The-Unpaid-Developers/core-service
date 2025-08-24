@@ -58,7 +58,7 @@ public class SolutionOverview {
     }
     public static SolutionOverviewBuilder fromExisting(SolutionOverview existing) {
         return new SolutionOverviewBuilder()
-                .id(existing.getId())
+                .id(null) // New instance, so no ID
                 .solutionDetails(existing.getSolutionDetails())
                 .reviewedBy(existing.getReviewedBy())
                 .reviewType(existing.getReviewType())
