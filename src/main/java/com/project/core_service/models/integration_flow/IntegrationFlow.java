@@ -18,11 +18,13 @@ public class IntegrationFlow {
     @Id
     private String id;
 
-    @NonNull
-    private String bsoCodeOfExternalSystem;
+    private String componentName;
 
     @NonNull
-    private ExternalSystemRole externalSystemRole;
+    private String counterpartSystemCode;
+
+    @NonNull
+    private CounterpartSystemRole counterpartSystemRole;
 
     @NonNull
     private IntegrationMethod integrationMethod;

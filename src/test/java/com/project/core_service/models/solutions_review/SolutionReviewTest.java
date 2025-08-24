@@ -32,9 +32,6 @@ import static org.mockito.Mockito.*;
 class SolutionReviewTest {
 
     @Mock
-    private SolutionOverview mockSolutionOverview;
-
-    @Mock
     private BusinessCapability mockBusinessCapability;
 
     @Mock
@@ -70,12 +67,11 @@ class SolutionReviewTest {
                 "AWG001",
                 "John Architect",
                 "Jane PM",
-                Arrays.asList("Partner1", "Partner2"));
+                "Partner1");
 
         return new SolutionOverview(
                 "overview-1",
                 solutionDetails,
-                Arrays.asList("Partner1", "Partner2"),
                 "john.reviewer",
                 ReviewType.NEW_BUILD,
                 ApprovalStatus.PENDING,

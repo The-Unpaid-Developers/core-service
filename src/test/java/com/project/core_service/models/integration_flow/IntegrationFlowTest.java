@@ -7,20 +7,23 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.UUID;
 
 public class IntegrationFlowTest {
+
     @Test
     void builderSetsFieldsCorrectly() {
         IntegrationFlow flow = IntegrationFlow.builder()
                 .id("if-123")
-                .bsoCodeOfExternalSystem("BSO-999")
-                .externalSystemRole(ExternalSystemRole.CONSUMER)
+                .componentName("MyComponent")
+                .counterpartSystemCode("BSO-999")
+                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
                 .integrationMethod(IntegrationMethod.API)
-                .frequency(Frequency.ANNUALLY) // using your suggested value
+                .frequency(Frequency.ANNUALLY)
                 .purpose("Data sync with external system")
                 .build();
 
         assertEquals("if-123", flow.getId());
-        assertEquals("BSO-999", flow.getBsoCodeOfExternalSystem());
-        assertEquals(ExternalSystemRole.CONSUMER, flow.getExternalSystemRole());
+        assertEquals("MyComponent", flow.getComponentName());
+        assertEquals("BSO-999", flow.getCounterpartSystemCode());
+        assertEquals(CounterpartSystemRole.CONSUMER, flow.getCounterpartSystemRole());
         assertEquals(IntegrationMethod.API, flow.getIntegrationMethod());
         assertEquals(Frequency.ANNUALLY, flow.getFrequency());
         assertEquals("Data sync with external system", flow.getPurpose());
@@ -31,25 +34,29 @@ public class IntegrationFlowTest {
         assertThrows(NullPointerException.class, () -> {
             IntegrationFlow.builder()
                     .id("if-456")
-                    .bsoCodeOfExternalSystem(null) // should fail because of @NonNull
-                    .externalSystemRole(ExternalSystemRole.PRODUCER)
+                    .componentName("MyComponent")
+                    .counterpartSystemCode(null) // should fail because of @NonNull
+                    .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
                     .integrationMethod(IntegrationMethod.FILE)
                     .frequency(Frequency.ANNUALLY)
                     .purpose("File transfer with external system")
                     .build();
         });
     }
+
     @Test
     void testConstructorAndGetters() {
         String id = UUID.randomUUID().toString();
+        String componentName = "PaymentService";
         String bsoCode = "BSO-001";
-        ExternalSystemRole role = ExternalSystemRole.CONSUMER;
+        CounterpartSystemRole role = CounterpartSystemRole.CONSUMER;
         IntegrationMethod method = IntegrationMethod.API;
-        Frequency frequency = Frequency.DAILY; // Assuming Frequency is an enum you have
+        Frequency frequency = Frequency.DAILY;
         String purpose = "Data ingestion";
 
         IntegrationFlow flow = new IntegrationFlow(
                 id,
+                componentName,
                 bsoCode,
                 role,
                 method,
@@ -58,21 +65,24 @@ public class IntegrationFlowTest {
         );
 
         assertEquals(id, flow.getId());
-        assertEquals(bsoCode, flow.getBsoCodeOfExternalSystem());
-        assertEquals(role, flow.getExternalSystemRole());
+        assertEquals(componentName, flow.getComponentName());
+        assertEquals(bsoCode, flow.getCounterpartSystemCode());
+        assertEquals(role, flow.getCounterpartSystemRole());
         assertEquals(method, flow.getIntegrationMethod());
         assertEquals(frequency, flow.getFrequency());
         assertEquals(purpose, flow.getPurpose());
     }
+
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
         String id = UUID.randomUUID().toString();
 
-        // bsoCodeOfExternalSystem null
+        // counterpartSystemCode null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
                 id,
+                "MyComponent",
                 null,
-                ExternalSystemRole.CONSUMER,
+                CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
                 "Purpose"
@@ -81,6 +91,7 @@ public class IntegrationFlowTest {
         // externalSystemRole null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
                 id,
+                "MyComponent",
                 "BSO-002",
                 null,
                 IntegrationMethod.API,
@@ -91,8 +102,9 @@ public class IntegrationFlowTest {
         // integrationMethod null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
                 id,
+                "MyComponent",
                 "BSO-002",
-                ExternalSystemRole.PRODUCER,
+                CounterpartSystemRole.PRODUCER,
                 null,
                 Frequency.DAILY,
                 "Purpose"
@@ -101,8 +113,9 @@ public class IntegrationFlowTest {
         // frequency null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
                 id,
+                "MyComponent",
                 "BSO-002",
-                ExternalSystemRole.PRODUCER,
+                CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 null,
                 "Purpose"
@@ -111,29 +124,31 @@ public class IntegrationFlowTest {
         // purpose null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
                 id,
+                "MyComponent",
                 "BSO-002",
-                ExternalSystemRole.PRODUCER,
+                CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
                 null
         ));
     }
+
     @Test
     void testEqualsAndHashCode() {
         String id = UUID.randomUUID().toString();
+        String componentName = "BillingService";
         String bsoCode = "BSO-002";
-        ExternalSystemRole role = ExternalSystemRole.PRODUCER;
+        CounterpartSystemRole role = CounterpartSystemRole.PRODUCER;
         IntegrationMethod method = IntegrationMethod.BATCH;
         Frequency frequency = Frequency.WEEKLY;
         String purpose = "Report generation";
-        int version = 2;
 
         IntegrationFlow f1 = new IntegrationFlow(
-                id, bsoCode, role, method, frequency, purpose
+                id, componentName, bsoCode, role, method, frequency, purpose
         );
 
         IntegrationFlow f2 = new IntegrationFlow(
-                id, bsoCode, role, method, frequency, purpose
+                id, componentName, bsoCode, role, method, frequency, purpose
         );
 
         assertEquals(f1, f2);
@@ -144,8 +159,9 @@ public class IntegrationFlowTest {
     void testToStringContainsKeyFields() {
         IntegrationFlow flow = new IntegrationFlow(
                 "flow-id",
+                "NotificationService",
                 "BSO-003",
-                ExternalSystemRole.CONSUMER,
+                CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.EVENT,
                 Frequency.MONTHLY,
                 "Batch processing"
@@ -153,6 +169,7 @@ public class IntegrationFlowTest {
 
         String toString = flow.toString();
         assertTrue(toString.contains("flow-id"));
+        assertTrue(toString.contains("NotificationService"));
         assertTrue(toString.contains("BSO-003"));
         assertTrue(toString.contains("CONSUMER"));
         assertTrue(toString.contains("EVENT"));

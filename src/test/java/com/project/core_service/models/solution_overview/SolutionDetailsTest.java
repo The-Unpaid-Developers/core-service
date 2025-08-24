@@ -3,7 +3,6 @@ package com.project.core_service.models.solution_overview;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
 
 public class SolutionDetailsTest {
 
@@ -15,7 +14,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 "Alice Architect",
                 "Bob PM",
-                List.of("Partner1", "Partner2")
+                "Partner1"
         );
 
         assertEquals("Awesome Solution", details.getSolutionName());
@@ -23,12 +22,11 @@ public class SolutionDetailsTest {
         assertEquals("AWG123", details.getSolutionReviewCode());
         assertEquals("Alice Architect", details.getSolutionArchitectName());
         assertEquals("Bob PM", details.getDeliveryProjectManagerName());
-        assertEquals(List.of("Partner1", "Partner2"), details.getItBusinessPartners());
+        assertEquals("Partner1", details.getItBusinessPartner());
     }
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
-        List<String> partners = List.of("Partner1");
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
                 null,
@@ -36,7 +34,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 "Alice Architect",
                 "Bob PM",
-                partners
+                "Partner1"
         ));
 
 
@@ -46,7 +44,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 "Alice Architect",
                 "Bob PM",
-                partners
+                "Partner1"
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
@@ -55,7 +53,7 @@ public class SolutionDetailsTest {
                 null,
                 "Alice Architect",
                 "Bob PM",
-                partners
+                "Partner1"
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
@@ -64,7 +62,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 null,
                 "Bob PM",
-                partners
+                "Partner1"
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
@@ -73,7 +71,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 "Alice Architect",
                 null,
-                partners
+                "Partner1"
         ));
 
         assertThrows(NullPointerException.class, () -> new SolutionDetails(
@@ -94,7 +92,7 @@ public class SolutionDetailsTest {
                 "AWG456",
                 "Eve Architect",
                 "Carol PM",
-                List.of("PartnerA")
+                "PartnerA"
         );
 
         SolutionDetails sd2 = new SolutionDetails(
@@ -103,7 +101,7 @@ public class SolutionDetailsTest {
                 "AWG456",
                 "Eve Architect",
                 "Carol PM",
-                List.of("PartnerA")
+                "PartnerA"
         );
 
         assertEquals(sd1, sd2);
@@ -118,7 +116,7 @@ public class SolutionDetailsTest {
                 "AWG789",
                 "Dave Architect",
                 "Frank PM",
-                List.of("PartnerX", "PartnerY")
+                "PartnerX"
         );
 
         String toString = details.toString();
