@@ -26,6 +26,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("AuditLogService Tests")
@@ -407,6 +408,115 @@ class AuditLogServiceTest {
             when(auditLogNodeRepository.findById("EMPTY")).thenReturn(Optional.empty());
             AuditLogNode nodeResult = auditLogService.getAuditLogNode("EMPTY");
             assertNull(nodeResult);
+        }
+
+        @Test
+        @DisplayName("Should cleanup orphaned node when meta save fails")
+        void shouldCleanupOrphanedNodeWhenMetaSaveFails() {
+            // Arrange
+            AuditLogMeta auditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+
+            // Mock node save success but meta save failure
+            when(auditLogNodeRepository.save(any(AuditLogNode.class))).thenReturn(new AuditLogNode());
+            when(auditLogMetaRepository.save(any(AuditLogMeta.class)))
+                    .thenThrow(new RuntimeException("Meta save failed"));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                    () -> auditLogService.addSolutionReviewToAuditLog(auditLogMeta, testSolutionReview,
+                            "Test description", "v1.0.0"));
+
+            assertEquals("Failed to add solution review to audit log", exception.getMessage());
+
+            // Verify cleanup was attempted
+            verify(auditLogNodeRepository).save(any(AuditLogNode.class));
+            verify(auditLogMetaRepository).save(any(AuditLogMeta.class));
+            verify(auditLogNodeRepository).delete(any(AuditLogNode.class));
+        }
+
+        @Test
+        @DisplayName("Should not cleanup node when node save fails")
+        void shouldNotCleanupNodeWhenNodeSaveFails() {
+            // Arrange
+            AuditLogMeta auditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+
+            // Mock node save failure
+            when(auditLogNodeRepository.save(any(AuditLogNode.class)))
+                    .thenThrow(new RuntimeException("Node save failed"));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                    () -> auditLogService.addSolutionReviewToAuditLog(auditLogMeta, testSolutionReview,
+                            "Test description", "v1.0.0"));
+
+            assertEquals("Failed to add solution review to audit log", exception.getMessage());
+
+            // Verify cleanup was NOT attempted since node save failed
+            verify(auditLogNodeRepository).save(any(AuditLogNode.class));
+            verify(auditLogNodeRepository, never()).delete(any(AuditLogNode.class));
+            verify(auditLogMetaRepository, never()).save(any(AuditLogMeta.class));
+        }
+
+        @Test
+        @DisplayName("Should handle cleanup failure gracefully")
+        void shouldHandleCleanupFailureGracefully() {
+            // Arrange
+            AuditLogMeta auditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+
+            // Mock node save success, meta save failure, and cleanup failure
+            when(auditLogNodeRepository.save(any(AuditLogNode.class))).thenReturn(new AuditLogNode());
+            when(auditLogMetaRepository.save(any(AuditLogMeta.class)))
+                    .thenThrow(new RuntimeException("Meta save failed"));
+            doThrow(new RuntimeException("Cleanup failed"))
+                    .when(auditLogNodeRepository).delete(any(AuditLogNode.class));
+
+            // Act & Assert
+            RuntimeException exception = assertThrows(RuntimeException.class,
+                    () -> auditLogService.addSolutionReviewToAuditLog(auditLogMeta, testSolutionReview,
+                            "Test description", "v1.0.0"));
+
+            assertEquals("Failed to add solution review to audit log", exception.getMessage());
+
+            // Verify all operations were attempted
+            verify(auditLogNodeRepository).save(any(AuditLogNode.class));
+            verify(auditLogMetaRepository).save(any(AuditLogMeta.class));
+            verify(auditLogNodeRepository).delete(any(AuditLogNode.class));
+        }
+
+        @Test
+        @DisplayName("Should handle null parameters gracefully")
+        void shouldHandleNullParametersGracefully() {
+            // Act & Assert - null audit log meta
+            auditLogService.addSolutionReviewToAuditLog(null, testSolutionReview,
+                    "Test description", "v1.0.0");
+
+            // Act & Assert - null solution review
+            AuditLogMeta auditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
+            auditLogService.addSolutionReviewToAuditLog(auditLogMeta, null,
+                    "Test description", "v1.0.0");
+
+            // Verify no repository interactions
+            verify(auditLogMetaRepository, never()).save(any(AuditLogMeta.class));
+            verify(auditLogNodeRepository, never()).save(any(AuditLogNode.class));
+        }
+
+        @Test
+        @DisplayName("Should handle invalid document states gracefully")
+        void shouldHandleInvalidDocumentStatesGracefully() {
+            // Arrange
+            AuditLogMeta auditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
+            testSolutionReview.setDocumentState(DocumentState.DRAFT); // Invalid state
+
+            // Act
+            auditLogService.addSolutionReviewToAuditLog(auditLogMeta, testSolutionReview,
+                    "Test description", "v1.0.0");
+
+            // Assert - No repository interactions should occur
+            verify(auditLogMetaRepository, never()).save(any(AuditLogMeta.class));
+            verify(auditLogNodeRepository, never()).save(any(AuditLogNode.class));
         }
     }
 }

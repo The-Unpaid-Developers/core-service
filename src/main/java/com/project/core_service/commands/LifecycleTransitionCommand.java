@@ -22,7 +22,6 @@ public class LifecycleTransitionCommand {
     /**
      * The ID of the SolutionReview document to transition
      */
-    @NotNull(message = "Document ID cannot be null")
     @NotBlank(message = "Document ID is required")
     private String documentId;
 
@@ -35,7 +34,6 @@ public class LifecycleTransitionCommand {
     /**
      * The user performing the transition (for audit purposes)
      */
-    @NotNull(message = "Modified by user cannot be null")
     @NotBlank(message = "Modified by user is required")
     private String modifiedBy;
 

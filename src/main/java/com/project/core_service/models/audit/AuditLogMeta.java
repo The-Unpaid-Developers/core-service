@@ -34,12 +34,18 @@ public class AuditLogMeta {
     private int nodeCount; // Total number of versions in the linked list
 
     public AuditLogMeta(String headNodeId, String systemCode) {
+        this.id = generateId(systemCode); // Generate a meaningful ID
         this.head = headNodeId;
         this.tail = headNodeId; // Initially head and tail are the same
         this.createdAt = LocalDateTime.now();
         this.lastModified = LocalDateTime.now();
         this.nodeCount = 1;
         this.systemCode = systemCode;
+    }
+
+    private String generateId(String systemCode) {
+        // Generate a unique ID based on system code and timestamp
+        return systemCode + "_audit_" + System.currentTimeMillis();
     }
 
     // Helper method to update when a new node is added to the front

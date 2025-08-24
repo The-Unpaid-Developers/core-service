@@ -89,13 +89,13 @@ class VersionServiceTest {
         }
 
         @Test
-        @DisplayName("Should throw exception for empty input")
-        void shouldThrowExceptionForEmptyInput() {
-            // Act & Assert
-            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                    () -> versionService.incrementPatchVersion(""));
+        @DisplayName("Should return default version for empty input")
+        void shouldReturnDefaultVersionForEmptyInput() {
+            // Act
+            String result = versionService.incrementPatchVersion("");
 
-            assertEquals("Version string cannot be null or empty", exception.getMessage());
+            // Assert
+            assertEquals("v1.0.0", result);
         }
 
         @ParameterizedTest

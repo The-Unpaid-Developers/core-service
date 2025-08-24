@@ -16,20 +16,17 @@ public class VersionService {
 
     /**
      * Increments the patch version (last number) of a semantic version string.
+     * Returns the default version if input is null or empty.
      * 
      * @param currentVersion The current version string (e.g., "v1.2.3" or "1.2.3")
-     * @return The incremented version string with 'v' prefix (e.g., "v1.2.4")
-     * @throws IllegalArgumentException if the version format is invalid or
-     *                                  null/empty
+     * @return The incremented version string with 'v' prefix (e.g., "v1.2.4"),
+     *         or DEFAULT_VERSION if input is null/empty
+     * @throws IllegalArgumentException if the version format is invalid
      */
     public String incrementPatchVersion(String currentVersion) {
-        if (currentVersion == null) {
+        if (currentVersion == null || currentVersion.isEmpty()) {
+            log.debug("Null or empty version provided, returning default: {}", DEFAULT_VERSION);
             return DEFAULT_VERSION;
-        }
-
-        if (currentVersion.isEmpty()) {
-            log.error("Cannot increment null or empty version string");
-            throw new IllegalArgumentException("Version string cannot be null or empty");
         }
 
         // Remove 'v' prefix if present

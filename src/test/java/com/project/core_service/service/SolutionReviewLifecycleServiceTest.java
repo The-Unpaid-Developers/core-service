@@ -346,6 +346,91 @@ class SolutionReviewLifecycleServiceTest {
             verify(solutionReviewRepository).findById("sr-previous");
             verify(solutionReviewRepository, times(2)).save(any(SolutionReview.class));
         }
+
+        @Test
+        @DisplayName("Should throw IllegalStateException when audit log has null head")
+        void shouldThrowIllegalStateExceptionWhenAuditLogHasNullHead() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+
+            AuditLogMeta emptyAuditLogMeta = new AuditLogMeta();
+            emptyAuditLogMeta.setHead(null);
+            emptyAuditLogMeta.setSystemCode("SYS-001");
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(emptyAuditLogMeta);
+
+            // Act & Assert
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                    () -> lifecycleService.executeTransition(testCommand));
+
+            assertTrue(exception.getMessage()
+                    .contains("Cannot unapprove: audit log has no head node for systemCode: SYS-001"));
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verifyNoMoreInteractions(auditLogService);
+        }
+
+        @Test
+        @DisplayName("Should throw NotFoundException when head node is not found")
+        void shouldThrowNotFoundExceptionWhenHeadNodeIsNotFound() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+
+            AuditLogMeta auditLogMetaWithHead = new AuditLogMeta();
+            auditLogMetaWithHead.setHead("non-existent-head");
+            auditLogMetaWithHead.setSystemCode("SYS-001");
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMetaWithHead);
+            when(auditLogService.getAuditLogNode("non-existent-head")).thenReturn(null);
+
+            // Act & Assert
+            NotFoundException exception = assertThrows(NotFoundException.class,
+                    () -> lifecycleService.executeTransition(testCommand));
+
+            assertTrue(exception.getMessage().contains("Head node not found in audit log for systemCode: SYS-001"));
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(auditLogService).getAuditLogNode("non-existent-head");
+            verifyNoMoreInteractions(auditLogService);
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalStateException when head node has no next node")
+        void shouldThrowIllegalStateExceptionWhenHeadNodeHasNoNextNode() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+
+            AuditLogMeta auditLogMetaWithHead = new AuditLogMeta();
+            auditLogMetaWithHead.setHead("head-node-id");
+            auditLogMetaWithHead.setSystemCode("SYS-001");
+
+            AuditLogNode headNodeWithoutNext = new AuditLogNode("sr-1", "Current approval", "v1.0.0");
+            headNodeWithoutNext.setId("head-node-id");
+            headNodeWithoutNext.setNext(null); // No next node
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMetaWithHead);
+            when(auditLogService.getAuditLogNode("head-node-id")).thenReturn(headNodeWithoutNext);
+
+            // Act & Assert
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                    () -> lifecycleService.executeTransition(testCommand));
+
+            assertTrue(exception.getMessage()
+                    .contains("Cannot unapprove: no previous version available for systemCode: SYS-001"));
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(auditLogService).getAuditLogNode("head-node-id");
+            verifyNoMoreInteractions(auditLogService);
+        }
     }
 
     @Nested

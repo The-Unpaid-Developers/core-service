@@ -234,8 +234,24 @@ public class SolutionReviewLifecycleService {
         solutionReview.unApproveCurrent(modifiedBy);
 
         // step 3: remove this SR from the audit log
-        AuditLogNode headNode = auditLogService.getAuditLogNode(auditLogMeta.getHead());
+        String headNodeId = auditLogMeta.getHead();
+        if (headNodeId == null) {
+            throw new IllegalStateException("Cannot unapprove: audit log has no head node for systemCode: "
+                    + solutionReview.getSystemCode());
+        }
+
+        AuditLogNode headNode = auditLogService.getAuditLogNode(headNodeId);
+        if (headNode == null) {
+            throw new NotFoundException("Head node not found in audit log for systemCode: "
+                    + solutionReview.getSystemCode());
+        }
+
         AuditLogNode nextNode = headNode.getNext();
+        if (nextNode == null) {
+            throw new IllegalStateException("Cannot unapprove: no previous version available for systemCode: "
+                    + solutionReview.getSystemCode());
+        }
+
         auditLogMeta.removeHead(nextNode.getId());
 
         // step 4: update the audit log meta

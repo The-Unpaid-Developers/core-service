@@ -64,10 +64,12 @@ public class AuditLogService {
 
         // Create new audit log node with the current state captured
         AuditLogNode newNode = new AuditLogNode(solutionReview.getId(), changeDescription, srVersion);
+        boolean nodeSaved = false;
 
         try {
             // Save node first to ensure we don't have orphaned references
             auditLogNodeRepository.save(newNode);
+            nodeSaved = true;
 
             // Update audit log meta only after successful node creation
             auditLogMeta.addNewHead(newNode.getId());
@@ -77,11 +79,15 @@ public class AuditLogService {
                     solutionReview.getId(), changeDescription, currentState);
         } catch (Exception e) {
             log.error("Failed to add SR {} to audit log, attempting cleanup", solutionReview.getId(), e);
-            // Attempt to clean up the orphaned node if meta update failed
-            try {
-                auditLogNodeRepository.delete(newNode);
-            } catch (Exception cleanupException) {
-                log.error("Failed to cleanup orphaned audit log node {}", newNode.getId(), cleanupException);
+
+            // cleanup if the node was actually persisted
+            if (nodeSaved) {
+                try {
+                    auditLogNodeRepository.delete(newNode);
+                    log.debug("Successfully cleaned up orphaned audit log node {}", newNode.getId());
+                } catch (Exception cleanupException) {
+                    log.error("Failed to cleanup orphaned audit log node {}", newNode.getId(), cleanupException);
+                }
             }
             throw new RuntimeException("Failed to add solution review to audit log", e);
         }

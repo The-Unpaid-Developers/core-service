@@ -76,6 +76,58 @@ class AuditLogMetaTest {
     }
 
     @Test
+    @DisplayName("Should generate unique ID automatically in specialized constructor")
+    void shouldGenerateUniqueIdAutomaticallyInSpecializedConstructor() {
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
+
+        // Verify ID is not null and follows expected pattern
+        assertNotNull(meta.getId());
+        assertTrue(meta.getId().startsWith(SYSTEM_CODE + "_audit_"));
+
+        // Verify ID contains timestamp
+        String[] idParts = meta.getId().split("_");
+        assertEquals(3, idParts.length);
+        assertEquals(SYSTEM_CODE, idParts[0]);
+        assertEquals("audit", idParts[1]);
+
+        // Verify timestamp part is numeric
+        assertDoesNotThrow(() -> Long.parseLong(idParts[2]));
+    }
+
+    @Test
+    @DisplayName("Should generate different IDs for different system codes")
+    void shouldGenerateDifferentIdsForDifferentSystemCodes() {
+        AuditLogMeta meta1 = new AuditLogMeta(HEAD_NODE_ID, "SYS-001");
+        AuditLogMeta meta2 = new AuditLogMeta(HEAD_NODE_ID, "SYS-002");
+
+        assertNotNull(meta1.getId());
+        assertNotNull(meta2.getId());
+        assertNotEquals(meta1.getId(), meta2.getId());
+
+        assertTrue(meta1.getId().startsWith("SYS-001_audit_"));
+        assertTrue(meta2.getId().startsWith("SYS-002_audit_"));
+    }
+
+    @Test
+    @DisplayName("Should generate different IDs for same system code at different times")
+    void shouldGenerateDifferentIdsForSameSystemCodeAtDifferentTimes() throws InterruptedException {
+        AuditLogMeta meta1 = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
+
+        // Small delay to ensure different timestamps
+        Thread.sleep(2);
+
+        AuditLogMeta meta2 = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
+
+        assertNotNull(meta1.getId());
+        assertNotNull(meta2.getId());
+        assertNotEquals(meta1.getId(), meta2.getId());
+
+        // Both should start with same system code
+        assertTrue(meta1.getId().startsWith(SYSTEM_CODE + "_audit_"));
+        assertTrue(meta2.getId().startsWith(SYSTEM_CODE + "_audit_"));
+    }
+
+    @Test
     @DisplayName("Should add new head correctly")
     void shouldAddNewHeadCorrectly() {
         AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
