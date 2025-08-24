@@ -1,8 +1,6 @@
 package com.project.core_service.commands;
 
-import com.project.core_service.models.solutions_review.DocumentState;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -28,8 +26,8 @@ public class LifecycleTransitionCommand {
     /**
      * The specific operation to perform (e.g., SUBMIT, APPROVE, etc.)
      */
-    @NotNull(message = "Operation cannot be null")
-    private DocumentState.StateOperation operation;
+    @NotBlank(message = "Operation is required")
+    private String operation;
 
     /**
      * The user performing the transition (for audit purposes)
@@ -46,7 +44,7 @@ public class LifecycleTransitionCommand {
      * Factory method for creating a command with required fields
      */
     public static LifecycleTransitionCommand of(String documentId,
-            DocumentState.StateOperation operation,
+            String operation,
             String modifiedBy) {
         return new LifecycleTransitionCommand(documentId, operation, modifiedBy, null);
     }
@@ -55,7 +53,7 @@ public class LifecycleTransitionCommand {
      * Factory method for creating a command with a comment
      */
     public static LifecycleTransitionCommand withComment(String documentId,
-            DocumentState.StateOperation operation,
+            String operation,
             String modifiedBy,
             String comment) {
         return new LifecycleTransitionCommand(documentId, operation, modifiedBy, comment);

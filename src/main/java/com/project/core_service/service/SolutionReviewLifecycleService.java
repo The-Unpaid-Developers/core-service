@@ -50,13 +50,23 @@ public class SolutionReviewLifecycleService {
         log.info("Executing lifecycle transition: operation={}, documentId={}, user={}",
                 command.getOperation(), command.getDocumentId(), command.getModifiedBy());
 
+        // step 0: Validate and convert operation string to enum
+        DocumentState.StateOperation operation;
+        try {
+            operation = DocumentState.StateOperation.valueOf(command.getOperation().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid operation '%s'. Valid operations are: %s",
+                            command.getOperation(),
+                            java.util.Arrays.toString(DocumentState.StateOperation.values())));
+        }
+
         // step 1: Load SolutionReview by documentId
         SolutionReview solutionReview = solutionReviewRepository.findById(command.getDocumentId())
                 .orElseThrow(() -> new NotFoundException(
                         String.format("SolutionReview with ID '%s' not found", command.getDocumentId())));
 
         DocumentState currentState = solutionReview.getDocumentState();
-        DocumentState.StateOperation operation = command.getOperation();
 
         log.info("Found SolutionReview: id={}, currentState={}, requestedOperation={}",
                 solutionReview.getId(), currentState, operation);

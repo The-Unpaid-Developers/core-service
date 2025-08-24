@@ -84,7 +84,7 @@ class SolutionReviewLifecycleServiceTest {
         @DisplayName("Should throw NotFoundException when solution review not found")
         void shouldThrowNotFoundExceptionWhenSolutionReviewNotFound() {
             // Arrange
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT);
+            testCommand.setOperation("SUBMIT");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.empty());
 
             // Act & Assert
@@ -101,7 +101,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldThrowIllegalStateTransitionExceptionForInvalidOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT); // Invalid from CURRENT
+            testCommand.setOperation("SUBMIT"); // Invalid from CURRENT
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
 
             // Act & Assert
@@ -118,7 +118,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteSubmitOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.DRAFT);
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT);
+            testCommand.setOperation("SUBMIT");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
 
@@ -137,7 +137,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteRemoveSubmissionOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.SUBMITTED);
-            testCommand.setOperation(DocumentState.StateOperation.REMOVE_SUBMISSION);
+            testCommand.setOperation("REMOVE_SUBMISSION");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
 
@@ -156,7 +156,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteMarkOutdatedOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.MARK_OUTDATED);
+            testCommand.setOperation("MARK_OUTDATED");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
 
@@ -175,7 +175,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteResetCurrentOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.OUTDATED);
-            testCommand.setOperation(DocumentState.StateOperation.RESET_CURRENT);
+            testCommand.setOperation("RESET_CURRENT");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
 
@@ -194,14 +194,12 @@ class SolutionReviewLifecycleServiceTest {
     @DisplayName("Execute Approve Tests")
     class ExecuteApproveTests {
 
-        // TODO: Fix this test - it tests a case where there's no existing audit log
-        // The service has a bug where it doesn't handle null head nodes properly
-        // @Test
+        @Test
         @DisplayName("Should successfully execute APPROVE operation with new audit log")
         void shouldSuccessfullyExecuteApproveOperationWithNewAuditLog() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.SUBMITTED);
-            testCommand.setOperation(DocumentState.StateOperation.APPROVE);
+            testCommand.setOperation("APPROVE");
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(null);
@@ -216,7 +214,6 @@ class SolutionReviewLifecycleServiceTest {
             when(auditLogService.getAuditLogNode(anyString())).thenReturn(null);
 
             // Mock that the newly created audit log meta has proper structure
-            AuditLogMeta newAuditLogMeta = new AuditLogMeta("sr-1", "SYS-001");
             doNothing().when(auditLogService).createAuditLogMeta(any(AuditLogMeta.class));
 
             // Act
@@ -240,7 +237,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteApproveOperationWithExistingAuditLogAndCurrentSR() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.SUBMITTED);
-            testCommand.setOperation(DocumentState.StateOperation.APPROVE);
+            testCommand.setOperation("APPROVE");
 
             // Create existing current solution review
             SolutionReview existingCurrentSR = new SolutionReview("SYS-001", testSolutionOverview);
@@ -289,7 +286,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldThrowNotFoundExceptionWhenAuditLogMetaNotFoundForUnapprove() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+            testCommand.setOperation("UNAPPROVE");
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(null);
@@ -308,7 +305,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldSuccessfullyExecuteUnapproveOperation() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+            testCommand.setOperation("UNAPPROVE");
 
             // Create previous outdated solution review
             SolutionReview previousOutdatedSR = new SolutionReview("SYS-001", testSolutionOverview);
@@ -352,7 +349,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldThrowIllegalStateExceptionWhenAuditLogHasNullHead() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+            testCommand.setOperation("UNAPPROVE");
 
             AuditLogMeta emptyAuditLogMeta = new AuditLogMeta();
             emptyAuditLogMeta.setHead(null);
@@ -378,7 +375,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldThrowNotFoundExceptionWhenHeadNodeIsNotFound() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+            testCommand.setOperation("UNAPPROVE");
 
             AuditLogMeta auditLogMetaWithHead = new AuditLogMeta();
             auditLogMetaWithHead.setHead("non-existent-head");
@@ -405,7 +402,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldThrowIllegalStateExceptionWhenHeadNodeHasNoNextNode() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.CURRENT);
-            testCommand.setOperation(DocumentState.StateOperation.UNAPPROVE);
+            testCommand.setOperation("UNAPPROVE");
 
             AuditLogMeta auditLogMetaWithHead = new AuditLogMeta();
             auditLogMetaWithHead.setHead("head-node-id");
@@ -442,7 +439,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldHandleIllegalStateTransitionExceptionGracefully() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.SUBMITTED);
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT); // Invalid from SUBMITTED
+            testCommand.setOperation("SUBMIT"); // Invalid from SUBMITTED
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
 
             // Act & Assert
@@ -459,7 +456,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldValidateAllRequiredCommandFields() {
             // Arrange
             testSolutionReview.setDocumentState(DocumentState.DRAFT);
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT);
+            testCommand.setOperation("SUBMIT");
             testCommand.setModifiedBy(null); // This should still work as the method doesn't validate this
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
@@ -479,7 +476,7 @@ class SolutionReviewLifecycleServiceTest {
         void shouldHandleCompleteLifecycle() {
             // Test DRAFT -> SUBMITTED
             testSolutionReview.setDocumentState(DocumentState.DRAFT);
-            testCommand.setOperation(DocumentState.StateOperation.SUBMIT);
+            testCommand.setOperation("SUBMIT");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
 
@@ -487,7 +484,7 @@ class SolutionReviewLifecycleServiceTest {
             assertEquals(DocumentState.SUBMITTED, testSolutionReview.getDocumentState());
 
             // Test SUBMITTED -> CURRENT (APPROVE)
-            testCommand.setOperation(DocumentState.StateOperation.APPROVE);
+            testCommand.setOperation("APPROVE");
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(null);
             when(versionService.incrementPatchVersion(isNull())).thenReturn("v1.0.0");
 
@@ -498,7 +495,7 @@ class SolutionReviewLifecycleServiceTest {
             assertEquals(DocumentState.CURRENT, testSolutionReview.getDocumentState());
 
             // Test CURRENT -> OUTDATED
-            testCommand.setOperation(DocumentState.StateOperation.MARK_OUTDATED);
+            testCommand.setOperation("MARK_OUTDATED");
 
             lifecycleService.executeTransition(testCommand);
             assertEquals(DocumentState.OUTDATED, testSolutionReview.getDocumentState());
