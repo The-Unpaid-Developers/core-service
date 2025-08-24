@@ -158,7 +158,8 @@ public class SolutionReviewDTO {
                 .lastModifiedAt(LocalDateTime.now());
     }
 
-    public static SolutionReviewDTOBuilder builderFromSolutionOverview(String systemCode, SolutionOverview solutionOverview) {
+    public static SolutionReviewDTOBuilder builderFromSolutionOverview(String systemCode,
+            SolutionOverview solutionOverview) {
         Objects.requireNonNull(systemCode, "SystemCode cannot be null");
         Objects.requireNonNull(solutionOverview, "SolutionOverview cannot be null");
 

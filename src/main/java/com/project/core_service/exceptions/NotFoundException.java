@@ -3,8 +3,11 @@ package com.project.core_service.exceptions;
 /**
  * Exception thrown to indicate that an entity with the given ID was not found.
  *
- * <p>This is a runtime exception typically used when a requested resource
- * does not exist in the system (e.g., database lookup failure, missing record, etc.).</p>
+ * <p>
+ * This is a runtime exception typically used when a requested resource
+ * does not exist in the system (e.g., database lookup failure, missing record,
+ * etc.).
+ * </p>
  */
 public class NotFoundException extends RuntimeException {
 

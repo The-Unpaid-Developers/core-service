@@ -14,6 +14,7 @@ import java.util.UUID;
 public class EnterpriseToolTest {
     @Mock
     private Tool tool;
+
     @Test
     void builderSetsFieldsCorrectly() {
 
@@ -34,15 +35,14 @@ public class EnterpriseToolTest {
 
     @Test
     void nonNullFieldsShouldThrowOnNull() {
-        assertThrows(NullPointerException.class, () -> {
-            EnterpriseTool.builder()
-                    .id("et-456")
-                    .tool(null) // Should blow up because of @NonNull
-                    .onboarded(OnboardingStatus.TRUE)
-                    .issues("Pending approval")
-                    .build();
-        });
+        EnterpriseTool.EnterpriseToolBuilder builder = EnterpriseTool.builder()
+                .id("et-456")
+                .onboarded(OnboardingStatus.TRUE)
+                .issues("Pending approval");
+
+        assertThrows(NullPointerException.class, () -> builder.build());
     }
+
     @Test
     void testEnterpriseToolConstructorAndGetters() {
         String enterpriseToolId = UUID.randomUUID().toString();
@@ -51,8 +51,7 @@ public class EnterpriseToolTest {
                 tool,
                 OnboardingStatus.TRUE,
                 "Fully integrated with all pipelines",
-                "No issues detected"
-        );
+                "No issues detected");
 
         assertEquals(enterpriseToolId, enterpriseTool.getId());
         assertEquals(tool, enterpriseTool.getTool());
@@ -65,26 +64,24 @@ public class EnterpriseToolTest {
     void shouldThrowExceptionWhenNullForNonNullFields() {
         assertThrows(NullPointerException.class, () -> new EnterpriseTool(
                 "et-002",
-                null,  // tool
+                null, // tool
                 OnboardingStatus.TRUE,
                 "integration status",
-                "issues"
-        ));
+                "issues"));
 
         assertThrows(NullPointerException.class, () -> new EnterpriseTool(
                 "et-003",
                 tool,
-                null,  // onboarded
+                null, // onboarded
                 "integration status",
-                "issues"
-        ));
+                "issues"));
 
         assertThrows(NullPointerException.class, () -> new EnterpriseTool(
                 "et-004",
                 tool,
                 OnboardingStatus.TRUE,
                 "integration status",
-                null  // issues
+                null // issues
         ));
     }
 
@@ -94,13 +91,11 @@ public class EnterpriseToolTest {
 
         EnterpriseTool et1 = new EnterpriseTool(
                 enterpriseToolId, tool, OnboardingStatus.TRUE,
-                "Integrated", "No issues"
-        );
+                "Integrated", "No issues");
 
         EnterpriseTool et2 = new EnterpriseTool(
                 enterpriseToolId, tool, OnboardingStatus.TRUE,
-                "Integrated", "No issues"
-        );
+                "Integrated", "No issues");
 
         assertEquals(et1, et2);
         assertEquals(et1.hashCode(), et2.hashCode());
@@ -111,8 +106,7 @@ public class EnterpriseToolTest {
         when(tool.toString()).thenReturn("MockedTool");
         EnterpriseTool enterpriseTool = new EnterpriseTool(
                 "enterprise-id", tool, OnboardingStatus.TRUE,
-                "Integrated", "No issues"
-        );
+                "Integrated", "No issues");
 
         String toStringResult = enterpriseTool.toString();
         assertTrue(toStringResult.contains("enterprise-id"));
