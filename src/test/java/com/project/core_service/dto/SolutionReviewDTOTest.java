@@ -83,8 +83,7 @@ class SolutionReviewDTOTest {
                 BusinessDriver.BUSINESS_OR_CUSTOMER_GROWTH,
                 "Increase revenue by 10%",
                 Arrays.asList(ApplicationUser.CUSTOMERS, ApplicationUser.EMPLOYEE),
-                new ArrayList<>()
-                );
+                new ArrayList<>());
     }
 
     private SolutionReview createTestSolutionReview() {
@@ -309,7 +308,7 @@ class SolutionReviewDTOTest {
         @DisplayName("Should create builder from solution overview")
         void shouldCreateBuilderFromSolutionOverview() {
             String systemCode = "sys-001";
-            SolutionReviewDTO dto = SolutionReviewDTO.builderFromSolutionOverview(systemCode,realSolutionOverview)
+            SolutionReviewDTO dto = SolutionReviewDTO.builderFromSolutionOverview(systemCode, realSolutionOverview)
                     .createdBy("test.creator")
                     .build();
 
@@ -324,11 +323,11 @@ class SolutionReviewDTOTest {
         void shouldThrowNullPointerExceptionWhenBuilderFromSolutionOverviewCalledWithNull() {
             NullPointerException exception = assertThrows(
                     NullPointerException.class,
-                    () -> SolutionReviewDTO.builderFromSolutionOverview(null,null));
+                    () -> SolutionReviewDTO.builderFromSolutionOverview(null, null));
             assertEquals("SystemCode cannot be null", exception.getMessage());
             NullPointerException exception2 = assertThrows(
                     NullPointerException.class,
-                    () -> SolutionReviewDTO.builderFromSolutionOverview("sys-001",null));
+                    () -> SolutionReviewDTO.builderFromSolutionOverview("sys-001", null));
             assertEquals("SolutionOverview cannot be null", exception2.getMessage());
         }
     }

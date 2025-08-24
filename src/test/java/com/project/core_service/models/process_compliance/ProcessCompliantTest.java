@@ -4,92 +4,92 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ProcessCompliantTest {
-        @Test
-        void builderSetsFieldsCorrectly() {
-                ProcessCompliant process = ProcessCompliant.builder()
-                                .id("pc-123")
-                                .standardGuideline(StandardGuideline.ACCESS_CONTROL_STANDARDS)
-                                .compliant(Compliant.TRUE)
-                                .description("Access control checks in place")
-                                .build();
+    @Test
+    void builderSetsFieldsCorrectly() {
+        ProcessCompliant process = ProcessCompliant.builder()
+                .id("pc-123")
+                .standardGuideline(StandardGuideline.ACCESS_CONTROL_STANDARDS)
+                .compliant(Compliant.TRUE)
+                .description("Access control checks in place")
+                .build();
 
-                assertEquals("pc-123", process.getId());
-                assertEquals(StandardGuideline.ACCESS_CONTROL_STANDARDS, process.getStandardGuideline());
-                assertEquals(Compliant.TRUE, process.getCompliant());
-                assertEquals("Access control checks in place", process.getDescription());
-        }
+        assertEquals("pc-123", process.getId());
+        assertEquals(StandardGuideline.ACCESS_CONTROL_STANDARDS, process.getStandardGuideline());
+        assertEquals(Compliant.TRUE, process.getCompliant());
+        assertEquals("Access control checks in place", process.getDescription());
+    }
 
-        @Test
-        void nonNullFieldsShouldThrowOnNull() {
-                ProcessCompliant.ProcessCompliantBuilder builder = ProcessCompliant.builder()
-                                .id("pc-456")
-                                .standardGuideline(null) // should fail due to @NonNull
-                                .compliant(Compliant.TRUE)
-                                .description("Missing guideline should break");
+    @Test
+    void nonNullFieldsShouldThrowOnNull() {
+        ProcessCompliant.ProcessCompliantBuilder builder = ProcessCompliant.builder()
+                .id("pc-456")
+                .standardGuideline(null) // should fail due to @NonNull
+                .compliant(Compliant.TRUE)
+                .description("Missing guideline should break");
 
-                assertThrows(NullPointerException.class, () -> builder.build());
-        }
+        assertThrows(NullPointerException.class, () -> builder.build());
+    }
 
-        @Test
-        void testProcessCompliantConstructorAndGetters() {
-                ProcessCompliant processCompliant = new ProcessCompliant(
-                                "pc-001",
-                                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
-                                Compliant.TRUE,
-                                "Encryption must follow company cryptographic standards.");
+    @Test
+    void testProcessCompliantConstructorAndGetters() {
+        ProcessCompliant processCompliant = new ProcessCompliant(
+                "pc-001",
+                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
+                Compliant.TRUE,
+                "Encryption must follow company cryptographic standards.");
 
-                assertEquals("pc-001", processCompliant.getId());
-                assertEquals(StandardGuideline.CRYPTOGRAPHY_STANDARDS, processCompliant.getStandardGuideline());
-                assertEquals(Compliant.TRUE, processCompliant.getCompliant());
-                assertEquals("Encryption must follow company cryptographic standards.",
-                                processCompliant.getDescription());
-        }
+        assertEquals("pc-001", processCompliant.getId());
+        assertEquals(StandardGuideline.CRYPTOGRAPHY_STANDARDS, processCompliant.getStandardGuideline());
+        assertEquals(Compliant.TRUE, processCompliant.getCompliant());
+        assertEquals("Encryption must follow company cryptographic standards.",
+                processCompliant.getDescription());
+    }
 
-        @Test
-        void shouldThrowExceptionWhenNullForNonNullFields() {
-                // StandardGuideline null
-                assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                                "pc-002", null, Compliant.TRUE, "Description"));
+    @Test
+    void shouldThrowExceptionWhenNullForNonNullFields() {
+        // StandardGuideline null
+        assertThrows(NullPointerException.class, () -> new ProcessCompliant(
+                "pc-002", null, Compliant.TRUE, "Description"));
 
-                // Compliant null
-                assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                                "pc-003", StandardGuideline.CRYPTOGRAPHY_STANDARDS, null, "Description"));
+        // Compliant null
+        assertThrows(NullPointerException.class, () -> new ProcessCompliant(
+                "pc-003", StandardGuideline.CRYPTOGRAPHY_STANDARDS, null, "Description"));
 
-                // Description null
-                assertThrows(NullPointerException.class, () -> new ProcessCompliant(
-                                "pc-004", StandardGuideline.CRYPTOGRAPHY_STANDARDS, Compliant.TRUE, null));
-        }
+        // Description null
+        assertThrows(NullPointerException.class, () -> new ProcessCompliant(
+                "pc-004", StandardGuideline.CRYPTOGRAPHY_STANDARDS, Compliant.TRUE, null));
+    }
 
-        @Test
-        void testProcessCompliantEqualsAndHashCode() {
-                ProcessCompliant pc1 = new ProcessCompliant(
-                                "pc-001",
-                                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
-                                Compliant.TRUE,
-                                "Encryption must follow company cryptographic standards.");
+    @Test
+    void testProcessCompliantEqualsAndHashCode() {
+        ProcessCompliant pc1 = new ProcessCompliant(
+                "pc-001",
+                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
+                Compliant.TRUE,
+                "Encryption must follow company cryptographic standards.");
 
-                ProcessCompliant pc2 = new ProcessCompliant(
-                                "pc-001",
-                                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
-                                Compliant.TRUE,
-                                "Encryption must follow company cryptographic standards.");
+        ProcessCompliant pc2 = new ProcessCompliant(
+                "pc-001",
+                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
+                Compliant.TRUE,
+                "Encryption must follow company cryptographic standards.");
 
-                assertEquals(pc1, pc2);
-                assertEquals(pc1.hashCode(), pc2.hashCode());
-        }
+        assertEquals(pc1, pc2);
+        assertEquals(pc1.hashCode(), pc2.hashCode());
+    }
 
-        @Test
-        void testProcessCompliantToString() {
-                ProcessCompliant processCompliant = new ProcessCompliant(
-                                "pc-001",
-                                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
-                                Compliant.TRUE,
-                                "Encryption must follow company cryptographic standards.");
+    @Test
+    void testProcessCompliantToString() {
+        ProcessCompliant processCompliant = new ProcessCompliant(
+                "pc-001",
+                StandardGuideline.CRYPTOGRAPHY_STANDARDS,
+                Compliant.TRUE,
+                "Encryption must follow company cryptographic standards.");
 
-                String toStringResult = processCompliant.toString();
-                assertTrue(toStringResult.contains("pc-001"));
-                assertTrue(toStringResult.contains("CRYPTOGRAPHY_STANDARDS"));
-                assertTrue(toStringResult.contains("TRUE"));
-                assertTrue(toStringResult.contains("Encryption must follow company cryptographic standards."));
-        }
+        String toStringResult = processCompliant.toString();
+        assertTrue(toStringResult.contains("pc-001"));
+        assertTrue(toStringResult.contains("CRYPTOGRAPHY_STANDARDS"));
+        assertTrue(toStringResult.contains("TRUE"));
+        assertTrue(toStringResult.contains("Encryption must follow company cryptographic standards."));
+    }
 }
