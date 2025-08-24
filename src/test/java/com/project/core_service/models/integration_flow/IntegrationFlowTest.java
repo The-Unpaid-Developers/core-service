@@ -31,17 +31,12 @@ public class IntegrationFlowTest {
 
     @Test
     void nonNullFieldsShouldThrowOnNull() {
-        assertThrows(NullPointerException.class, () -> {
-            IntegrationFlow.builder()
-                    .id("if-456")
-                    .componentName("MyComponent")
-                    .counterpartSystemCode(null) // should fail because of @NonNull
-                    .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
-                    .integrationMethod(IntegrationMethod.FILE)
-                    .frequency(Frequency.ANNUALLY)
-                    .purpose("File transfer with external system")
-                    .build();
-        });
+        IntegrationFlow.IntegrationFlowBuilder builder = IntegrationFlow.builder()
+                .id("if-456")
+                .componentName("MyComponent");
+
+        // should fail because of @NonNull when setting counterpartSystemCode to null
+        assertThrows(NullPointerException.class, () -> builder.counterpartSystemCode(null));
     }
 
     @Test
@@ -61,8 +56,7 @@ public class IntegrationFlowTest {
                 role,
                 method,
                 frequency,
-                purpose
-        );
+                purpose);
 
         assertEquals(id, flow.getId());
         assertEquals(componentName, flow.getComponentName());
@@ -85,8 +79,7 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose"
-        ));
+                "Purpose"));
 
         // externalSystemRole null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -96,8 +89,7 @@ public class IntegrationFlowTest {
                 null,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose"
-        ));
+                "Purpose"));
 
         // integrationMethod null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -107,8 +99,7 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 null,
                 Frequency.DAILY,
-                "Purpose"
-        ));
+                "Purpose"));
 
         // frequency null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -118,8 +109,7 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 null,
-                "Purpose"
-        ));
+                "Purpose"));
 
         // purpose null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -129,8 +119,7 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                null
-        ));
+                null));
     }
 
     @Test
@@ -144,12 +133,10 @@ public class IntegrationFlowTest {
         String purpose = "Report generation";
 
         IntegrationFlow f1 = new IntegrationFlow(
-                id, componentName, bsoCode, role, method, frequency, purpose
-        );
+                id, componentName, bsoCode, role, method, frequency, purpose);
 
         IntegrationFlow f2 = new IntegrationFlow(
-                id, componentName, bsoCode, role, method, frequency, purpose
-        );
+                id, componentName, bsoCode, role, method, frequency, purpose);
 
         assertEquals(f1, f2);
         assertEquals(f1.hashCode(), f2.hashCode());
@@ -164,8 +151,7 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.EVENT,
                 Frequency.MONTHLY,
-                "Batch processing"
-        );
+                "Batch processing");
 
         String toString = flow.toString();
         assertTrue(toString.contains("flow-id"));

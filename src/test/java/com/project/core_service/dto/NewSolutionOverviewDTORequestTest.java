@@ -19,21 +19,19 @@ public class NewSolutionOverviewDTORequestTest {
                 "AWG123",
                 "ArchitectZ",
                 "ManagerQ",
-                "Nested1"
-        );
+                "Nested1");
     }
 
     private NewSolutionOverviewRequestDTO dummyDTO(
             SolutionDetails details,
-            String valueOutcome
-    ) {
+            String valueOutcome) {
         return new NewSolutionOverviewRequestDTO(
                 details,
                 BusinessUnit.UNKNOWN,
                 BusinessDriver.RISK_MANAGEMENT,
                 valueOutcome,
-                List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
-        );
+                List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation",
+                        ConcernStatus.UNKNOWN)));
     }
 
     private void assertSolutionOverviewMapping(SolutionOverview overview, NewSolutionOverviewRequestDTO dto) {
@@ -63,16 +61,14 @@ public class NewSolutionOverviewDTORequestTest {
                     "Description of concern",
                     "impact",
                     "mitigation",
-                    ConcernStatus.UNKNOWN
-            );
+                    ConcernStatus.UNKNOWN);
 
             NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(
                     details,
                     BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT,
                     "Outcome",
-                    List.of(concern)
-            );
+                    List.of(concern));
 
             SolutionOverview overview = dto.toNewDraftEntity();
 
@@ -122,61 +118,61 @@ public class NewSolutionOverviewDTORequestTest {
 
         @Test
         void shouldThrowWhenSolutionDetailsIsNull() {
-            assertThrows(NullPointerException.class, () ->
-                    new NewSolutionOverviewRequestDTO(
-                            null,
-                            BusinessUnit.UNKNOWN,
-                            BusinessDriver.RISK_MANAGEMENT,
-                            "Outcome",
-                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
+                    "mitigation", ConcernStatus.UNKNOWN);
+            List<Concern> concerns = List.of(concern);
 
-                    )
-            );
+            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
+                    null,
+                    BusinessUnit.UNKNOWN,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    "Outcome",
+                    concerns));
         }
 
         @Test
         void shouldThrowWhenBusinessUnitIsNull() {
             SolutionDetails details = dummySolutionDetails();
-            assertThrows(NullPointerException.class, () ->
-                    new NewSolutionOverviewRequestDTO(
-                            details,
-                            null,
-                            BusinessDriver.RISK_MANAGEMENT,
-                            "Outcome",
-                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
+                    "mitigation", ConcernStatus.UNKNOWN);
+            List<Concern> concerns = List.of(concern);
 
-                    )
-            );
+            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
+                    details,
+                    null,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    "Outcome",
+                    concerns));
         }
 
         @Test
         void shouldThrowWhenBusinessDriverIsNull() {
             SolutionDetails details = dummySolutionDetails();
-            assertThrows(NullPointerException.class, () ->
-                    new NewSolutionOverviewRequestDTO(
-                            details,
-                            BusinessUnit.UNKNOWN,
-                            null,
-                            "Outcome",
-                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
+                    "mitigation", ConcernStatus.UNKNOWN);
+            List<Concern> concerns = List.of(concern);
 
-                    )
-            );
+            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
+                    details,
+                    BusinessUnit.UNKNOWN,
+                    null,
+                    "Outcome",
+                    concerns));
         }
 
         @Test
         void shouldThrowWhenValueOutcomeIsNull() {
             SolutionDetails details = dummySolutionDetails();
-            assertThrows(NullPointerException.class, () ->
-                    new NewSolutionOverviewRequestDTO(
-                            details,
-                            BusinessUnit.UNKNOWN,
-                            BusinessDriver.RISK_MANAGEMENT,
-                            null,
-                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
+                    "mitigation", ConcernStatus.UNKNOWN);
+            List<Concern> concerns = List.of(concern);
 
-                    )
-            );
+            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
+                    details,
+                    BusinessUnit.UNKNOWN,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    null,
+                    concerns));
         }
     }
 }

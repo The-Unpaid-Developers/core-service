@@ -25,15 +25,12 @@ class TechnologyComponentTest {
 
     @Test
     void testBuilderWithNullNonNullFieldThrowsException() {
-        assertThrows(NullPointerException.class, () -> {
-            TechnologyComponent.builder()
-                    .id("tech-003")
-                    .componentName("Cache")
-                    .productName(null) // productName is @NonNull
-                    .productVersion("1.0")
-                    .usage(Usage.PREREQUISITE_INSTALLATION)
-                    .build();
-        });
+        TechnologyComponent.TechnologyComponentBuilder builder = TechnologyComponent.builder()
+                .id("tech-003")
+                .componentName("Cache");
+
+        // productName is @NonNull, should fail when setting to null
+        assertThrows(NullPointerException.class, () -> builder.productName(null));
     }
 
     @Test
@@ -43,8 +40,7 @@ class TechnologyComponentTest {
                 "Database Engine",
                 "PostgreSQL",
                 "14.1",
-                Usage.INFRASTRUCTURE
-        );
+                Usage.INFRASTRUCTURE);
 
         assertEquals("tech-001", tc.getId());
         assertEquals("Database Engine", tc.getComponentName());
@@ -60,8 +56,7 @@ class TechnologyComponentTest {
                 null, // allowed
                 "Redis",
                 "6.2",
-                Usage.BASIC_INSTALLATION
-        );
+                Usage.BASIC_INSTALLATION);
 
         assertNull(tc.getComponentName());
         assertEquals("Redis", tc.getProductName());
@@ -74,24 +69,21 @@ class TechnologyComponentTest {
                 "Cache",
                 null,
                 "1.0",
-                Usage.BASIC_INSTALLATION
-        ));
+                Usage.BASIC_INSTALLATION));
 
         assertThrows(NullPointerException.class, () -> new TechnologyComponent(
                 "tech-003",
                 "Cache",
                 "Redis",
                 null,
-                Usage.BASIC_INSTALLATION
-        ));
+                Usage.BASIC_INSTALLATION));
 
         assertThrows(NullPointerException.class, () -> new TechnologyComponent(
                 "tech-004",
                 "Cache",
                 "Redis",
                 "6.2",
-                null
-        ));
+                null));
     }
 
     @Test
@@ -101,16 +93,14 @@ class TechnologyComponentTest {
                 "Messaging",
                 "Kafka",
                 "3.0",
-                Usage.INFRASTRUCTURE
-        );
+                Usage.INFRASTRUCTURE);
 
         TechnologyComponent b = new TechnologyComponent(
                 "tech-005",
                 "Messaging",
                 "Kafka",
                 "3.0",
-                Usage.INFRASTRUCTURE
-        );
+                Usage.INFRASTRUCTURE);
 
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
@@ -123,8 +113,7 @@ class TechnologyComponentTest {
                 "Database",
                 "MongoDB",
                 "5.0",
-                Usage.INFRASTRUCTURE
-        );
+                Usage.INFRASTRUCTURE);
 
         String toString = tc.toString();
         assertTrue(toString.contains("tech-006"));
