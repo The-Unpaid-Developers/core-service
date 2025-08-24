@@ -14,6 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class AuditLogMetaTest {
 
     private static final String SOLUTION_REVIEW_ID = "sr-001";
+    private static final String SYSTEM_CODE = "systemCode";
     private static final String HEAD_NODE_ID = "node-001";
     private static final String NEW_HEAD_ID = "node-002";
 
@@ -39,6 +40,7 @@ class AuditLogMetaTest {
 
         AuditLogMeta meta = new AuditLogMeta(
                 SOLUTION_REVIEW_ID,
+                SYSTEM_CODE,
                 HEAD_NODE_ID,
                 "tail-001",
                 createdAt,
@@ -58,11 +60,10 @@ class AuditLogMetaTest {
     void shouldCreateAuditLogMetaWithSpecializedConstructor() {
         LocalDateTime beforeCreation = LocalDateTime.now().minusSeconds(1);
 
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
 
         LocalDateTime afterCreation = LocalDateTime.now().plusSeconds(1);
 
-        assertEquals(SOLUTION_REVIEW_ID, meta.getId());
         assertEquals(HEAD_NODE_ID, meta.getHead());
         assertEquals(HEAD_NODE_ID, meta.getTail()); // Initially head and tail are the same
         assertEquals(1, meta.getNodeCount());
@@ -77,7 +78,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should add new head correctly")
     void shouldAddNewHeadCorrectly() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
         LocalDateTime originalLastModified = meta.getLastModified();
         int originalNodeCount = meta.getNodeCount();
         String originalTail = meta.getTail();
@@ -93,7 +94,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should return false for isEmpty when meta has head and count > 0")
     void shouldReturnFalseForIsEmptyWhenMetaHasHeadAndCountGreaterThanZero() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
 
         assertFalse(meta.isEmpty());
     }
@@ -121,7 +122,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should return true for hasOnlyOneVersion when nodeCount is 1")
     void shouldReturnTrueForHasOnlyOneVersionWhenNodeCountIsOne() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
 
         assertTrue(meta.hasOnlyOneVersion());
     }
@@ -129,7 +130,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should return false for hasOnlyOneVersion when nodeCount is not 1")
     void shouldReturnFalseForHasOnlyOneVersionWhenNodeCountIsNotOne() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
         meta.addNewHead(NEW_HEAD_ID);
 
         assertFalse(meta.hasOnlyOneVersion());
@@ -138,7 +139,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should handle multiple head additions correctly")
     void shouldHandleMultipleHeadAdditionsCorrectly() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
         String originalTail = meta.getTail();
 
         meta.addNewHead("node-002");
@@ -176,7 +177,7 @@ class AuditLogMetaTest {
     @Test
     @DisplayName("Should handle toString correctly")
     void shouldHandleToStringCorrectly() {
-        AuditLogMeta meta = new AuditLogMeta(SOLUTION_REVIEW_ID, HEAD_NODE_ID);
+        AuditLogMeta meta = new AuditLogMeta(HEAD_NODE_ID, SYSTEM_CODE);
 
         String result = meta.toString();
 
@@ -191,6 +192,7 @@ class AuditLogMetaTest {
 
         AuditLogMeta meta1 = new AuditLogMeta(
                 SOLUTION_REVIEW_ID,
+                SYSTEM_CODE,
                 HEAD_NODE_ID,
                 "tail-001",
                 testTime,
@@ -199,6 +201,7 @@ class AuditLogMetaTest {
 
         AuditLogMeta meta2 = new AuditLogMeta(
                 SOLUTION_REVIEW_ID,
+                SYSTEM_CODE,
                 HEAD_NODE_ID,
                 "tail-001",
                 testTime,
