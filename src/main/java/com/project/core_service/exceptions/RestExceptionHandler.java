@@ -60,14 +60,14 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         for (ObjectError objectError : ex.getBindingResult().getAllErrors()) {
             String errorMessage = objectError.getDefaultMessage();
             if (errorMessage != null && !errorMessage.trim().isEmpty()) {
-                if (message.length() > 0) {
+                if (!message.isEmpty()) {
                     message.append("; ");
                 }
                 message.append(errorMessage);
             }
         }
         // Fallback message if no valid error messages were found
-        String finalMessage = message.length() > 0 ? message.toString() : "Validation failed";
+        String finalMessage = !message.isEmpty() ? message.toString() : "Validation failed";
         body.put(MESSAGE, finalMessage);
         body.put(PATH, request.getDescription(false));
         return new ResponseEntity<>(body, headers, status);

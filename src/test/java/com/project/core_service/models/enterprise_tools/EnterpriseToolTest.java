@@ -40,7 +40,7 @@ public class EnterpriseToolTest {
                 .onboarded(OnboardingStatus.TRUE)
                 .issues("Pending approval");
 
-        assertThrows(NullPointerException.class, () -> builder.build());
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test

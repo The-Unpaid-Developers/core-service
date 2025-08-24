@@ -53,7 +53,7 @@ class DataAssetTest {
                 .dataClassification(Classification.PUBLIC)
                 .dataOwnedBy("ops");
 
-        assertThrows(NullPointerException.class, () -> builder.build());
+        assertThrows(NullPointerException.class, builder::build);
     }
 
     @Test
