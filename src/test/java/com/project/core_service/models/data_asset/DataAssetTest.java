@@ -16,7 +16,7 @@ class DataAssetTest {
                 .componentName("Component-A")
                 .dataDomain("finance")
                 .dataClassification(Classification.CONFIDENTIAL)
-                .dataOwnership("sales")
+                .dataOwnedBy("sales")
                 .masteredIn("db-core")
                 .build();
 
@@ -24,7 +24,7 @@ class DataAssetTest {
         assertEquals("Component-A", asset.getComponentName());
         assertEquals(Classification.CONFIDENTIAL, asset.getDataClassification());
         assertEquals("finance", asset.getDataDomain());
-        assertEquals("sales", asset.getDataOwnership());
+        assertEquals("sales", asset.getDataOwnedBy());
         assertEquals("db-core", asset.getMasteredIn());
     }
 
@@ -35,7 +35,7 @@ class DataAssetTest {
                 .componentName("HR-Comp")
                 .dataDomain("hr")
                 .dataClassification(Classification.INTERNAL)
-                .dataOwnership("hr")
+                .dataOwnedBy("hr")
                 .masteredIn("db-hr")
                 .build();
 
@@ -52,7 +52,7 @@ class DataAssetTest {
                     .componentName("Ops-Comp")
                     .dataDomain("ops")
                     .dataClassification(Classification.PUBLIC)
-                    .dataOwnership("ops")
+                    .dataOwnedBy("ops")
                     .build();
         });
     }
@@ -73,7 +73,7 @@ class DataAssetTest {
         assertThat(asset.getComponentName()).isEqualTo("Comp-Finance");
         assertThat(asset.getDataDomain()).isEqualTo("Finance");
         assertThat(asset.getDataClassification()).isEqualTo(Classification.CONFIDENTIAL);
-        assertThat(asset.getDataOwnership()).isEqualTo("Retail Banking");
+        assertThat(asset.getDataOwnedBy()).isEqualTo("Retail Banking");
         assertThat(asset.getDataEntities()).containsExactly("Customer", "Transaction");
         assertThat(asset.getMasteredIn()).isEqualTo("Core Banking System");
     }
