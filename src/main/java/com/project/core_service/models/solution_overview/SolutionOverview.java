@@ -22,11 +22,7 @@ public class SolutionOverview {
     @NonNull
     private SolutionDetails solutionDetails;
 
-    @NonNull
-    private List<String> itBusinessPartners;
-
-    @NonNull
-    private String reviewedBy; // Potentially User if we are modelling user
+    private String reviewedBy;
 
     @NonNull
     private ReviewType reviewType;
@@ -54,4 +50,40 @@ public class SolutionOverview {
 
     private List<Concern> concerns;
 
+    public static SolutionOverviewBuilder newDraftBuilder() {
+        return new SolutionOverviewBuilder()
+                .reviewType(ReviewType.NEW_BUILD)
+                .approvalStatus(ApprovalStatus.PENDING)
+                .reviewStatus(ReviewStatus.DRAFT);
+    }
+    public static SolutionOverviewBuilder fromExisting(SolutionOverview existing) {
+        return new SolutionOverviewBuilder()
+                .id(existing.getId())
+                .solutionDetails(existing.getSolutionDetails())
+                .reviewedBy(existing.getReviewedBy())
+                .reviewType(existing.getReviewType())
+                .approvalStatus(existing.getApprovalStatus())
+                .reviewStatus(existing.getReviewStatus())
+                .conditions(existing.getConditions())
+                .businessUnit(existing.getBusinessUnit())
+                .businessDriver(existing.getBusinessDriver())
+                .valueOutcome(existing.getValueOutcome())
+                .applicationUsers(existing.getApplicationUsers())
+                .concerns(existing.getConcerns());
+    }
+
+    public static SolutionOverviewBuilder newEnhancementBuilder(SolutionOverview existing) {
+        return fromExisting(existing)
+                .reviewType(ReviewType.ENHANCEMENT)
+                .approvalStatus(ApprovalStatus.PENDING)
+                .reviewStatus(ReviewStatus.DRAFT);
+    }
+
+    public static SolutionOverviewBuilder newApprovedBuilder() {
+        return new SolutionOverviewBuilder()
+                .reviewType(ReviewType.NEW_BUILD)
+                .approvalStatus(ApprovalStatus.APPROVED)
+                .reviewStatus(ReviewStatus.COMPLETED);
+    }
 }
+

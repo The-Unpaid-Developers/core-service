@@ -1,7 +1,5 @@
 package com.project.core_service.models.solution_overview;
 
-import java.util.List;
-
 import jakarta.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,5 +18,5 @@ public class SolutionDetails {
     @Nonnull
     private String deliveryProjectManagerName;
     @Nonnull
-    private List<String> itBusinessPartners;
+    private String itBusinessPartner;
 }

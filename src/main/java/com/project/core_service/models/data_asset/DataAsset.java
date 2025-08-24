@@ -20,8 +20,7 @@ public class DataAsset {
     @Id
     private String id;
 
-    @NonNull
-    private String solutionOverviewId;
+    private String componentName;
 
     // TODO: Potential Enum, but we don't have all the deps name :(
     @NonNull
@@ -30,9 +29,9 @@ public class DataAsset {
     @NonNull
     private Classification dataClassification;
 
-    // TODO: Potential Enum, but we don't have all the deps name :(
+    // Data owned by which department or team
     @NonNull
-    private String ownedByBusinessUnit;
+    private String dataOwnedBy;
 
     @NonNull
     @Builder.Default
