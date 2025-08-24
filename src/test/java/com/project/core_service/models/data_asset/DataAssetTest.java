@@ -46,15 +46,14 @@ class DataAssetTest {
 
     @Test
     void nonNullFieldsShouldThrowOnNull() {
-        assertThrows(NullPointerException.class, () -> {
-            DataAsset.builder()
-                    .id("789")
-                    .componentName("Ops-Comp")
-                    .dataDomain("ops")
-                    .dataClassification(Classification.PUBLIC)
-                    .dataOwnedBy("ops")
-                    .build();
-        });
+        DataAsset.DataAssetBuilder builder = DataAsset.builder()
+                .id("789")
+                .componentName("Ops-Comp")
+                .dataDomain("ops")
+                .dataClassification(Classification.PUBLIC)
+                .dataOwnedBy("ops");
+
+        assertThrows(NullPointerException.class, () -> builder.build());
     }
 
     @Test
@@ -66,8 +65,7 @@ class DataAssetTest {
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        );
+                "Core Banking System");
 
         assertThat(asset.getId()).isEqualTo("da-001");
         assertThat(asset.getComponentName()).isEqualTo("Comp-Finance");
@@ -87,8 +85,7 @@ class DataAssetTest {
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        )).isInstanceOf(NullPointerException.class);
+                "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
                 "da-001",
@@ -97,8 +94,7 @@ class DataAssetTest {
                 null,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        )).isInstanceOf(NullPointerException.class);
+                "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
                 "da-001",
@@ -107,8 +103,7 @@ class DataAssetTest {
                 Classification.CONFIDENTIAL,
                 null,
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        )).isInstanceOf(NullPointerException.class);
+                "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
                 "da-001",
@@ -117,8 +112,7 @@ class DataAssetTest {
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
                 null,
-                "Core Banking System"
-        )).isInstanceOf(NullPointerException.class);
+                "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
                 "da-001",
@@ -127,8 +121,7 @@ class DataAssetTest {
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                null
-        )).isInstanceOf(NullPointerException.class);
+                null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
@@ -140,8 +133,7 @@ class DataAssetTest {
                 Classification.INTERNAL,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        );
+                "Core Banking System");
 
         DataAsset b = new DataAsset(
                 "same-id",
@@ -150,8 +142,7 @@ class DataAssetTest {
                 Classification.INTERNAL,
                 "Retail Banking",
                 List.of("Customer", "Transaction"),
-                "Core Banking System"
-        );
+                "Core Banking System");
 
         assertThat(a).isEqualTo(b);
         assertThat(a.hashCode()).isEqualTo(b.hashCode());
@@ -166,8 +157,7 @@ class DataAssetTest {
                 Classification.PUBLIC,
                 "Human Resources",
                 List.of("Employee", "Payroll"),
-                "HRMS"
-        );
+                "HRMS");
 
         String output = asset.toString();
         assertThat(output).contains(
@@ -178,7 +168,6 @@ class DataAssetTest {
                 "Human Resources",
                 "Employee",
                 "Payroll",
-                "HRMS"
-        );
+                "HRMS");
     }
 }

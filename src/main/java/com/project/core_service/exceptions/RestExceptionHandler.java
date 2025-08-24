@@ -23,35 +23,45 @@ import jakarta.servlet.http.HttpServletResponse;
 /**
  * Global exception handler for REST controllers.
  *
- * <p>This class extends {@link ResponseEntityExceptionHandler} and uses
+ * <p>
+ * This class extends {@link ResponseEntityExceptionHandler} and uses
  * {@link ControllerAdvice} to handle and customize responses for various
- * exceptions thrown within the application.</p>
+ * exceptions thrown within the application.
+ * </p>
  *
- * <p>It ensures that clients receive consistent, JSON-formatted error
- * responses containing a timestamp, HTTP status, message, and request path.</p>
+ * <p>
+ * It ensures that clients receive consistent, JSON-formatted error
+ * responses containing a timestamp, HTTP status, message, and request path.
+ * </p>
  */
 @ControllerAdvice
 public class RestExceptionHandler extends ResponseEntityExceptionHandler {
+    private static final String TIMESTAMP = "timestamp";
+    private static final String MESSAGE = "message";
+    private static final String PATH = "path";
+    private static final String STATUS = "status";
+
     /**
      * Handles validation errors for invalid method arguments.
      *
-     * @param ex the exception containing validation errors
+     * @param ex      the exception containing validation errors
      * @param headers HTTP headers
-     * @param status HTTP status code
+     * @param status  HTTP status code
      * @param request the current web request
      * @return a {@link ResponseEntity} containing error details
      */
     @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status.value());
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status.value());
         StringBuilder message = new StringBuilder();
         for (ObjectError objectError : ex.getBindingResult().getAllErrors()) {
             message.append(objectError.getDefaultMessage());
         }
-        body.put("message", message.toString());
-        body.put("path", request.getDescription(false));
+        body.put(MESSAGE, message.toString());
+        body.put(PATH, request.getDescription(false));
         return new ResponseEntity<>(body, headers, status);
     }
 
@@ -66,20 +76,19 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         response.sendError(HttpStatus.BAD_REQUEST.value());
     }
 
-
     /**
      * Handles uncaught {@link NotFoundException}s.
      *
      * @param ex the runtime exception
      * @return a {@link ResponseEntity} with error details
      */
-    @ExceptionHandler({NotFoundException.class})
+    @ExceptionHandler({ NotFoundException.class })
     public ResponseEntity<Object> handleNotFoundException(NotFoundException ex) {
         HttpStatus status = HttpStatus.NOT_FOUND;
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        body.put(MESSAGE, ex.getMessage());
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -89,13 +98,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @param ex the runtime exception
      * @return a {@link ResponseEntity} with error details
      */
-    @ExceptionHandler({RuntimeException.class})
+    @ExceptionHandler({ RuntimeException.class })
     public ResponseEntity<Object> handleOtherRuntimeException(RuntimeException ex) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        body.put(MESSAGE, ex.getMessage());
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -105,16 +114,18 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @param ex the {@link DataIntegrityViolationException}
      * @return a {@link ResponseEntity} with conflict details
      */
-    @ExceptionHandler({DataIntegrityViolationException.class})
+    @ExceptionHandler({ DataIntegrityViolationException.class })
     public ResponseEntity<Object> handleDataIntegrityViolationException(DataIntegrityViolationException ex) {
         HttpStatus status = HttpStatus.CONFLICT;
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
         if (ex.getRootCause() != null) {
-            body.put("message", ex.getRootCause().getMessage());
+            String rootCauseMessage = ex.getRootCause().getMessage();
+            body.put(MESSAGE, rootCauseMessage != null ? rootCauseMessage : "Database constraint violation");
         } else {
-            body.put("message", ex.getMessage());
+            String exceptionMessage = ex.getMessage();
+            body.put(MESSAGE, exceptionMessage != null ? exceptionMessage : "Database constraint violation");
         }
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
@@ -125,13 +136,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * @param ex the exception
      * @return a {@link ResponseEntity} with error details
      */
-    @ExceptionHandler({IOException.class})
+    @ExceptionHandler({ IOException.class })
     public ResponseEntity<Object> handleIOException(IOException ex) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
-        body.put("message", ex.getMessage());
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        body.put(MESSAGE, ex.getMessage());
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -140,13 +151,13 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
      * This prevents raw stack traces from being exposed to the client.
      * Always returns a generic error response.
      */
-    @ExceptionHandler({Exception.class})
+    @ExceptionHandler({ Exception.class })
     public ResponseEntity<Object> handleExceptions(Exception ex) {
         HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("timestamp", new Date());
-        body.put("status", status);
-        body.put("message", "Unexpected Server Error");
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        body.put(MESSAGE, "Unexpected Server Error");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 }
