@@ -1,4 +1,7 @@
 {
     "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "editor.tabSize": 4,
+    "editor.indentSize": 4,
+    "java.debug.settings.onBuildFailureProceed": true
 }

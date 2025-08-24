@@ -32,8 +32,7 @@ public class NewSolutionOverviewRequestDTO {
                 solutionDetails.getSolutionReviewCode(),
                 solutionDetails.getSolutionArchitectName(),
                 solutionDetails.getDeliveryProjectManagerName(),
-                solutionDetails.getItBusinessPartner()
-        );
+                solutionDetails.getItBusinessPartner());
         return SolutionOverview.newDraftBuilder()
                 .solutionDetails(copiedDetails)
                 .businessUnit(businessUnit)

@@ -58,9 +58,17 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         body.put(STATUS, status.value());
         StringBuilder message = new StringBuilder();
         for (ObjectError objectError : ex.getBindingResult().getAllErrors()) {
-            message.append(objectError.getDefaultMessage());
+            String errorMessage = objectError.getDefaultMessage();
+            if (errorMessage != null && !errorMessage.trim().isEmpty()) {
+                if (message.length() > 0) {
+                    message.append("; ");
+                }
+                message.append(errorMessage);
+            }
         }
-        body.put(MESSAGE, message.toString());
+        // Fallback message if no valid error messages were found
+        String finalMessage = message.length() > 0 ? message.toString() : "Validation failed";
+        body.put(MESSAGE, finalMessage);
         body.put(PATH, request.getDescription(false));
         return new ResponseEntity<>(body, headers, status);
     }
@@ -88,7 +96,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, new Date());
         body.put(STATUS, status);
-        body.put(MESSAGE, ex.getMessage());
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Resource not found");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -104,7 +113,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, new Date());
         body.put(STATUS, status);
-        body.put(MESSAGE, ex.getMessage());
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Internal server error");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -120,13 +130,19 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, new Date());
         body.put(STATUS, status);
-        if (ex.getRootCause() != null) {
-            String rootCauseMessage = ex.getRootCause().getMessage();
-            body.put(MESSAGE, rootCauseMessage != null ? rootCauseMessage : "Database constraint violation");
-        } else {
-            String exceptionMessage = ex.getMessage();
-            body.put(MESSAGE, exceptionMessage != null ? exceptionMessage : "Database constraint violation");
+
+        String message = "Database constraint violation";
+        Throwable rootCause = ex.getRootCause();
+        if (rootCause != null) {
+            String rootCauseMessage = rootCause.getMessage();
+            if (rootCauseMessage != null && !rootCauseMessage.trim().isEmpty()) {
+                message = rootCauseMessage;
+            }
+        } else if (ex.getMessage() != null && !ex.getMessage().trim().isEmpty()) {
+            message = ex.getMessage();
         }
+
+        body.put(MESSAGE, message);
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -142,7 +158,8 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, new Date());
         body.put(STATUS, status);
-        body.put(MESSAGE, ex.getMessage());
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "I/O error occurred");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 

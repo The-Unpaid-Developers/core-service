@@ -58,13 +58,14 @@ class DataAssetTest {
 
     @Test
     void shouldCreateDataAssetSuccessfully() {
+        var dataEntities = List.of("Customer", "Transaction");
         DataAsset asset = new DataAsset(
                 "da-001",
                 "Comp-Finance",
                 "Finance",
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System");
 
         assertThat(asset.getId()).isEqualTo("da-001");
@@ -78,13 +79,15 @@ class DataAssetTest {
 
     @Test
     void shouldThrowExceptionWhenSettingNullForNonNullFields() {
+        var dataEntities = List.of("Customer", "Transaction");
+
         assertThatThrownBy(() -> new DataAsset(
                 "da-001",
                 "Comp-Finance",
                 null,
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -93,7 +96,7 @@ class DataAssetTest {
                 "Finance",
                 null,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -102,7 +105,7 @@ class DataAssetTest {
                 "Finance",
                 Classification.CONFIDENTIAL,
                 null,
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System")).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new DataAsset(
@@ -120,19 +123,20 @@ class DataAssetTest {
                 "Finance",
                 Classification.CONFIDENTIAL,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 null)).isInstanceOf(NullPointerException.class);
     }
 
     @Test
     void shouldRespectEqualsAndHashCode() {
+        var dataEntities = List.of("Customer", "Transaction");
         DataAsset a = new DataAsset(
                 "same-id",
                 "Comp-A",
                 "Finance",
                 Classification.INTERNAL,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System");
 
         DataAsset b = new DataAsset(
@@ -141,7 +145,7 @@ class DataAssetTest {
                 "Finance",
                 Classification.INTERNAL,
                 "Retail Banking",
-                List.of("Customer", "Transaction"),
+                dataEntities,
                 "Core Banking System");
 
         assertThat(a).isEqualTo(b);
@@ -150,13 +154,14 @@ class DataAssetTest {
 
     @Test
     void toStringShouldContainMeaningfulInfo() {
+        var dataEntities = List.of("Employee", "Payroll");
         DataAsset asset = new DataAsset(
                 "da-002",
                 "Comp-HR",
                 "HR",
                 Classification.PUBLIC,
                 "Human Resources",
-                List.of("Employee", "Payroll"),
+                dataEntities,
                 "HRMS");
 
         String output = asset.toString();
