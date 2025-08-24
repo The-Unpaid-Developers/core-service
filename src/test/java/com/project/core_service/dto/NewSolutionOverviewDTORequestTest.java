@@ -8,7 +8,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Nested;
 
-class NewSolutionOverviewRequestDTOTest {
+import java.util.List;
+
+public class NewSolutionOverviewDTORequestTest {
 
     private SolutionDetails dummySolutionDetails() {
         return new SolutionDetails(
@@ -29,7 +31,8 @@ class NewSolutionOverviewRequestDTOTest {
                 details,
                 BusinessUnit.UNKNOWN,
                 BusinessDriver.RISK_MANAGEMENT,
-                valueOutcome
+                valueOutcome,
+                List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
         );
     }
 
@@ -40,7 +43,6 @@ class NewSolutionOverviewRequestDTOTest {
         assertEquals(BusinessDriver.RISK_MANAGEMENT, overview.getBusinessDriver());
         assertEquals(dto.getValueOutcome(), overview.getValueOutcome());
 
-        // Defaults from builder
         assertEquals(ReviewType.NEW_BUILD, overview.getReviewType());
         assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
         assertEquals(ReviewStatus.DRAFT, overview.getReviewStatus());
@@ -53,14 +55,40 @@ class NewSolutionOverviewRequestDTOTest {
     class MappingTests {
 
         @Test
-        void shouldMapAllFieldsCorrectly() {
+        void toNewDraftEntityShouldMapCorrectly() {
             SolutionDetails details = dummySolutionDetails();
-            String valueOutcome = "Increase resilience";
+            Concern concern = new Concern(
+                    "Concern-01",
+                    ConcernType.RISK,
+                    "Description of concern",
+                    "impact",
+                    "mitigation",
+                    ConcernStatus.UNKNOWN
+            );
 
-            NewSolutionOverviewRequestDTO dto = dummyDTO(details, valueOutcome);
+            NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(
+                    details,
+                    BusinessUnit.UNKNOWN,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    "Outcome",
+                    List.of(concern)
+            );
+
             SolutionOverview overview = dto.toNewDraftEntity();
 
-            assertSolutionOverviewMapping(overview, dto);
+            // Existing checks
+            assertEquals(details, overview.getSolutionDetails());
+            assertEquals(BusinessUnit.UNKNOWN, overview.getBusinessUnit());
+            assertEquals(BusinessDriver.RISK_MANAGEMENT, overview.getBusinessDriver());
+            assertEquals("Outcome", overview.getValueOutcome());
+            assertEquals(ReviewType.NEW_BUILD, overview.getReviewType());
+            assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
+            assertEquals(ReviewStatus.DRAFT, overview.getReviewStatus());
+
+            // New concern checks
+            assertNotNull(overview.getConcerns());
+            assertEquals(1, overview.getConcerns().size());
+            assertEquals(concern, overview.getConcerns().get(0));
         }
 
         @Test
@@ -99,7 +127,9 @@ class NewSolutionOverviewRequestDTOTest {
                             null,
                             BusinessUnit.UNKNOWN,
                             BusinessDriver.RISK_MANAGEMENT,
-                            "Outcome"
+                            "Outcome",
+                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+
                     )
             );
         }
@@ -112,7 +142,9 @@ class NewSolutionOverviewRequestDTOTest {
                             details,
                             null,
                             BusinessDriver.RISK_MANAGEMENT,
-                            "Outcome"
+                            "Outcome",
+                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+
                     )
             );
         }
@@ -125,7 +157,9 @@ class NewSolutionOverviewRequestDTOTest {
                             details,
                             BusinessUnit.UNKNOWN,
                             null,
-                            "Outcome"
+                            "Outcome",
+                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+
                     )
             );
         }
@@ -138,7 +172,9 @@ class NewSolutionOverviewRequestDTOTest {
                             details,
                             BusinessUnit.UNKNOWN,
                             BusinessDriver.RISK_MANAGEMENT,
-                            null
+                            null,
+                            List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation", ConcernStatus.UNKNOWN))
+
                     )
             );
         }

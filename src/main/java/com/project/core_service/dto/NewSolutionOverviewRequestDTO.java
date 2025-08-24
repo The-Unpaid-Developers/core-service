@@ -5,6 +5,9 @@ import jakarta.annotation.Nonnull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 public class NewSolutionOverviewRequestDTO {
@@ -20,6 +23,8 @@ public class NewSolutionOverviewRequestDTO {
     @Nonnull
     private String valueOutcome;
 
+    private List<Concern> concerns;
+
     public SolutionOverview toNewDraftEntity() {
         SolutionDetails copiedDetails = new SolutionDetails(
                 solutionDetails.getSolutionName(),
@@ -27,13 +32,14 @@ public class NewSolutionOverviewRequestDTO {
                 solutionDetails.getSolutionReviewCode(),
                 solutionDetails.getSolutionArchitectName(),
                 solutionDetails.getDeliveryProjectManagerName(),
-                solutionDetails.getItBusinessPartner() // copy list
+                solutionDetails.getItBusinessPartner()
         );
         return SolutionOverview.newDraftBuilder()
                 .solutionDetails(copiedDetails)
                 .businessUnit(businessUnit)
                 .businessDriver(businessDriver)
                 .valueOutcome(valueOutcome)
+                .concerns(concerns == null ? List.of() : new ArrayList<>(concerns)) // copy list
                 .build();
     }
 }

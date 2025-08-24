@@ -31,7 +31,7 @@ public class DataAsset {
 
     // Data owned by which department or team
     @NonNull
-    private String dataOwnership;
+    private String dataOwnedBy;
 
     @NonNull
     @Builder.Default
