@@ -14,14 +14,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CoreServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(CoreServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(CoreServiceApplication.class, args);
+    }
 
-	@Bean
-	CommandLineRunner logEndpoints(RequestMappingHandlerMapping mapping) {
-		return args -> {
-			mapping.getHandlerMethods().forEach((key, value) -> log.debug("Mapped: {}", key));
-		};
-	}
+    @Bean
+    CommandLineRunner logEndpoints(RequestMappingHandlerMapping mapping) {
+        return args -> mapping.getHandlerMethods().forEach((key, value) -> log.debug("Mapped: {}", key));
+    }
 }
