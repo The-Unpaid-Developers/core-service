@@ -4,6 +4,7 @@ import com.project.core_service.commands.LifecycleTransitionCommand;
 import com.project.core_service.service.SolutionReviewLifecycleService;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -23,7 +24,11 @@ public class LifecycleController {
 
     @PostMapping("/transition")
     public ResponseEntity<String> transition(@RequestBody LifecycleTransitionCommand command) {
-        lifecycleService.executeTransition(command);
-        return ResponseEntity.ok("Transition successful");
+        try {
+            lifecycleService.executeTransition(command);
+            return ResponseEntity.ok("Transition successful");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+        }
     }
 }

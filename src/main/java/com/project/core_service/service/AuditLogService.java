@@ -39,25 +39,52 @@ public class AuditLogService {
     /**
      * Adds a SolutionReview to the audit log when it becomes CURRENT or OUTDATED.
      * 
+     * @param auditLogMeta      the audit log meta to update
      * @param solutionReview    the SR to add to audit log
      * @param changeDescription description of what changed
+     * @param srVersion         the version of the solution review
+     * @throws IllegalArgumentException if the solution review is not in a valid
+     *                                  state for audit logging
      */
     public void addSolutionReviewToAuditLog(AuditLogMeta auditLogMeta, SolutionReview solutionReview,
             String changeDescription, String srVersion) {
-        // Only allow add to audit log if SR is CURRENT or OUTDATED
-        if (solutionReview.getDocumentState() != DocumentState.CURRENT &&
-                solutionReview.getDocumentState() != DocumentState.OUTDATED) {
+        if (auditLogMeta == null || solutionReview == null) {
+            log.warn("Cannot add to audit log: auditLogMeta or solutionReview is null");
             return;
         }
 
-        // Create new audit log node
+        DocumentState currentState = solutionReview.getDocumentState();
+
+        // Only allow add to audit log if SR is CURRENT or OUTDATED
+        if (currentState != DocumentState.CURRENT && currentState != DocumentState.OUTDATED) {
+            log.debug("Solution review {} not added to audit log - state is {} (must be CURRENT or OUTDATED)",
+                    solutionReview.getId(), currentState);
+            return;
+        }
+
+        // Create new audit log node with the current state captured
         AuditLogNode newNode = new AuditLogNode(solutionReview.getId(), changeDescription, srVersion);
-        auditLogNodeRepository.save(newNode);
 
-        auditLogMeta.addNewHead(newNode.getId());
-        auditLogMetaRepository.save(auditLogMeta);
+        try {
+            // Save node first to ensure we don't have orphaned references
+            auditLogNodeRepository.save(newNode);
 
-        log.info("Added SR {} to audit log with change: {}", solutionReview.getId(), changeDescription);
+            // Update audit log meta only after successful node creation
+            auditLogMeta.addNewHead(newNode.getId());
+            auditLogMetaRepository.save(auditLogMeta);
+
+            log.info("Added SR {} to audit log with change: {} (state: {})",
+                    solutionReview.getId(), changeDescription, currentState);
+        } catch (Exception e) {
+            log.error("Failed to add SR {} to audit log, attempting cleanup", solutionReview.getId(), e);
+            // Attempt to clean up the orphaned node if meta update failed
+            try {
+                auditLogNodeRepository.delete(newNode);
+            } catch (Exception cleanupException) {
+                log.error("Failed to cleanup orphaned audit log node {}", newNode.getId(), cleanupException);
+            }
+            throw new RuntimeException("Failed to add solution review to audit log", e);
+        }
     }
 
     public void updateAuditLogNode(AuditLogNode auditLogNode, String changeDescription) {

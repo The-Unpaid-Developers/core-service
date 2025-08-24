@@ -78,26 +78,20 @@ public class SolutionReviewLifecycleService {
         // step 3: Execute the state operation
         // we have special handling for APPROVE and UNAPPROVE
         // to ensure that we have only 1 current SR for a systemCode
-        try {
-            switch (operation) {
-                case APPROVE:
-                    executeApprove(solutionReview, command.getModifiedBy());
-                    break;
-                case UNAPPROVE:
-                    executeUnapprove(solutionReview, command.getModifiedBy());
-                    break;
-                default:
-                    executeTransitionOperationOnSolutionReview(solutionReview, operation, command.getModifiedBy());
-                    break;
-            }
-
-            log.debug("State transition successful: {} -> {}",
-                    currentState, solutionReview.getDocumentState());
-
-        } catch (IllegalStateTransitionException e) {
-            log.error("State transition failed: {}", e.getMessage());
-            throw e;
+        switch (operation) {
+            case APPROVE:
+                executeApprove(solutionReview, command.getModifiedBy());
+                break;
+            case UNAPPROVE:
+                executeUnapprove(solutionReview, command.getModifiedBy());
+                break;
+            default:
+                executeTransitionOperationOnSolutionReview(solutionReview, operation, command.getModifiedBy());
+                break;
         }
+
+        log.debug("State transition successful: {} -> {}",
+                currentState, solutionReview.getDocumentState());
 
         // step 4: Save the updated document
         SolutionReview savedReview = solutionReviewRepository.save(solutionReview);
@@ -129,12 +123,6 @@ public class SolutionReviewLifecycleService {
                 break;
             case REMOVE_SUBMISSION:
                 solutionReview.removeSubmission(modifiedBy);
-                break;
-            case APPROVE:
-                solutionReview.approve(modifiedBy);
-                break;
-            case UNAPPROVE:
-                solutionReview.unApproveCurrent(modifiedBy);
                 break;
             case MARK_OUTDATED:
                 solutionReview.markAsOutdated(modifiedBy);
@@ -209,6 +197,11 @@ public class SolutionReviewLifecycleService {
             AuditLogMeta auditLogMeta) {
 
         AuditLogNode headNode = auditLogService.getAuditLogNode(auditLogMeta.getHead());
+        if (headNode == null) {
+            log.info("Head node not found for audit log meta: {}", auditLogMeta.getId());
+            return null;
+        }
+
         String srVersion = headNode.getSolutionsReviewVersion();
 
         // find the current SR and mark it as outdated

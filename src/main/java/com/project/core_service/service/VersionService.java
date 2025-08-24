@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class VersionService {
 
-    private static final String DEFAULT_VERSION = "v1.0.1";
+    private static final String DEFAULT_VERSION = "v1.0.0";
     private static final String VERSION_REGEX = "^v?\\d+\\.\\d+\\.\\d+$";
 
     /**
@@ -19,11 +19,17 @@ public class VersionService {
      * 
      * @param currentVersion The current version string (e.g., "v1.2.3" or "1.2.3")
      * @return The incremented version string with 'v' prefix (e.g., "v1.2.4")
+     * @throws IllegalArgumentException if the version format is invalid or
+     *                                  null/empty
      */
     public String incrementPatchVersion(String currentVersion) {
-        if (currentVersion == null || currentVersion.isEmpty()) {
-            log.debug("Null or empty version provided, returning default: {}", DEFAULT_VERSION);
+        if (currentVersion == null) {
             return DEFAULT_VERSION;
+        }
+
+        if (currentVersion.isEmpty()) {
+            log.error("Cannot increment null or empty version string");
+            throw new IllegalArgumentException("Version string cannot be null or empty");
         }
 
         // Remove 'v' prefix if present
@@ -31,8 +37,9 @@ public class VersionService {
 
         // Validate format
         if (!("v" + versionWithoutPrefix).matches(VERSION_REGEX)) {
-            log.warn("Invalid version format: {}. Returning default: {}", currentVersion, DEFAULT_VERSION);
-            return DEFAULT_VERSION;
+            log.error("Invalid version format: {}", currentVersion);
+            throw new IllegalArgumentException("Invalid version format: " + currentVersion +
+                    ". Expected format: vMAJOR.MINOR.PATCH (e.g., v1.2.3)");
         }
 
         // Split by dots
@@ -43,6 +50,12 @@ public class VersionService {
             int minor = Integer.parseInt(versionParts[1]);
             int patch = Integer.parseInt(versionParts[2]);
 
+            // Check for potential overflow (though unlikely in practice)
+            if (patch == Integer.MAX_VALUE) {
+                throw new IllegalArgumentException(
+                        "Patch version overflow: cannot increment beyond " + Integer.MAX_VALUE);
+            }
+
             // Increment patch version
             patch++;
 
@@ -50,9 +63,9 @@ public class VersionService {
             log.debug("Incremented version from {} to {}", currentVersion, newVersion);
             return newVersion;
         } catch (NumberFormatException e) {
-            log.error("Failed to parse version numbers from: {}. Returning default: {}",
-                    currentVersion, DEFAULT_VERSION, e);
-            return DEFAULT_VERSION;
+            log.error("Failed to parse version numbers from: {}", currentVersion, e);
+            throw new IllegalArgumentException(
+                    "Invalid version format - unable to parse numeric components: " + currentVersion, e);
         }
     }
 
