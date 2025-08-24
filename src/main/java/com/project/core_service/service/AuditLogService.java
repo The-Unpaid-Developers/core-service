@@ -9,6 +9,8 @@ import com.project.core_service.repositories.AuditLogNodeRepository;
 
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -18,6 +20,7 @@ public class AuditLogService {
     private final AuditLogMetaRepository auditLogMetaRepository;
     private final AuditLogNodeRepository auditLogNodeRepository;
 
+    @Autowired
     public AuditLogService(AuditLogMetaRepository auditLogMetaRepository,
             AuditLogNodeRepository auditLogNodeRepository) {
         this.auditLogMetaRepository = auditLogMetaRepository;

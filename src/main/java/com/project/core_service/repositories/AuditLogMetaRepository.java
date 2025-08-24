@@ -8,7 +8,6 @@ import org.springframework.stereotype.Repository;
  * Repository interface for {@link AuditLogMeta} entities.
  * 
  * Provides CRUD operations for managing audit log metadata in MongoDB.
- * The ID in AuditLogMeta corresponds to the SolutionReview ID.
  */
 @Repository
 public interface AuditLogMetaRepository extends MongoRepository<AuditLogMeta, String> {
