@@ -22,12 +22,10 @@ public class ProcessCompliantTest {
     @Test
     void nonNullFieldsShouldThrowOnNull() {
         ProcessCompliant.ProcessCompliantBuilder builder = ProcessCompliant.builder()
-                .id("pc-456")
-                .standardGuideline(null) // should fail due to @NonNull
-                .compliant(Compliant.TRUE)
-                .description("Missing guideline should break");
+                .id("pc-456");
 
-        assertThrows(NullPointerException.class, () -> builder.build());
+        // should fail due to @NonNull when setting standardGuideline to null
+        assertThrows(NullPointerException.class, () -> builder.standardGuideline(null));
     }
 
     @Test

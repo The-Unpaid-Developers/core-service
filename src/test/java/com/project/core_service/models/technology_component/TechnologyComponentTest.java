@@ -27,12 +27,10 @@ class TechnologyComponentTest {
     void testBuilderWithNullNonNullFieldThrowsException() {
         TechnologyComponent.TechnologyComponentBuilder builder = TechnologyComponent.builder()
                 .id("tech-003")
-                .componentName("Cache")
-                .productName(null) // productName is @NonNull
-                .productVersion("1.0")
-                .usage(Usage.PREREQUISITE_INSTALLATION);
+                .componentName("Cache");
 
-        assertThrows(NullPointerException.class, () -> builder.build());
+        // productName is @NonNull, should fail when setting to null
+        assertThrows(NullPointerException.class, () -> builder.productName(null));
     }
 
     @Test

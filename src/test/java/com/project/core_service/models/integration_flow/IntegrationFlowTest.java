@@ -33,14 +33,10 @@ public class IntegrationFlowTest {
     void nonNullFieldsShouldThrowOnNull() {
         IntegrationFlow.IntegrationFlowBuilder builder = IntegrationFlow.builder()
                 .id("if-456")
-                .componentName("MyComponent")
-                .counterpartSystemCode(null) // should fail because of @NonNull
-                .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
-                .integrationMethod(IntegrationMethod.FILE)
-                .frequency(Frequency.ANNUALLY)
-                .purpose("File transfer with external system");
+                .componentName("MyComponent");
 
-        assertThrows(NullPointerException.class, () -> builder.build());
+        // should fail because of @NonNull when setting counterpartSystemCode to null
+        assertThrows(NullPointerException.class, () -> builder.counterpartSystemCode(null));
     }
 
     @Test
