@@ -17,7 +17,10 @@ import lombok.AllArgsConstructor;
 @Document(collection = "auditLogMeta")
 public class AuditLogMeta {
     @Id
-    private String id; // This should match the original SolutionReview.id
+    private String id;
+
+    @NonNull
+    private String systemCode;
 
     private String head; // id of the head node (most recent version)
 
@@ -30,13 +33,19 @@ public class AuditLogMeta {
 
     private int nodeCount; // Total number of versions in the linked list
 
-    public AuditLogMeta(String solutionReviewId, String headNodeId) {
-        this.id = solutionReviewId;
+    public AuditLogMeta(String headNodeId, String systemCode) {
+        this.id = generateId(systemCode); // Generate a meaningful ID
         this.head = headNodeId;
         this.tail = headNodeId; // Initially head and tail are the same
         this.createdAt = LocalDateTime.now();
         this.lastModified = LocalDateTime.now();
         this.nodeCount = 1;
+        this.systemCode = systemCode;
+    }
+
+    private String generateId(String systemCode) {
+        // Generate a unique ID based on system code and timestamp
+        return systemCode + "_audit_" + System.currentTimeMillis();
     }
 
     // Helper method to update when a new node is added to the front
@@ -44,6 +53,12 @@ public class AuditLogMeta {
         this.head = newHeadId;
         this.lastModified = LocalDateTime.now();
         this.nodeCount++;
+    }
+
+    public void removeHead(String newHeadId) {
+        this.head = newHeadId;
+        this.lastModified = LocalDateTime.now();
+        this.nodeCount--;
     }
 
     public boolean isEmpty() {

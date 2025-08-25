@@ -25,10 +25,10 @@ public class AuditLogNode {
     @NonNull
     private String solutionsReviewVersion;
 
-    private String next; // References next node's id
+    private AuditLogNode next;
 
     @NonNull
-    private LocalDateTime timestamp; // When this version was created
+    private LocalDateTime timestamp; // When this version was last updated
 
     private String changeDescription; // Description of what changed
 
@@ -40,7 +40,8 @@ public class AuditLogNode {
         this.next = null;
     }
 
-    public AuditLogNode(String solutionReviewId, String changeDescription, String solutionsReviewVersion, String next) {
+    public AuditLogNode(String solutionReviewId, String changeDescription, String solutionsReviewVersion,
+            AuditLogNode next) {
         this.solutionReviewId = solutionReviewId;
         this.solutionsReviewVersion = solutionsReviewVersion;
         this.changeDescription = changeDescription;

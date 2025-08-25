@@ -148,8 +148,9 @@ public class SolutionReview {
      * 
      * @throws IllegalStateTransitionException if not in DRAFT state
      */
-    public void submit() {
+    public void submit(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.SUBMIT);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -157,10 +158,11 @@ public class SolutionReview {
      * Only documents in SUBMITTED state can be returned to draft.
      * 
      * @throws IllegalStateTransitionException if not in SUBMITTED
-     *                                                       state
+     *                                         state
      */
-    public void removeSubmission() {
+    public void removeSubmission(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.REMOVE_SUBMISSION);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -168,10 +170,11 @@ public class SolutionReview {
      * Only documents in SUBMITTED state can be approved.
      * 
      * @throws IllegalStateTransitionException if not in SUBMITTED
-     *                                                       state
+     *                                         state
      */
-    public void approve() {
+    public void approve(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.APPROVE);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -180,8 +183,9 @@ public class SolutionReview {
      * 
      * @throws IllegalStateTransitionException if not in CURRENT state
      */
-    public void unApproveCurrent() {
+    public void unApproveCurrent(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.UNAPPROVE);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -190,8 +194,9 @@ public class SolutionReview {
      * 
      * @throws IllegalStateTransitionException if not in CURRENT state
      */
-    public void markAsOutdated() {
+    public void markAsOutdated(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.MARK_OUTDATED);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -199,10 +204,11 @@ public class SolutionReview {
      * Only documents in OUTDATED state can be reset to current.
      * 
      * @throws IllegalStateTransitionException if not in OUTDATED
-     *                                                       state
+     *                                         state
      */
-    public void resetAsCurrent() {
+    public void resetAsCurrent(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.RESET_CURRENT);
+        this.setLastModifiedBy(modifiedBy);
     }
 
     /**
@@ -211,7 +217,7 @@ public class SolutionReview {
      * @param newState   the target state to transition to
      * @param modifiedBy the user making the change
      * @throws IllegalStateTransitionException if transition is
-     *                                                       invalid
+     *                                         invalid
      */
     public void transitionTo(DocumentState newState, String modifiedBy) {
         this.documentState.validateTransition(newState);
@@ -277,8 +283,6 @@ public class SolutionReview {
         this.lastModifiedAt = LocalDateTime.now();
         this.lastModifiedBy = modifiedBy;
     }
-
-
 
     // Builder pattern factory methods
     public static SolutionReviewBuilder newDraftBuilder() {
