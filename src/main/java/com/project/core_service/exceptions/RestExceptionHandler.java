@@ -102,19 +102,19 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * Handles uncaught {@link RuntimeException}s.
+     * Handles uncaught {@link IllegalStateTransitionException}s.
      *
-     * @param ex the runtime exception
+     * @param ex the illegal state transition exception
      * @return a {@link ResponseEntity} with error details
      */
-    @ExceptionHandler({ RuntimeException.class })
-    public ResponseEntity<Object> handleOtherRuntimeException(RuntimeException ex) {
-        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+    @ExceptionHandler({ IllegalStateTransitionException.class })
+    public ResponseEntity<Object> handleIllegalStateTransitionException(IllegalStateTransitionException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         Map<String, Object> body = new LinkedHashMap<>();
         body.put(TIMESTAMP, new Date());
         body.put(STATUS, status);
         String message = ex.getMessage();
-        body.put(MESSAGE, message != null ? message : "Internal server error");
+        body.put(MESSAGE, message != null ? message : "Invalid state transition");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
@@ -160,6 +160,23 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         body.put(STATUS, status);
         String message = ex.getMessage();
         body.put(MESSAGE, message != null ? message : "I/O error occurred");
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
+     * Handles uncaught {@link RuntimeException}s that don't have specific handlers.
+     *
+     * @param ex the runtime exception
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ RuntimeException.class })
+    public ResponseEntity<Object> handleOtherRuntimeException(RuntimeException ex) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Internal server error");
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
