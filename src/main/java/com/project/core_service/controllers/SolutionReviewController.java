@@ -21,10 +21,14 @@ import java.util.List;
  * solution reviews. Supports pagination and filtering by system code.</p>
  */
 @RestController
-@RequestMapping("/api/solution-review")
+@RequestMapping("/api/v1/solution-review")
 public class SolutionReviewController {
+    private final SolutionReviewService solutionReviewService;
+
     @Autowired
-    private SolutionReviewService solutionReviewService;
+    public SolutionReviewController(SolutionReviewService solutionReviewService) {
+        this.solutionReviewService = solutionReviewService;
+    }
 
     /**
      * Retrieves a {@link SolutionReview} by its ID.

@@ -42,6 +42,25 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     private static final String STATUS = "status";
 
     /**
+     * Handles uncaught {@link IllegalArgumentException}s.
+     *
+     * @param ex      the illegal argument exception
+     * @param request the current web request
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ IllegalArgumentException.class })
+    public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Invalid argument");
+        body.put(PATH, request.getDescription(false));
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
      * Handles validation errors for invalid method arguments.
      *
      * @param ex      the exception containing validation errors

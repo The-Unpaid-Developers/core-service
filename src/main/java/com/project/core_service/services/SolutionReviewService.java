@@ -3,17 +3,11 @@ package com.project.core_service.services;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.models.business_capabilities.BusinessCapability;
-import com.project.core_service.models.data_asset.DataAsset;
 import com.project.core_service.models.enterprise_tools.EnterpriseTool;
 import com.project.core_service.models.enterprise_tools.Tool;
-import com.project.core_service.models.integration_flow.IntegrationFlow;
-import com.project.core_service.models.process_compliance.ProcessCompliant;
 import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
-import com.project.core_service.models.system_component.SystemComponent;
-import com.project.core_service.models.technology_component.TechnologyComponent;
 import com.project.core_service.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -23,11 +17,9 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  * Service layer for managing {@link SolutionReview} entities.
@@ -38,38 +30,54 @@ import java.util.function.Function;
  */
 @Service
 public class SolutionReviewService {
-    @Autowired
-    private SolutionReviewRepository solutionReviewRepository;
+    private final SolutionReviewRepository solutionReviewRepository;
+
+    private final SolutionOverviewRepository solutionOverviewRepository;
+
+    private final ConcernRepository concernRepository;
+
+    private final ToolRepository toolRepository;
+
+    private final BusinessCapabilityRepository businessCapabilityRepository;
+
+    private final SystemComponentRepository systemComponentRepository;
+
+    private final IntegrationFlowRepository integrationFlowRepository;
+
+    private final DataAssetRepository dataAssetRepository;
+
+    private final TechnologyComponentRepository technologyComponentRepository;
+
+    private final EnterpriseToolRepository enterpriseToolRepository;
+
+    private final ProcessCompliantRepository processCompliantRepository;
 
     @Autowired
-    private SolutionOverviewRepository solutionOverviewRepository;
-
-    @Autowired
-    private ConcernRepository concernRepository;
-
-    @Autowired
-    private ToolRepository toolRepository;
-
-    @Autowired
-    private BusinessCapabilityRepository businessCapabilityRepository;
-
-    @Autowired
-    private SystemComponentRepository systemComponentRepository;
-
-    @Autowired
-    private IntegrationFlowRepository integrationFlowRepository;
-
-    @Autowired
-    private DataAssetRepository dataAssetRepository;
-
-    @Autowired
-    private TechnologyComponentRepository technologyComponentRepository;
-
-    @Autowired
-    private EnterpriseToolRepository enterpriseToolRepository;
-
-    @Autowired
-    private ProcessCompliantRepository processCompliantRepository;
+    public SolutionReviewService(
+            SolutionReviewRepository solutionReviewRepository,
+            SolutionOverviewRepository solutionOverviewRepository,
+            ConcernRepository concernRepository,
+            ToolRepository toolRepository,
+            BusinessCapabilityRepository businessCapabilityRepository,
+            SystemComponentRepository systemComponentRepository,
+            IntegrationFlowRepository integrationFlowRepository,
+            DataAssetRepository dataAssetRepository,
+            TechnologyComponentRepository technologyComponentRepository,
+            EnterpriseToolRepository enterpriseToolRepository,
+            ProcessCompliantRepository processCompliantRepository
+    ) {
+        this.solutionReviewRepository = solutionReviewRepository;
+        this.solutionOverviewRepository = solutionOverviewRepository;
+        this.concernRepository = concernRepository;
+        this.toolRepository = toolRepository;
+        this.businessCapabilityRepository = businessCapabilityRepository;
+        this.systemComponentRepository = systemComponentRepository;
+        this.integrationFlowRepository = integrationFlowRepository;
+        this.dataAssetRepository = dataAssetRepository;
+        this.technologyComponentRepository = technologyComponentRepository;
+        this.enterpriseToolRepository = enterpriseToolRepository;
+        this.processCompliantRepository = processCompliantRepository;
+    }
 
 
     /**
@@ -112,6 +120,9 @@ public class SolutionReviewService {
      * @return the newly created solution review
      */
     public SolutionReview createSolutionReview(String systemCode, NewSolutionOverviewRequestDTO solutionOverview) {
+        if (solutionOverview == null) {
+            throw new IllegalArgumentException("SolutionOverview cannot be null");
+        }
         SolutionOverview savedOverview = saveSolutionOverview(solutionOverview.toNewDraftEntity());
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
                 .systemCode(systemCode)
@@ -132,6 +143,9 @@ public class SolutionReviewService {
      * @throws NotFoundException if no solution review exists with the given ID
      */
     public SolutionReview updateSolutionReview(SolutionReviewDTO modifiedSolutionReview) {
+        if (modifiedSolutionReview == null) {
+            throw new IllegalArgumentException("Modified SolutionReview cannot be null");
+        }
         // Check exists throw not found if not exists
         SolutionReview solutionReview = solutionReviewRepository.findById(modifiedSolutionReview.getId())
                 .orElseThrow(() -> new NotFoundException(modifiedSolutionReview.getId()));

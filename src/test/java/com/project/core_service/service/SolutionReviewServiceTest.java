@@ -139,6 +139,11 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void createSolutionReview_ShouldThrowIfOverviewNull() {
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", null));
+    }
+
+    @Test
     void createSolutionReview_ShouldSaveAndInsert() {
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
@@ -152,6 +157,11 @@ class SolutionReviewServiceTest {
         assertNotNull(result);
         assertEquals("SYS-123", result.getSystemCode());
         verify(solutionReviewRepository).insert(any(SolutionReview.class));
+    }
+
+    @Test
+    void updateSolutionReview_ShouldThrowIfDTONull() {
+        assertThrows(IllegalArgumentException.class, () -> service.updateSolutionReview(null));
     }
 
     @Test
