@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Service layer for managing {@link SolutionReview} entities.
@@ -196,6 +197,7 @@ public class SolutionReviewService {
         integrationFlowRepository.deleteAll(solutionReview.getIntegrationFlows());
         dataAssetRepository.deleteAll(solutionReview.getDataAssets());
         technologyComponentRepository.deleteAll(solutionReview.getTechnologyComponents());
+        toolRepository.deleteAll(solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).collect(Collectors.toList()));
         enterpriseToolRepository.deleteAll(solutionReview.getEnterpriseTools());
         processCompliantRepository.deleteAll(solutionReview.getProcessCompliances());
         if (solutionReview.getSolutionOverview().getConcerns() != null) {
