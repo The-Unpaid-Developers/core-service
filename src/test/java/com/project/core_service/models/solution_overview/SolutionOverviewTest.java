@@ -178,7 +178,7 @@ class SolutionOverviewTest {
         @Nested
         class FromExistingBuilderTests {
             @Test
-            void shouldCopyAllFields() {
+            void shouldCopyAllFieldsExceptId() {
                 SolutionOverview original = new SolutionOverview(
                         "id-020",
                         dummySolutionDetails(),
@@ -196,7 +196,19 @@ class SolutionOverviewTest {
 
                 SolutionOverview copy = SolutionOverview.fromExisting(original).build();
 
-                assertEquals(original, copy); // should be equal since all fields match
+                assertNotEquals(original.getId(), copy.getId()); // IDs should differ
+                assertNull(copy.getId(), "Copied instance should have null ID");
+                assertEquals(original.getSolutionDetails(), copy.getSolutionDetails());
+                assertEquals(original.getReviewedBy(), copy.getReviewedBy());
+                assertEquals(original.getReviewType(), copy.getReviewType());
+                assertEquals(original.getApprovalStatus(), copy.getApprovalStatus());
+                assertEquals(original.getReviewStatus(), copy.getReviewStatus());
+                assertEquals(original.getConditions(), copy.getConditions());
+                assertEquals(original.getBusinessUnit(), copy.getBusinessUnit());
+                assertEquals(original.getBusinessDriver(), copy.getBusinessDriver());
+                assertEquals(original.getValueOutcome(), copy.getValueOutcome());
+                assertEquals(original.getApplicationUsers(), copy.getApplicationUsers());
+                assertEquals(original.getConcerns(), copy.getConcerns());
             }
         }
 
@@ -222,7 +234,7 @@ class SolutionOverviewTest {
                 SolutionOverview enhancement = SolutionOverview.newEnhancementBuilder(original).build();
 
                 // copied fields
-                assertEquals(original.getId(), enhancement.getId());
+                assertEquals(null, enhancement.getId());
                 assertEquals(original.getSolutionDetails(), enhancement.getSolutionDetails());
                 assertEquals(original.getReviewedBy(), enhancement.getReviewedBy());
                 assertEquals(original.getBusinessUnit(), enhancement.getBusinessUnit());
