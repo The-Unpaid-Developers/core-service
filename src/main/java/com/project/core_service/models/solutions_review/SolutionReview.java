@@ -321,4 +321,24 @@ public class SolutionReview {
                 .createdBy(userId)
                 .lastModifiedBy(userId);
     }
+
+    public static SolutionReviewBuilder fromExisting(SolutionReview original, String modifiedBy) {
+        SolutionOverview clonedOverview = SolutionOverview.newEnhancementBuilder(original.solutionOverview).build();
+        return SolutionReview.builder()
+                .id(null)
+                .documentState(DocumentState.DRAFT)
+                .solutionOverview(clonedOverview)
+                .systemCode(original.systemCode)
+                .businessCapabilities(new ArrayList<>(original.businessCapabilities))
+                .systemComponents(new ArrayList<>(original.systemComponents))
+                .integrationFlows(new ArrayList<>(original.integrationFlows))
+                .dataAssets(new ArrayList<>(original.dataAssets))
+                .technologyComponents(new ArrayList<>(original.technologyComponents))
+                .enterpriseTools(new ArrayList<>(original.enterpriseTools))
+                .processCompliances(new ArrayList<>(original.processCompliances))
+                .createdAt(LocalDateTime.now())
+                .lastModifiedAt(LocalDateTime.now())
+                .createdBy(original.createdBy)
+                .lastModifiedBy(modifiedBy);
+    }
 }
