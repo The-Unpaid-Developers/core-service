@@ -15,9 +15,9 @@ public class NotFoundException extends RuntimeException {
      * Constructs a new {@code NotFoundException} with a detail message
      * indicating that the specified ID could not be found.
      *
-     * @param id the identifier of the entity that was not found
+     * @param msg message
      */
-    public NotFoundException(String id) {
-        super(String.format("id %s not found", id));
+    public NotFoundException(String msg) {
+        super(msg);
     }
 }
