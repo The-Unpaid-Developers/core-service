@@ -79,7 +79,7 @@ class LifecycleControllerTest {
                     .content(requestJson))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.status").value("NOT_FOUND"))
-                    .andExpect(jsonPath("$.message").value("id " + errorMessage + " not found"));
+                    .andExpect(jsonPath("$.message").value(errorMessage));
 
             verify(lifecycleService, times(1)).executeTransition(any());
         }

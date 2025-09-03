@@ -138,6 +138,23 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handles uncaught {@link IllegalOperationException}s.
+     *
+     * @param ex the illegal operation exception
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ IllegalOperationException.class })
+    public ResponseEntity<Object> handleIllegalOperationException(IllegalOperationException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Illegal operation");
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
      * Handles database constraint violations such as unique key violations.
      *
      * @param ex the {@link DataIntegrityViolationException}

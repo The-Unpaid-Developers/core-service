@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.solution_overview.*;
 import com.project.core_service.models.solutions_review.DocumentState;
@@ -144,6 +145,45 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeNullOrEmpty() {
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview(null, dto));
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview("", dto));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeExists() {
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+        assertThrows(IllegalOperationException.class, () -> service.createSolutionReview("SYS-123", dto));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfOverviewInvalid() {
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", null));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfConcernInvalid() {
+        List<Concern> invalidConcerns = List.of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                invalidConcerns);
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview("SYS-123", dto));
+    }
+
+    @Test
     void createSolutionReview_ShouldSaveAndInsert() {
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
@@ -156,6 +196,34 @@ class SolutionReviewServiceTest {
 
         assertNotNull(result);
         assertEquals("SYS-123", result.getSystemCode());
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeNullOrEmpty() {
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview(null));
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview(""));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeNotFound() {
+        when(solutionReviewRepository.findAllBySystemCode(eq("NOT-EXIST"), any(Sort.class)))
+                .thenReturn(Collections.emptyList());
+
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview("NOT-EXIST"));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeExists() {
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        when(solutionReviewRepository.insert(any(SolutionReview.class)))
+                .thenReturn(review);
+
+        SolutionReview review1 = service.createSolutionReview("SYS-123");
+        assertNotNull(review1);
+        assertEquals("SYS-123", review1.getSystemCode());
         verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 

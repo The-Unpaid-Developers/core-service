@@ -2,6 +2,7 @@ package com.project.core_service.services;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.enterprise_tools.EnterpriseTool;
 import com.project.core_service.models.enterprise_tools.Tool;
@@ -121,14 +122,49 @@ public class SolutionReviewService {
      * @return the newly created solution review
      */
     public SolutionReview createSolutionReview(String systemCode, NewSolutionOverviewRequestDTO solutionOverview) {
+        List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
+        if (!solutionReviews.isEmpty() && solutionReviews.getFirst().getDocumentState().ordinal() <= DocumentState.CURRENT.ordinal()) {
+            throw new IllegalOperationException("A CURRENT or SUBMITTED or DRAFT review already exists for system " + systemCode);
+        }
+
         if (solutionOverview == null) {
             throw new IllegalArgumentException("SolutionOverview cannot be null");
         }
+
         SolutionOverview savedOverview = saveSolutionOverview(solutionOverview.toNewDraftEntity());
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
                 .systemCode(systemCode)
                 .solutionOverview(savedOverview)
                 .build();
+        return solutionReviewRepository.insert(solutionReview);
+    }
+
+    /**
+     * Creates a new draft {@link SolutionReview} for existing systems
+     *
+     * @param systemCode the system code associated with the review
+     * @return the newly created solution review
+     */
+    public SolutionReview createSolutionReview(String systemCode) {
+        List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
+        if (solutionReviews.isEmpty()) {
+            throw new NotFoundException("System " + systemCode + " does not exist");
+        }
+        SolutionOverview savedOverview = saveSolutionOverview(
+                SolutionOverview
+                        .fromExisting(solutionReviews.getFirst().getSolutionOverview())
+                        .build()
+        );
+        SolutionReview solutionReview = SolutionReview.fromExisting(solutionReviews.getFirst(), null)
+                .solutionOverview(savedOverview).build();
+
+        saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
+        saveIfNotEmpty(solutionReview.getSystemComponents(), systemComponentRepository, solutionReview::setSystemComponents);
+        saveIfNotEmpty(solutionReview.getIntegrationFlows(), integrationFlowRepository, solutionReview::setIntegrationFlows);
+        saveIfNotEmpty(solutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
+        saveIfNotEmpty(solutionReview.getTechnologyComponents(), technologyComponentRepository, solutionReview::setTechnologyComponents);
+        saveEnterpriseTools(solutionReview, solutionReview.getEnterpriseTools());
+        saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
     }
 
