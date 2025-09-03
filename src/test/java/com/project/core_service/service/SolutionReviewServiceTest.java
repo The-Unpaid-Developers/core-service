@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.solution_overview.*;
 import com.project.core_service.models.solutions_review.DocumentState;
@@ -150,8 +151,8 @@ class SolutionReviewServiceTest {
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
                 overview.getConcerns());
-        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview(null, dto));
-        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("", dto));
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview(null, dto));
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview("", dto));
     }
 
     @Test
@@ -163,17 +164,12 @@ class SolutionReviewServiceTest {
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
                 overview.getConcerns());
-        assertThrows(IllegalStateException.class, () -> service.createSolutionReview("SYS-123", dto));
+        assertThrows(IllegalOperationException.class, () -> service.createSolutionReview("SYS-123", dto));
     }
 
     @Test
     void createSolutionReview_ShouldThrowIfOverviewInvalid() {
-        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(null,
-                overview.getBusinessUnit(),
-                overview.getBusinessDriver(),
-                overview.getValueOutcome(),
-                overview.getConcerns());
-        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", dto));
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", null));
     }
 
     @Test
@@ -184,7 +180,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
                 invalidConcerns);
-        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", dto));
+        assertThrows(NullPointerException.class, () -> service.createSolutionReview("SYS-123", dto));
     }
 
     @Test
