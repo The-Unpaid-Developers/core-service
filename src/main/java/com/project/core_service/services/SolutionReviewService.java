@@ -142,7 +142,7 @@ public class SolutionReviewService {
     /**
      * Creates a new draft {@link SolutionReview} for existing systems
      *
-     * @param systemCode       the system code associated with the review
+     * @param systemCode the system code associated with the review
      * @return the newly created solution review
      */
     public SolutionReview createSolutionReview(String systemCode) {
@@ -150,8 +150,21 @@ public class SolutionReviewService {
         if (solutionReviews.isEmpty()) {
             throw new NotFoundException("System " + systemCode + " does not exist");
         }
-        SolutionReview solutionReview = SolutionReview.fromExisting(solutionReviews.getFirst(), null).build();
+        SolutionOverview savedOverview = saveSolutionOverview(
+                SolutionOverview
+                        .fromExisting(solutionReviews.getFirst().getSolutionOverview())
+                        .build()
+        );
+        SolutionReview solutionReview = SolutionReview.fromExisting(solutionReviews.getFirst(), null)
+                .solutionOverview(savedOverview).build();
 
+        saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
+        saveIfNotEmpty(solutionReview.getSystemComponents(), systemComponentRepository, solutionReview::setSystemComponents);
+        saveIfNotEmpty(solutionReview.getIntegrationFlows(), integrationFlowRepository, solutionReview::setIntegrationFlows);
+        saveIfNotEmpty(solutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
+        saveIfNotEmpty(solutionReview.getTechnologyComponents(), technologyComponentRepository, solutionReview::setTechnologyComponents);
+        saveEnterpriseTools(solutionReview, solutionReview.getEnterpriseTools());
+        saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
     }
 

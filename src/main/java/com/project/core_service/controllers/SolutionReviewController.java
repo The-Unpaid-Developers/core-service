@@ -83,6 +83,18 @@ public class SolutionReviewController {
     }
 
     /**
+     * Creates a new {@link SolutionReview} for the given system code.
+     *
+     * @param systemCode       the system code associated with the review
+     * @return a {@link ResponseEntity} containing the created solution review
+     * with status {@code 201 Created}
+     */
+    @PostMapping("/existing/{systemCode}")
+    public ResponseEntity<SolutionReview> createSolutionReviewFromExisting(@PathVariable String systemCode) {
+        return new ResponseEntity<>(solutionReviewService.createSolutionReview(systemCode), HttpStatus.CREATED);
+    }
+
+    /**
      * Updates an existing {@link SolutionReview}.
      *
      * @param newSolutionReview the updated solution review object
