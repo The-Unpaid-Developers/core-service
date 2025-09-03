@@ -144,6 +144,50 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeNullOrEmpty() {
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview(null, dto));
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("", dto));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeExists() {
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+        assertThrows(IllegalStateException.class, () -> service.createSolutionReview("SYS-123", dto));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfOverviewInvalid() {
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(null,
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", dto));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfConcernInvalid() {
+        List<Concern> invalidConcerns = List.of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                invalidConcerns);
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", dto));
+    }
+
+    @Test
     void createSolutionReview_ShouldSaveAndInsert() {
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
@@ -156,6 +200,34 @@ class SolutionReviewServiceTest {
 
         assertNotNull(result);
         assertEquals("SYS-123", result.getSystemCode());
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeNullOrEmpty() {
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview(null));
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview(""));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeNotFound() {
+        when(solutionReviewRepository.findAllBySystemCode(eq("NOT-EXIST"), any(Sort.class)))
+                .thenReturn(Collections.emptyList());
+
+        assertThrows(NotFoundException.class, () -> service.createSolutionReview("NOT-EXIST"));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeExists() {
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        when(solutionReviewRepository.insert(any(SolutionReview.class)))
+                .thenReturn(review);
+
+        SolutionReview review1 = service.createSolutionReview("SYS-123");
+        assertNotNull(review1);
+        assertEquals("SYS-123", review1.getSystemCode());
         verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
