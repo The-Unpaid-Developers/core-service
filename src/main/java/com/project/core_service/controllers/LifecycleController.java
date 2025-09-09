@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/v1/lifecycle")
+@RequestMapping("/api/v1/lifecycle")
 public class LifecycleController {
 
     private final SolutionReviewLifecycleService lifecycleService;
