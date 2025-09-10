@@ -93,6 +93,14 @@ public class SolutionReviewService {
         return solutionReviewRepository.findById(id);
     }
 
+    /**
+     * Retrieves all {@link SolutionReview} entries.
+     *
+     * @return a {@link List} of all solution reviews
+     */
+    public List<SolutionReview> getAllSolutionReviews() {
+        return solutionReviewRepository.findAll(Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+    }
 
     /**
      * Retrieves all {@link SolutionReview} entries with pagination.
