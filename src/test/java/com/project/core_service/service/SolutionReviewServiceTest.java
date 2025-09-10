@@ -195,6 +195,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert
@@ -213,6 +214,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert
@@ -234,6 +236,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert - Should not throw exception
