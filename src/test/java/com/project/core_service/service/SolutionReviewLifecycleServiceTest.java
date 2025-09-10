@@ -23,6 +23,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -414,6 +415,9 @@ class SolutionReviewLifecycleServiceTest {
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMetaWithHead);
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
+                    .thenReturn(Optional.empty());
             when(auditLogService.getAuditLogNode("head-node-id")).thenReturn(headNodeWithoutNext);
 
             // Act & Assert
@@ -425,8 +429,133 @@ class SolutionReviewLifecycleServiceTest {
 
             verify(solutionReviewRepository).findById("sr-1");
             verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
             verify(auditLogService).getAuditLogNode("head-node-id");
             verifyNoMoreInteractions(auditLogService);
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalStateException when existing draft/submitted SR exists for same systemCode")
+        void shouldThrowIllegalStateExceptionWhenExistingDraftOrSubmittedExists() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation("UNAPPROVE");
+
+            AuditLogMeta auditLogMeta = new AuditLogMeta();
+            auditLogMeta.setSystemCode("SYS-001");
+
+            // Create a mock existing draft SR
+            SolutionReview existingDraftSR = SolutionReview.newDraftBuilder()
+                    .systemCode("SYS-001")
+                    .solutionOverview(testSolutionOverview)
+                    .build();
+            existingDraftSR.setDocumentState(DocumentState.DRAFT);
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
+                    .thenReturn(Optional.of(existingDraftSR));
+
+            // Act & Assert
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                    () -> lifecycleService.executeTransition(testCommand));
+
+            assertTrue(exception.getMessage()
+                    .contains("Cannot unapprove: there is an existing draft/submitted SR for systemCode: SYS-001"));
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
+            verifyNoMoreInteractions(auditLogService);
+        }
+
+        @Test
+        @DisplayName("Should throw IllegalStateException when existing submitted SR exists for same systemCode")
+        void shouldThrowIllegalStateExceptionWhenExistingSubmittedExists() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation("UNAPPROVE");
+
+            AuditLogMeta auditLogMeta = new AuditLogMeta();
+            auditLogMeta.setSystemCode("SYS-001");
+
+            // Create a mock existing submitted SR
+            SolutionReview existingSubmittedSR = SolutionReview.newDraftBuilder()
+                    .systemCode("SYS-001")
+                    .solutionOverview(testSolutionOverview)
+                    .build();
+            existingSubmittedSR.setDocumentState(DocumentState.SUBMITTED);
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
+                    .thenReturn(Optional.of(existingSubmittedSR));
+
+            // Act & Assert
+            IllegalStateException exception = assertThrows(IllegalStateException.class,
+                    () -> lifecycleService.executeTransition(testCommand));
+
+            assertTrue(exception.getMessage()
+                    .contains("Cannot unapprove: there is an existing draft/submitted SR for systemCode: SYS-001"));
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
+            verifyNoMoreInteractions(auditLogService);
+        }
+
+        @Test
+        @DisplayName("Should successfully unapprove when no existing draft/submitted SR exists")
+        void shouldSuccessfullyUnapproveWhenNoDraftOrSubmittedExists() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.CURRENT);
+            testCommand.setOperation("UNAPPROVE");
+
+            AuditLogMeta auditLogMeta = new AuditLogMeta();
+            auditLogMeta.setHead("head-node-id");
+            auditLogMeta.setSystemCode("SYS-001");
+
+            AuditLogNode headNode = new AuditLogNode("sr-1", "Current approval", "v1.0.0");
+            headNode.setId("head-node-id");
+
+            AuditLogNode nextNode = new AuditLogNode("sr-previous", "Previous approval", "v0.9.0");
+            nextNode.setId("next-node-id");
+            headNode.setNext(nextNode);
+
+            SolutionReview previousSR = SolutionReview.newDraftBuilder()
+                    .systemCode("SYS-001")
+                    .solutionOverview(testSolutionOverview)
+                    .build();
+            previousSR.setDocumentState(DocumentState.OUTDATED);
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
+                    .thenReturn(Optional.empty());
+            when(auditLogService.getAuditLogNode("head-node-id")).thenReturn(headNode);
+            when(solutionReviewRepository.findById("sr-previous")).thenReturn(Optional.of(previousSR));
+            when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
+
+            // Act
+            assertDoesNotThrow(() -> lifecycleService.executeTransition(testCommand));
+
+            // Assert
+            assertEquals(DocumentState.SUBMITTED, testSolutionReview.getDocumentState());
+
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(auditLogService).getAuditLogMeta("SYS-001");
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
+                    Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
+            verify(auditLogService).getAuditLogNode("head-node-id");
+            verify(solutionReviewRepository).findById("sr-previous");
+            verify(auditLogService).updateAuditLogMeta(auditLogMeta);
+            verify(solutionReviewRepository, times(2)).save(any(SolutionReview.class));
         }
     }
 

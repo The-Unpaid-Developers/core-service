@@ -29,23 +29,35 @@ import java.util.*;
 @ExtendWith(MockitoExtension.class)
 class SolutionReviewServiceTest {
 
-    @Mock private SolutionReviewRepository solutionReviewRepository;
-    @Mock private SolutionOverviewRepository solutionOverviewRepository;
-    @Mock private ConcernRepository concernRepository;
-    @Mock private ToolRepository toolRepository;
-    @Mock private BusinessCapabilityRepository businessCapabilityRepository;
-    @Mock private SystemComponentRepository systemComponentRepository;
-    @Mock private IntegrationFlowRepository integrationFlowRepository;
-    @Mock private DataAssetRepository dataAssetRepository;
-    @Mock private TechnologyComponentRepository technologyComponentRepository;
-    @Mock private EnterpriseToolRepository enterpriseToolRepository;
-    @Mock private ProcessCompliantRepository processCompliantRepository;
+    @Mock
+    private SolutionReviewRepository solutionReviewRepository;
+    @Mock
+    private SolutionOverviewRepository solutionOverviewRepository;
+    @Mock
+    private ConcernRepository concernRepository;
+    @Mock
+    private ToolRepository toolRepository;
+    @Mock
+    private BusinessCapabilityRepository businessCapabilityRepository;
+    @Mock
+    private SystemComponentRepository systemComponentRepository;
+    @Mock
+    private IntegrationFlowRepository integrationFlowRepository;
+    @Mock
+    private DataAssetRepository dataAssetRepository;
+    @Mock
+    private TechnologyComponentRepository technologyComponentRepository;
+    @Mock
+    private EnterpriseToolRepository enterpriseToolRepository;
+    @Mock
+    private ProcessCompliantRepository processCompliantRepository;
 
     @InjectMocks
     private SolutionReviewService service;
 
     private SolutionReview review;
     private SolutionOverview overview;
+
     private SolutionDetails dummySolutionDetails() {
         return new SolutionDetails(
                 "SolutionName",
@@ -53,8 +65,7 @@ class SolutionReviewServiceTest {
                 "AWG001",
                 "Architect",
                 "PM",
-                "Partner1"
-        );
+                "Partner1");
     }
 
     private List<ApplicationUser> dummyApplicationUsers() {
@@ -68,13 +79,13 @@ class SolutionReviewServiceTest {
                 "desc",
                 "impact",
                 "disposition",
-                ConcernStatus.UNKNOWN
-        );
+                ConcernStatus.UNKNOWN);
         return List.of(dummyConcern);
     }
+
     @BeforeEach
     void setup() {
-         overview = new SolutionOverview(
+        overview = new SolutionOverview(
                 "id-001",
                 dummySolutionDetails(),
                 "ReviewerName",
@@ -86,8 +97,7 @@ class SolutionReviewServiceTest {
                 BusinessDriver.OPERATIONAL_EFFICIENCY,
                 "Expected value outcome",
                 dummyApplicationUsers(),
-                dummyConcerns()
-        );
+                dummyConcerns());
 
         review = SolutionReview.newDraftBuilder()
                 .id("rev-1")
@@ -156,7 +166,9 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void createSolutionReview_ShouldThrowIfSystemCodeExists() {
+    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithDraftState() {
+        // Arrange - existing DRAFT review
+        review.setDocumentState(DocumentState.DRAFT);
         when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
                 .thenReturn(List.of(review));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
@@ -164,7 +176,71 @@ class SolutionReviewServiceTest {
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
                 overview.getConcerns());
-        assertThrows(IllegalOperationException.class, () -> service.createSolutionReview("SYS-123", dto));
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123", dto));
+        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithSubmittedState() {
+        // Arrange - existing SUBMITTED review
+        review.setDocumentState(DocumentState.SUBMITTED);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123", dto));
+        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithCurrentState() {
+        // Arrange - existing CURRENT review
+        review.setDocumentState(DocumentState.CURRENT);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123", dto));
+        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+    }
+
+    @Test
+    void createSolutionReview_ShouldAllowIfSystemCodeExistsWithOutdatedState() {
+        // Arrange - existing OUTDATED review (should allow creation of new draft)
+        review.setDocumentState(DocumentState.OUTDATED);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
+
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getConcerns());
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123", dto);
+            assertNotNull(result);
+        });
+
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
     @Test
@@ -174,7 +250,8 @@ class SolutionReviewServiceTest {
 
     @Test
     void createSolutionReview_ShouldThrowIfConcernInvalid() {
-        List<Concern> invalidConcerns = List.of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN));
+        List<Concern> invalidConcerns = List
+                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
