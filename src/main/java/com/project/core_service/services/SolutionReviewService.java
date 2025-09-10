@@ -131,16 +131,18 @@ public class SolutionReviewService {
      */
     public SolutionReview createSolutionReview(String systemCode, NewSolutionOverviewRequestDTO solutionOverview) {
         List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
-        if (!solutionReviews.isEmpty() && solutionReviews.getFirst().getDocumentState().ordinal() <= DocumentState.CURRENT.ordinal()) {
-            throw new IllegalOperationException("A CURRENT or SUBMITTED or DRAFT review already exists for system " + systemCode);
+        if (!solutionReviews.isEmpty()) {
+            throw new IllegalOperationException("System " + systemCode + " already exists. Use /existing/{systemCode} to create a new draft from existing.");
         }
 
         if (solutionOverview == null) {
             throw new IllegalArgumentException("SolutionOverview cannot be null");
         }
 
-        SolutionOverview savedOverview = saveSolutionOverview(solutionOverview.toNewDraftEntity());
+        SolutionOverview overview = solutionOverview.toNewDraftEntity();
+        SolutionOverview savedOverview = saveSolutionOverview(overview);
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
+                .id(solutionOverview.getSolutionDetails().getSolutionName().replace(" ", "-") + "-1")
                 .systemCode(systemCode)
                 .solutionOverview(savedOverview)
                 .build();
@@ -155,15 +157,16 @@ public class SolutionReviewService {
      */
     public SolutionReview createSolutionReview(String systemCode) {
         List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
-        if (solutionReviews.isEmpty()) {
-            throw new NotFoundException("System " + systemCode + " does not exist");
-        }
+        String newId = getNewId(systemCode, solutionReviews);
+
         SolutionOverview savedOverview = saveSolutionOverview(
                 SolutionOverview
                         .fromExisting(solutionReviews.getFirst().getSolutionOverview())
                         .build()
         );
+
         SolutionReview solutionReview = SolutionReview.fromExisting(solutionReviews.getFirst(), null)
+                .id(newId)
                 .solutionOverview(savedOverview).build();
 
         saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
@@ -174,6 +177,19 @@ public class SolutionReviewService {
         saveEnterpriseTools(solutionReview, solutionReview.getEnterpriseTools());
         saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
+    }
+
+    private static String getNewId(String systemCode, List<SolutionReview> solutionReviews) {
+        if (solutionReviews.isEmpty()) {
+            throw new NotFoundException("System " + systemCode + " does not exist");
+        }
+
+        if (solutionReviews.getFirst().getDocumentState().ordinal() < DocumentState.CURRENT.ordinal()) {
+            throw new IllegalOperationException("A SUBMITTED or DRAFT review already exists for system " + systemCode);
+        }
+
+        SolutionReview lastReview = solutionReviews.getFirst();
+        return lastReview.getId().replaceAll("-\\d+$", "") + "-" + (Integer.parseInt(lastReview.getId().replaceAll("^.*-(\\d+)$", "$1")) + 1);
     }
 
     /**
