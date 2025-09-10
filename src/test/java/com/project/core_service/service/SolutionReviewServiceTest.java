@@ -160,6 +160,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
         assertThrows(NullPointerException.class, () -> service.createSolutionReview(null, dto));
         assertThrows(NullPointerException.class, () -> service.createSolutionReview("", dto));
@@ -175,6 +176,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert
@@ -193,6 +195,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert
@@ -211,6 +214,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert
@@ -232,6 +236,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
 
         // Act & Assert - Should not throw exception
@@ -256,6 +261,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 invalidConcerns);
         assertThrows(NullPointerException.class, () -> service.createSolutionReview("SYS-123", dto));
     }
@@ -268,6 +274,7 @@ class SolutionReviewServiceTest {
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
                 overview.getValueOutcome(),
+                overview.getApplicationUsers(),
                 overview.getConcerns());
         SolutionReview result = service.createSolutionReview("SYS-123", dto);
 

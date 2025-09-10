@@ -255,14 +255,17 @@ public class SolutionReviewService {
     }
 
     private void saveEnterpriseTools(SolutionReview solutionReview, List<EnterpriseTool> enterpriseTools) {
-        List<EnterpriseTool> newEnterpriseTools = enterpriseTools.stream()
-                .map(enterpriseTool -> {
-                    Tool savedTool = toolRepository.save(enterpriseTool.getTool());
-                    enterpriseTool.setTool(savedTool);
-                    return enterpriseToolRepository.save(enterpriseTool);
-                })
-                .toList();
-        solutionReview.setEnterpriseTools(newEnterpriseTools);
+        if (enterpriseTools != null && !enterpriseTools.isEmpty()) {
+            enterpriseTools.stream()
+                .forEach(enterpriseTool -> {
+                    Tool tool = toolRepository.save(enterpriseTool.getTool());
+                    enterpriseTool.setTool(tool);
+                });
+            List<EnterpriseTool> savedEnterpriseTools = enterpriseToolRepository.saveAll(enterpriseTools);
+
+            solutionReview.setEnterpriseTools(savedEnterpriseTools);
+
+        }
     }
 
     private <T> void saveIfNotEmpty(List<T> entities, MongoRepository<T, String> repository, Consumer<List<T>> setter) {
