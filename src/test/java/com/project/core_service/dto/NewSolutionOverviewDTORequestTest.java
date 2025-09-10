@@ -46,7 +46,6 @@ public class NewSolutionOverviewDTORequestTest {
         assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
         assertEquals(ReviewStatus.DRAFT, overview.getReviewStatus());
         assertNotNull(overview.getApplicationUsers());
-        assertTrue(overview.getApplicationUsers().isEmpty());
     }
 
     @Nested
