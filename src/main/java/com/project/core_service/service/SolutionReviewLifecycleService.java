@@ -241,8 +241,11 @@ public class SolutionReviewLifecycleService {
                     solutionReview.getSystemCode()));
         }
 
-        // step 2: check that there is no existing draft/submitted SR for the same systemCode (we block this to simplify the system)
-        Optional<SolutionReview> existingDraftOrSubmittedSROpt = solutionReviewRepository.findBySystemCodeAndDocumentStateIn(solutionReview.getSystemCode(), Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
+        // step 2: check that there is no existing draft/submitted SR for the same
+        // systemCode (we block this to simplify the system)
+        Optional<SolutionReview> existingDraftOrSubmittedSROpt = solutionReviewRepository
+                .findFirstBySystemCodeAndDocumentStateIn(solutionReview.getSystemCode(),
+                        Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
         if (existingDraftOrSubmittedSROpt.isPresent()) {
             throw new IllegalStateException("Cannot unapprove: there is an existing draft/submitted SR for systemCode: "
                     + solutionReview.getSystemCode());

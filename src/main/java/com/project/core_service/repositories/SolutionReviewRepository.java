@@ -14,10 +14,15 @@ import java.util.Optional;
 /**
  * Repository interface for {@link SolutionReview} entities.
  *
- * <p>Extends {@link MongoRepository} to provide CRUD operations and query methods
- * for managing solution reviews in a MongoDB database.</p>
+ * <p>
+ * Extends {@link MongoRepository} to provide CRUD operations and query methods
+ * for managing solution reviews in a MongoDB database.
+ * </p>
  *
- * <p>Includes a custom query method for retrieving reviews by system code with pagination.</p>
+ * <p>
+ * Includes a custom query method for retrieving reviews by system code with
+ * pagination.
+ * </p>
  */
 @Repository
 public interface SolutionReviewRepository extends MongoRepository<SolutionReview, String> {
@@ -34,11 +39,14 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
     List<SolutionReview> findAllBySystemCode(String systemCode, Sort sort);
 
     /**
-     * Retrieves a list of {@link SolutionReview} entries filtered by system code and document state.
+     * Retrieves the first {@link SolutionReview} entry filtered by system code and
+     * document state.
      *
-     * @param systemCode the system code used for filtering
-     * @param documentState the document state used for filtering
-     * @return a {@link List} of solution reviews that match the given system code and document state
+     * @param systemCode     the system code used for filtering
+     * @param documentStates the list of document states used for filtering
+     * @return an {@link Optional} containing the first solution review that matches
+     *         the given criteria, or empty if none found
      */
-    Optional<SolutionReview> findBySystemCodeAndDocumentStateIn(String systemCode, List<DocumentState> documentStates);
+    Optional<SolutionReview> findFirstBySystemCodeAndDocumentStateIn(String systemCode,
+            List<DocumentState> documentStates);
 }

@@ -415,7 +415,7 @@ class SolutionReviewLifecycleServiceTest {
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMetaWithHead);
-            when(solutionReviewRepository.findBySystemCodeAndDocumentStateIn("SYS-001",
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
                     .thenReturn(Optional.empty());
             when(auditLogService.getAuditLogNode("head-node-id")).thenReturn(headNodeWithoutNext);
@@ -429,7 +429,7 @@ class SolutionReviewLifecycleServiceTest {
 
             verify(solutionReviewRepository).findById("sr-1");
             verify(auditLogService).getAuditLogMeta("SYS-001");
-            verify(solutionReviewRepository).findBySystemCodeAndDocumentStateIn("SYS-001",
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
             verify(auditLogService).getAuditLogNode("head-node-id");
             verifyNoMoreInteractions(auditLogService);
@@ -454,7 +454,7 @@ class SolutionReviewLifecycleServiceTest {
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
-            when(solutionReviewRepository.findBySystemCodeAndDocumentStateIn("SYS-001",
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
                     .thenReturn(Optional.of(existingDraftSR));
 
@@ -467,7 +467,7 @@ class SolutionReviewLifecycleServiceTest {
 
             verify(solutionReviewRepository).findById("sr-1");
             verify(auditLogService).getAuditLogMeta("SYS-001");
-            verify(solutionReviewRepository).findBySystemCodeAndDocumentStateIn("SYS-001",
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
             verifyNoMoreInteractions(auditLogService);
         }
@@ -491,7 +491,7 @@ class SolutionReviewLifecycleServiceTest {
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
-            when(solutionReviewRepository.findBySystemCodeAndDocumentStateIn("SYS-001",
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
                     .thenReturn(Optional.of(existingSubmittedSR));
 
@@ -504,7 +504,7 @@ class SolutionReviewLifecycleServiceTest {
 
             verify(solutionReviewRepository).findById("sr-1");
             verify(auditLogService).getAuditLogMeta("SYS-001");
-            verify(solutionReviewRepository).findBySystemCodeAndDocumentStateIn("SYS-001",
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
             verifyNoMoreInteractions(auditLogService);
         }
@@ -535,7 +535,7 @@ class SolutionReviewLifecycleServiceTest {
 
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(auditLogService.getAuditLogMeta("SYS-001")).thenReturn(auditLogMeta);
-            when(solutionReviewRepository.findBySystemCodeAndDocumentStateIn("SYS-001",
+            when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED)))
                     .thenReturn(Optional.empty());
             when(auditLogService.getAuditLogNode("head-node-id")).thenReturn(headNode);
@@ -550,7 +550,7 @@ class SolutionReviewLifecycleServiceTest {
 
             verify(solutionReviewRepository).findById("sr-1");
             verify(auditLogService).getAuditLogMeta("SYS-001");
-            verify(solutionReviewRepository).findBySystemCodeAndDocumentStateIn("SYS-001",
+            verify(solutionReviewRepository).findFirstBySystemCodeAndDocumentStateIn("SYS-001",
                     Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
             verify(auditLogService).getAuditLogNode("head-node-id");
             verify(solutionReviewRepository).findById("sr-previous");
