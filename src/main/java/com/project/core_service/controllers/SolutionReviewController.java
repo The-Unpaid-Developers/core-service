@@ -61,7 +61,7 @@ public class SolutionReviewController {
      * @param size the number of items per page
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews
      */
-    @GetMapping("/all")
+    @GetMapping("/paging")
     public ResponseEntity<Page<SolutionReview>> getSolutionReviews(@RequestParam int page, @RequestParam int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(solutionReviewService.getSolutionReviews(pageable));
@@ -73,7 +73,7 @@ public class SolutionReviewController {
      * @param systemCode the system code used for filtering
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews
      */
-    @GetMapping
+    @GetMapping("/system")
     public ResponseEntity<List<SolutionReview>> getSolutionReviewsBySystemCode(@RequestParam String systemCode) {
         return ResponseEntity.ok(solutionReviewService.getSolutionReviewsBySystemCode(systemCode));
     }
