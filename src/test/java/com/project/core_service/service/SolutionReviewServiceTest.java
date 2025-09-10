@@ -150,6 +150,15 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void getAllSolutionReviews() {
+        when(solutionReviewRepository.findAll(any(Sort.class))).thenReturn(List.of(review));
+
+        List<SolutionReview> result = service.getAllSolutionReviews();
+
+        assertEquals(1, result.size());
+    }
+
+    @Test
     void createSolutionReview_ShouldThrowIfOverviewNull() {
         assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", null));
     }

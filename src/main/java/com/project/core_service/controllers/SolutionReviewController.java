@@ -45,6 +45,16 @@ public class SolutionReviewController {
     }
 
     /**
+     * Retrieves all {@link SolutionReview} entries.
+     *
+     * @return a {@link ResponseEntity} containing a list of all solution reviews
+     */
+    @GetMapping
+    public ResponseEntity<List<SolutionReview>> getAllSolutionReviews() {
+        return ResponseEntity.ok(solutionReviewService.getAllSolutionReviews());
+    }
+
+    /**
      * Retrieves all {@link SolutionReview} entries with pagination.
      *
      * @param page the page index (0-based)
