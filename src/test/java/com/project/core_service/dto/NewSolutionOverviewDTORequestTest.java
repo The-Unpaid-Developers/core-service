@@ -30,6 +30,7 @@ public class NewSolutionOverviewDTORequestTest {
                 BusinessUnit.UNKNOWN,
                 BusinessDriver.RISK_MANAGEMENT,
                 valueOutcome,
+                List.of(ApplicationUser.EMPLOYEE),
                 List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation",
                         ConcernStatus.UNKNOWN)));
     }
@@ -68,6 +69,7 @@ public class NewSolutionOverviewDTORequestTest {
                     BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT,
                     "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
                     List.of(concern));
 
             SolutionOverview overview = dto.toNewDraftEntity();
@@ -127,6 +129,7 @@ public class NewSolutionOverviewDTORequestTest {
                     BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT,
                     "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
                     concerns));
         }
 
@@ -142,6 +145,7 @@ public class NewSolutionOverviewDTORequestTest {
                     null,
                     BusinessDriver.RISK_MANAGEMENT,
                     "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
                     concerns));
         }
 
@@ -157,6 +161,7 @@ public class NewSolutionOverviewDTORequestTest {
                     BusinessUnit.UNKNOWN,
                     null,
                     "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
                     concerns));
         }
 
@@ -172,6 +177,7 @@ public class NewSolutionOverviewDTORequestTest {
                     BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT,
                     null,
+                    List.of(ApplicationUser.EMPLOYEE),
                     concerns));
         }
     }

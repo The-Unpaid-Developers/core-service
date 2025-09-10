@@ -23,6 +23,8 @@ public class NewSolutionOverviewRequestDTO {
     @Nonnull
     private String valueOutcome;
 
+    private List<ApplicationUser> applicationUsers;
+
     private List<Concern> concerns;
 
     public SolutionOverview toNewDraftEntity() {
@@ -38,6 +40,7 @@ public class NewSolutionOverviewRequestDTO {
                 .businessUnit(businessUnit)
                 .businessDriver(businessDriver)
                 .valueOutcome(valueOutcome)
+                .applicationUsers(applicationUsers == null ? List.of() : new ArrayList<>(applicationUsers)) // copy list
                 .concerns(concerns == null ? List.of() : new ArrayList<>(concerns)) // copy list
                 .build();
     }

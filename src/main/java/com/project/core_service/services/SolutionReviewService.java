@@ -10,6 +10,7 @@ import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.repositories.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +32,7 @@ import java.util.stream.Collectors;
  * layer between the controller and repository.</p>
  */
 @Service
+@Slf4j
 public class SolutionReviewService {
     private final SolutionReviewRepository solutionReviewRepository;
 
@@ -132,6 +134,7 @@ public class SolutionReviewService {
         }
 
         SolutionOverview savedOverview = saveSolutionOverview(solutionOverview.toNewDraftEntity());
+        log.info("Created new SolutionOverview: {}", savedOverview);
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
                 .systemCode(systemCode)
                 .solutionOverview(savedOverview)
@@ -195,16 +198,25 @@ public class SolutionReviewService {
         solutionReview.setDocumentState(modifiedSolutionReview.getDocumentState());
 
         if (modifiedSolutionReview.getSolutionOverview() != null) {
+            log.info("Updating SolutionOverview for SolutionOverview {}", solutionReview.getSolutionOverview());
             SolutionOverview overview = saveSolutionOverview(modifiedSolutionReview.getSolutionOverview());
             solutionReview.setSolutionOverview(overview);
         }
 
+        log.info("Updating BusinessCapabilities");
         saveIfNotEmpty(modifiedSolutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
+        log.info("Updating SystemComponents");
         saveIfNotEmpty(modifiedSolutionReview.getSystemComponents(), systemComponentRepository, solutionReview::setSystemComponents);
+        log.info("Updating IntegrationFlows");
+
         saveIfNotEmpty(modifiedSolutionReview.getIntegrationFlows(), integrationFlowRepository, solutionReview::setIntegrationFlows);
+        log.info("Updating DataAssets");
         saveIfNotEmpty(modifiedSolutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
+        log.info("Updating TechnologyComponents");
         saveIfNotEmpty(modifiedSolutionReview.getTechnologyComponents(), technologyComponentRepository, solutionReview::setTechnologyComponents);
+        log.info("Updating EnterpriseTools");
         saveEnterpriseTools(solutionReview, modifiedSolutionReview.getEnterpriseTools());
+        log.info("Updating ProcessCompliances");
         saveIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
 
         solutionReview.setLastModifiedAt(LocalDateTime.now());
@@ -255,14 +267,17 @@ public class SolutionReviewService {
     }
 
     private void saveEnterpriseTools(SolutionReview solutionReview, List<EnterpriseTool> enterpriseTools) {
-        List<EnterpriseTool> newEnterpriseTools = enterpriseTools.stream()
-                .map(enterpriseTool -> {
-                    Tool savedTool = toolRepository.save(enterpriseTool.getTool());
-                    enterpriseTool.setTool(savedTool);
-                    return enterpriseToolRepository.save(enterpriseTool);
-                })
-                .toList();
-        solutionReview.setEnterpriseTools(newEnterpriseTools);
+        if (enterpriseTools != null && !enterpriseTools.isEmpty()) {
+            enterpriseTools.stream()
+                .forEach(enterpriseTool -> {
+                    Tool tool = toolRepository.save(enterpriseTool.getTool());
+                    enterpriseTool.setTool(tool);
+                });
+            List<EnterpriseTool> savedEnterpriseTools = enterpriseToolRepository.saveAll(enterpriseTools);
+
+            solutionReview.setEnterpriseTools(savedEnterpriseTools);
+
+        }
     }
 
     private <T> void saveIfNotEmpty(List<T> entities, MongoRepository<T, String> repository, Consumer<List<T>> setter) {
