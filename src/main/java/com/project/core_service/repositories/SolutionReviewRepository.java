@@ -1,5 +1,6 @@
 package com.project.core_service.repositories;
 
+import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -8,6 +9,7 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository interface for {@link SolutionReview} entities.
@@ -30,4 +32,13 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      *         sorted as specified
      */
     List<SolutionReview> findAllBySystemCode(String systemCode, Sort sort);
+
+    /**
+     * Retrieves a list of {@link SolutionReview} entries filtered by system code and document state.
+     *
+     * @param systemCode the system code used for filtering
+     * @param documentState the document state used for filtering
+     * @return a {@link List} of solution reviews that match the given system code and document state
+     */
+    Optional<SolutionReview> findBySystemCodeAndDocumentStateIn(String systemCode, List<DocumentState> documentStates);
 }

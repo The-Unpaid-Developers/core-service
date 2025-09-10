@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 /**
@@ -240,10 +241,17 @@ public class SolutionReviewLifecycleService {
                     solutionReview.getSystemCode()));
         }
 
-        // step 2: unapprove the current SR
+        // step 2: check that there is no existing draft/submitted SR for the same systemCode (we block this to simplify the system)
+        Optional<SolutionReview> existingDraftOrSubmittedSROpt = solutionReviewRepository.findBySystemCodeAndDocumentStateIn(solutionReview.getSystemCode(), Arrays.asList(DocumentState.DRAFT, DocumentState.SUBMITTED));
+        if (existingDraftOrSubmittedSROpt.isPresent()) {
+            throw new IllegalStateException("Cannot unapprove: there is an existing draft/submitted SR for systemCode: "
+                    + solutionReview.getSystemCode());
+        }
+
+        // step 3: unapprove the current SR
         solutionReview.unApproveCurrent(modifiedBy);
 
-        // step 3: remove this SR from the audit log
+        // step 4: remove this SR from the audit log
         String headNodeId = auditLogMeta.getHead();
         if (headNodeId == null) {
             throw new IllegalStateException("Cannot unapprove: audit log has no head node for systemCode: "
@@ -264,10 +272,10 @@ public class SolutionReviewLifecycleService {
 
         auditLogMeta.removeHead(nextNode.getId());
 
-        // step 4: update the audit log meta
+        // step 5: update the audit log meta
         auditLogService.updateAuditLogMeta(auditLogMeta);
 
-        // step 5: update the most recent outdated as current
+        // step 6: update the most recent outdated as current
         Optional<SolutionReview> mostRecentOutdated = solutionReviewRepository.findById(nextNode.getSolutionReviewId());
         if (mostRecentOutdated.isPresent()) {
             mostRecentOutdated.get().resetAsCurrent(modifiedBy);
