@@ -5,6 +5,7 @@ import com.project.core_service.models.solutions_review.SolutionReview;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -52,11 +53,15 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
             List<DocumentState> documentStates);
 
     /**
-     * Retrieves all distinct system codes (unpaginated).
+     * Retrieves all distinct system codes.
      *
      * @return a {@link List} of distinct system codes
      */
-    @Query(value = "{}", fields = "{ 'systemCode': 1 }")
+    @Aggregation(pipeline = {
+        "{ $group: { _id: '$systemCode' } }",
+        "{ $sort: { _id: 1 } }",
+        "{ $project: { _id: 0, systemCode: '$_id' } }"
+    })
     List<String> findAllDistinctSystemCodes();
 
     /**
