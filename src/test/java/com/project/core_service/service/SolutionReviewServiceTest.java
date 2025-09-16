@@ -1,6 +1,8 @@
 package com.project.core_service.service;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
@@ -20,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
@@ -156,6 +159,95 @@ class SolutionReviewServiceTest {
         List<SolutionReview> result = service.getAllSolutionReviews();
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void getPaginatedSystemView_ShouldReturnApprovedReviews() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl<String> systemCodesPage = new PageImpl<>(List.of("SYS-123", "SYS-456"));
+        SolutionReview approvedReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview) // Use the dummy overview
+                .documentState(DocumentState.CURRENT)
+                .build();
+
+        when(solutionReviewRepository.findDistinctSystemCodes(pageable)).thenReturn(systemCodesPage);
+        when(solutionReviewRepository.findApprovedBySystemCode("SYS-123")).thenReturn(Optional.of(approvedReview));
+        when(solutionReviewRepository.findApprovedBySystemCode("SYS-456")).thenReturn(Optional.empty());
+        when(solutionReviewRepository.findBySystemCode(eq("SYS-456"), any(Sort.class)))
+                .thenReturn(List.of());
+
+        // Act
+        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+
+        // Assert
+        assertEquals(2, result.getTotalElements());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.CURRENT, result.getContent().get(0).getDocumentState());
+        assertNull(result.getContent().get(1)); // No review for SYS-456
+    }
+
+    @Test
+    void getPaginatedSystemView_ShouldReturnLatestReviewIfNoApprovedExists() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl<String> systemCodesPage = new PageImpl<>(List.of("SYS-123"));
+        SolutionReview latestReview = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-123")
+                .solutionOverview(overview) // Use the dummy overview
+                .documentState(DocumentState.DRAFT)
+                .lastModifiedAt(LocalDateTime.now())
+                .build();
+
+        when(solutionReviewRepository.findDistinctSystemCodes(pageable)).thenReturn(systemCodesPage);
+        when(solutionReviewRepository.findApprovedBySystemCode("SYS-123")).thenReturn(Optional.empty());
+        when(solutionReviewRepository.findBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(latestReview));
+
+        // Act
+        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.DRAFT, result.getContent().get(0).getDocumentState());
+    }
+
+    @Test
+    void getPaginatedSystemView_ShouldHandleEmptySystemCodes() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl<String> systemCodesPage = new PageImpl<>(List.of());
+
+        when(solutionReviewRepository.findDistinctSystemCodes(pageable)).thenReturn(systemCodesPage);
+
+        // Act
+        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void getPaginatedSystemView_ShouldHandleNoReviewsForSystem() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl<String> systemCodesPage = new PageImpl<>(List.of("SYS-123"));
+
+        when(solutionReviewRepository.findDistinctSystemCodes(pageable)).thenReturn(systemCodesPage);
+        when(solutionReviewRepository.findApprovedBySystemCode("SYS-123")).thenReturn(Optional.empty());
+        when(solutionReviewRepository.findBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of());
+
+        // Act
+        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertNull(result.getContent().get(0)); // No review for SYS-123
     }
 
     @Test

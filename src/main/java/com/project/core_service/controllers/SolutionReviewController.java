@@ -78,6 +78,22 @@ public class SolutionReviewController {
         return ResponseEntity.ok(solutionReviewService.getSolutionReviewsBySystemCode(systemCode));
     }
 
+   /**
+     * Retrieves all {@link SolutionReview} entries with pagination for system view.
+     *
+     * @param page the page index (0-based)
+     * @param size the number of items per page
+     * @return a {@link ResponseEntity} containing a paginated list of solution reviews
+     */
+    @GetMapping("/system-view")
+    public ResponseEntity<Page<SolutionReview>> getPaginatedSystemView(
+            @RequestParam int page,
+            @RequestParam int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SolutionReview> systemView = solutionReviewService.getPaginatedSystemView(pageable);
+        return ResponseEntity.ok(systemView);
+    }
 
     /**
      * Creates a new {@link SolutionReview} for the given system code.

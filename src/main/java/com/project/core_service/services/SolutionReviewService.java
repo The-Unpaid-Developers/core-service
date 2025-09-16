@@ -122,6 +122,32 @@ public class SolutionReviewService {
         return solutionReviewRepository.findAllBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
     }
 
+   /**
+     * Retrieves a paginated view of solution reviews grouped by system.
+     *
+     * <p>For each system, if an approved solution review exists, it is returned.
+     * Otherwise, the latest solution review for the system is returned.</p>
+     *
+     * @param pageable the pagination information
+     * @return a {@link Page} of solution reviews, one per system
+     */
+    public Page<SolutionReview> getPaginatedSystemView(Pageable pageable) {
+        // Retrieve distinct system codes with pagination
+        Page<String> systemCodes = solutionReviewRepository.findDistinctSystemCodes(pageable);
+
+        // Map each system code to its corresponding SolutionReview
+        return systemCodes.map(systemCode -> {
+            // Check if an approved solution review exists for the system
+            Optional<SolutionReview> approvedReview = solutionReviewRepository.findApprovedBySystemCode(systemCode);
+
+            // If no approved review exists, retrieve the latest solution review
+            return approvedReview.orElseGet(() -> {
+                List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+                return reviews.isEmpty() ? null : reviews.get(0);
+            });
+        });
+    }
+
     /**
      * Creates a new draft {@link SolutionReview}.
      *
