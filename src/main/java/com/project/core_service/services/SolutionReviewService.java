@@ -177,8 +177,14 @@ public class SolutionReviewService {
      */
     public SolutionReview createSolutionReview(String systemCode, NewSolutionOverviewRequestDTO solutionOverview) {
         List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
-        if (!solutionReviews.isEmpty() && solutionReviews.getFirst().getDocumentState().ordinal() <= DocumentState.CURRENT.ordinal()) {
-            throw new IllegalOperationException("A CURRENT or SUBMITTED or DRAFT review already exists for system " + systemCode);
+
+        // Check if there's any DRAFT or SUBMITTED review (should block creation)
+        boolean hasActiveReview = solutionReviews.stream()
+            .anyMatch(review -> review.getDocumentState() == DocumentState.DRAFT || 
+                            review.getDocumentState() == DocumentState.SUBMITTED);
+        
+        if (hasActiveReview) {
+            throw new IllegalOperationException("A DRAFT or SUBMITTED review already exists for system " + systemCode);
         }
 
         if (solutionOverview == null) {
@@ -204,6 +210,16 @@ public class SolutionReviewService {
         if (solutionReviews.isEmpty()) {
             throw new NotFoundException("System " + systemCode + " does not exist");
         }
+
+        // Check if there's any DRAFT or SUBMITTED review (should block creation)
+        boolean hasActiveReview = solutionReviews.stream()
+            .anyMatch(review -> review.getDocumentState() == DocumentState.DRAFT || 
+                            review.getDocumentState() == DocumentState.SUBMITTED);
+        
+        if (hasActiveReview) {
+            throw new IllegalOperationException("A DRAFT or SUBMITTED review already exists for system " + systemCode);
+        }
+        
         SolutionOverview savedOverview = saveSolutionOverview(
                 SolutionOverview
                         .fromExisting(solutionReviews.getFirst().getSolutionOverview())

@@ -279,7 +279,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123");
-        
+
         SolutionReview olderReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
@@ -287,7 +287,7 @@ class SolutionReviewServiceTest {
                 .documentState(DocumentState.SUBMITTED)
                 .lastModifiedAt(LocalDateTime.now().minusDays(1))
                 .build();
-        
+
         SolutionReview latestReview = SolutionReview.newDraftBuilder()
                 .id("rev-2")
                 .systemCode("SYS-123")
@@ -332,7 +332,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(1, 2); // Second page, 2 items per page
         List<String> systemCodes = List.of("SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005");
-        
+
         // Create 5 reviews for different systems
         List<SolutionReview> reviews = new ArrayList<>();
         for (int i = 1; i <= 5; i++) {
@@ -357,7 +357,7 @@ class SolutionReviewServiceTest {
         assertEquals(2, result.getContent().size()); // Current page size
         assertEquals(1, result.getNumber()); // Current page number
         assertEquals(3, result.getTotalPages()); // Total pages (5 items, 2 per page = 3 pages)
-        
+
         // Verify we got the correct items for page 1 (0-indexed)
         assertEquals("SYS-003", result.getContent().get(0).getSystemCode());
         assertEquals("SYS-004", result.getContent().get(1).getSystemCode());
@@ -416,7 +416,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        assertTrue(exception.getMessage().contains("A DRAFT or SUBMITTED review already exists for system"));
     }
 
     @Test
@@ -435,15 +435,17 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        assertTrue(exception.getMessage().contains("A DRAFT or SUBMITTED review already exists for system"));
     }
 
     @Test
-    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithCurrentState() {
+    void createSolutionReview_ShouldAllowCreationWhenCurrentStateExists() {
         // Arrange - existing CURRENT review
         review.setDocumentState(DocumentState.CURRENT);
         when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
                 .thenReturn(List.of(review));
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
@@ -451,10 +453,13 @@ class SolutionReviewServiceTest {
                 overview.getApplicationUsers(),
                 overview.getConcerns());
 
-        // Act & Assert
-        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
-                () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123", dto);
+            assertNotNull(result);
+        });
+
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
     @Test
@@ -532,7 +537,8 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeExists() {
+    void createSolutionReviewFromExisting_ShouldSucceedWhenCurrentStateExists() {
+        review.setDocumentState(DocumentState.CURRENT);
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
                 .thenReturn(List.of(review));
@@ -545,6 +551,45 @@ class SolutionReviewServiceTest {
         verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfDraftExists() {
+        // Test blocking behavior for DRAFT state
+        review.setDocumentState(DocumentState.DRAFT);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123"));
+        assertTrue(exception.getMessage().contains("A DRAFT or SUBMITTED review already exists"));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldThrowIfSubmittedExists() {
+        // Test blocking behavior for SUBMITTED state
+        review.setDocumentState(DocumentState.SUBMITTED);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123"));
+        assertTrue(exception.getMessage().contains("A DRAFT or SUBMITTED review already exists"));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldSucceedWhenOutdatedExists() {
+        // Test allowing creation when only OUTDATED exists
+        review.setDocumentState(DocumentState.OUTDATED);
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+                .thenReturn(List.of(review));
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
+
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123");
+            assertNotNull(result);
+        });
+    }
+    
     @Test
     void updateSolutionReview_ShouldThrowIfDTONull() {
         assertThrows(IllegalArgumentException.class, () -> service.updateSolutionReview(null));
