@@ -66,7 +66,7 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      * @param systemCode the system code used for filtering
      * @return an {@link Optional} containing the approved solution review, or empty if none found
      */
-    @Query("{ 'systemCode': ?0, 'documentState': 'APPROVED' }")
+    @Query("{ 'systemCode': ?0, 'documentState': 'CURRENT' }")
     Optional<SolutionReview> findApprovedBySystemCode(String systemCode);
 
      /**

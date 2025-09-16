@@ -140,10 +140,13 @@ public class SolutionReviewService {
             // Check if an approved solution review exists for the system
             Optional<SolutionReview> approvedReview = solutionReviewRepository.findApprovedBySystemCode(systemCode);
 
-            // If no approved review exists, retrieve the latest solution review
             return approvedReview.orElseGet(() -> {
                 List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
-                return reviews.isEmpty() ? null : reviews.get(0);
+                // Prioritize CURRENT state
+                return reviews.stream()
+                        .filter(review -> review.getDocumentState() == DocumentState.CURRENT)
+                        .findFirst()
+                        .orElse(reviews.isEmpty() ? null : reviews.get(0)); // Fallback to the latest review
             });
         });
     }
