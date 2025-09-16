@@ -52,13 +52,12 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
             List<DocumentState> documentStates);
 
     /**
-     * Retrieves a paginated list of distinct system codes.
+     * Retrieves all distinct system codes (unpaginated).
      *
-     * @param pageable the pagination information
-     * @return a {@link Page} of distinct system codes
-     */        
+     * @return a {@link List} of distinct system codes
+     */
     @Query(value = "{}", fields = "{ 'systemCode': 1 }")
-    Page<String> findDistinctSystemCodes(Pageable pageable);
+    List<String> findAllDistinctSystemCodes();
 
     /**
      * Retrieves the approved {@link SolutionReview} for a given system code.

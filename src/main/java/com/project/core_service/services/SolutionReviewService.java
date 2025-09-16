@@ -12,6 +12,7 @@ import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
@@ -133,22 +134,38 @@ public class SolutionReviewService {
      */
     public Page<SolutionReview> getPaginatedSystemView(Pageable pageable) {
         // Retrieve distinct system codes with pagination
-        Page<String> systemCodes = solutionReviewRepository.findDistinctSystemCodes(pageable);
+        List<String> allSystemCodes = solutionReviewRepository.findAllDistinctSystemCodes();
 
-        // Map each system code to its corresponding SolutionReview
-        return systemCodes.map(systemCode -> {
-            // Check if an approved solution review exists for the system
-            Optional<SolutionReview> approvedReview = solutionReviewRepository.findApprovedBySystemCode(systemCode);
-
-            return approvedReview.orElseGet(() -> {
-                List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
-                // Prioritize CURRENT state
-                return reviews.stream()
-                        .filter(review -> review.getDocumentState() == DocumentState.CURRENT)
-                        .findFirst()
-                        .orElse(reviews.isEmpty() ? null : reviews.get(0)); // Fallback to the latest review
-            });
-        });
+        // Map each system code to its representative SolutionReview based on business rules
+        List<SolutionReview> representativeReviews = allSystemCodes.stream()
+            .map(systemCode -> {
+                // Check if an approved (CURRENT) solution review exists for the system
+                Optional<SolutionReview> approvedReview = solutionReviewRepository.findApprovedBySystemCode(systemCode);
+                
+                return approvedReview.orElseGet(() -> {
+                    // No CURRENT review found, get all reviews for this system sorted by lastModifiedAt DESC
+                    List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(
+                        systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt")
+                    );
+                    // Return the latest review (first in DESC order), or null if no reviews exist
+                    return reviews.isEmpty() ? null : reviews.get(0);
+                });
+            })
+            .filter(review -> review != null) // Remove any null entries
+            .collect(Collectors.toList());
+        
+        // Apply manual pagination to the representative reviews
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), representativeReviews.size());
+        
+        // Handle case where start is beyond the available data
+        if (start >= representativeReviews.size()) {
+            return new PageImpl<>(List.of(), pageable, representativeReviews.size());
+        }
+        
+        List<SolutionReview> paginatedList = representativeReviews.subList(start, end);
+        
+        return new PageImpl<>(paginatedList, pageable, representativeReviews.size());
     }
 
     /**
