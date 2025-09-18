@@ -2,6 +2,7 @@ package com.project.core_service.controllers;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.services.SolutionReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +94,25 @@ public class SolutionReviewController {
         Pageable pageable = PageRequest.of(page, size);
         Page<SolutionReview> systemView = solutionReviewService.getPaginatedSystemView(pageable);
         return ResponseEntity.ok(systemView);
+    }
+
+    /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     *
+     * @param documentState the document state used for filtering (e.g., SUBMITTED, DRAFT, CURRENT, OUTDATED)
+     * @param page          the page index (0-based)
+     * @param size          the number of items per page
+     * @return a {@link ResponseEntity} containing a paginated list of solution reviews with the specified document state
+     */
+    @GetMapping("/by-state")
+    public ResponseEntity<Page<SolutionReview>> getSolutionReviewsByDocumentState(
+            @RequestParam String documentState,
+            @RequestParam int page,
+            @RequestParam int size
+    ) {
+        DocumentState state = DocumentState.valueOf(documentState.toUpperCase());
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(solutionReviewService.getSolutionReviewsByDocumentState(state, pageable));
     }
 
     /**

@@ -384,6 +384,88 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void getSolutionReviewsByDocumentState_ShouldReturnSubmittedReviews() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        SolutionReview submittedReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .build();
+
+        PageImpl<SolutionReview> expectedPage = new PageImpl<>(List.of(submittedReview));
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable))
+                .thenReturn(expectedPage);
+
+        // Act
+        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(DocumentState.SUBMITTED, pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.SUBMITTED, result.getContent().get(0).getDocumentState());
+    }
+
+    @Test
+    void getSolutionReviewsByDocumentState_ShouldReturnOnlySubmittedWhenBothSubmittedAndDraftExist() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        
+        SolutionReview submittedReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .lastModifiedAt(LocalDateTime.now().minusDays(1))
+                .build();
+
+        SolutionReview draftReview = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview)
+                .documentState(DocumentState.DRAFT)
+                .lastModifiedAt(LocalDateTime.now())
+                .build();
+
+        // Mock repository to return only the SUBMITTED review when filtering by SUBMITTED state
+        PageImpl<SolutionReview> expectedPage = new PageImpl<>(List.of(submittedReview));
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable))
+                .thenReturn(expectedPage);
+
+        // Act
+        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(DocumentState.SUBMITTED, pageable);
+
+        // Assert
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        assertEquals("rev-1", result.getContent().get(0).getId());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.SUBMITTED, result.getContent().get(0).getDocumentState());
+        
+        // Verify that the repository was called with the correct document state
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.SUBMITTED, pageable);
+    }
+
+    @Test
+    void getSolutionReviewsByDocumentState_ShouldReturnEmptyPageWhenNoReviewsFound() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10);
+        PageImpl<SolutionReview> emptyPage = new PageImpl<>(List.of());
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.CURRENT, pageable))
+                .thenReturn(emptyPage);
+
+        // Act
+        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(DocumentState.CURRENT, pageable);
+
+        // Assert
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
     void createSolutionReview_ShouldThrowIfOverviewNull() {
         assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("SYS-123", null));
     }

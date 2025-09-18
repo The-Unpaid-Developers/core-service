@@ -169,6 +169,17 @@ public class SolutionReviewService {
     }
 
     /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     *
+     * @param documentState the document state used for filtering
+     * @param pageable      the pagination information
+     * @return a {@link Page} of solution reviews with the specified document state
+     */
+    public Page<SolutionReview> getSolutionReviewsByDocumentState(DocumentState documentState, Pageable pageable) {
+        return solutionReviewRepository.findByDocumentState(documentState, pageable);
+    }
+
+    /**
      * Creates a new draft {@link SolutionReview}.
      *
      * @param systemCode       the system code associated with the review

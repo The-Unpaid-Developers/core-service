@@ -82,4 +82,13 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      */
     @Query("{ 'systemCode': ?0 }")
     List<SolutionReview> findBySystemCode(String systemCode, Sort sort);
+
+    /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     *
+     * @param documentState the document state used for filtering
+     * @param pageable      the pagination information
+     * @return a {@link Page} of solution reviews with the specified document state
+     */
+    Page<SolutionReview> findByDocumentState(DocumentState documentState, Pageable pageable);
 }
