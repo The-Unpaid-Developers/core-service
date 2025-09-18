@@ -152,6 +152,19 @@ public class SolutionReviewController {
     }
 
     /**
+     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED state.
+     *
+     * Only the concerns in the solution overview are updated. Other fields are ignored.
+     *
+     * @param solutionReviewWithConcerns the solution review object containing updated concerns
+     * @return a {@link ResponseEntity} containing the updated solution review
+     */
+    @PutMapping("/concerns")
+    public ResponseEntity<SolutionReview> updateSolutionReviewConcerns(@RequestBody SolutionReviewDTO solutionReviewWithConcerns) {
+        return ResponseEntity.ok(solutionReviewService.updateSolutionReviewConcerns(solutionReviewWithConcerns));
+    }
+
+    /**
      * Deletes a {@link SolutionReview} by its ID.
      *
      * @param id the identifier of the solution review to delete

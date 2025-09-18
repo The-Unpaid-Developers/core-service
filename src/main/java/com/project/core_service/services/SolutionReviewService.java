@@ -294,6 +294,41 @@ public class SolutionReviewService {
     }
 
     /**
+     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED state.
+     *
+     * The solution review must be in SUBMITTED state for this operation to be allowed.
+     *
+     * @param modifiedSolutionReview the DTO containing the updated concerns
+     * @return the updated solution review
+     * @throws NotFoundException if no solution review exists with the given ID
+     * @throws IllegalStateException if the solution review is not in SUBMITTED state
+     */
+    public SolutionReview updateSolutionReviewConcerns(SolutionReviewDTO modifiedSolutionReview) {
+        if (modifiedSolutionReview == null) {
+            throw new IllegalArgumentException("Modified SolutionReview cannot be null");
+        }
+        
+        // Check exists throw not found if not exists
+        SolutionReview solutionReview = solutionReviewRepository.findById(modifiedSolutionReview.getId())
+                .orElseThrow(() -> new NotFoundException(modifiedSolutionReview.getId()));
+
+        // Validate that the solution review is in SUBMITTED state
+        if (solutionReview.getDocumentState() != DocumentState.SUBMITTED) {
+            throw new IllegalStateException("Only SUBMITTED reviews can have concerns updated");
+        }
+
+        // Update solution overview (including concerns)
+        if (modifiedSolutionReview.getSolutionOverview() != null) {
+            SolutionOverview overview = saveSolutionOverview(modifiedSolutionReview.getSolutionOverview());
+            solutionReview.setSolutionOverview(overview);
+        }
+
+        solutionReview.setLastModifiedAt(LocalDateTime.now());
+
+        return solutionReviewRepository.save(solutionReview);
+    }
+
+    /**
      * Deletes a {@link SolutionReview} by its ID.
      *
      * @param id the identifier of the solution review to delete

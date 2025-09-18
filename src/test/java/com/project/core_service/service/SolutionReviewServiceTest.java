@@ -715,6 +715,204 @@ class SolutionReviewServiceTest {
     }
 
     @Test
+    void updateSolutionReviewConcerns_ShouldUpdateConcernsForSubmittedReview() {
+        // Arrange
+        String reviewId = "review-123";
+        SolutionReview existingReview = SolutionReview.newDraftBuilder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .build();
+
+        Concern newConcern = new Concern("concern-1", ConcernType.RISK, "New concern", "High impact", "Under review", ConcernStatus.UNKNOWN);
+        SolutionOverview modifiedOverview = SolutionOverview.fromExisting(overview)
+                .concerns(List.of(newConcern))
+                .build();
+
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(modifiedOverview)
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
+        when(solutionOverviewRepository.save(any(SolutionOverview.class))).thenReturn(modifiedOverview);
+        when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(existingReview);
+
+        // Act
+        SolutionReview result = service.updateSolutionReviewConcerns(modifiedDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(solutionReviewRepository).findById(reviewId);
+        verify(solutionOverviewRepository).save(any(SolutionOverview.class));
+        verify(solutionReviewRepository).save(any(SolutionReview.class));
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldThrowExceptionWhenReviewNotSubmitted() {
+        // Arrange
+        String reviewId = "review-123";
+        SolutionReview draftReview = SolutionReview.newDraftBuilder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.DRAFT)
+                .build();
+
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(draftReview));
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> service.updateSolutionReviewConcerns(modifiedDTO)
+        );
+
+        assertEquals("Only SUBMITTED reviews can have concerns updated", exception.getMessage());
+        verify(solutionReviewRepository).findById(reviewId);
+        verify(solutionReviewRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldThrowExceptionWhenReviewNotFound() {
+        // Arrange
+        String reviewId = "non-existent-review";
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.empty());
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
+                () -> service.updateSolutionReviewConcerns(modifiedDTO)
+        );
+
+        assertEquals(reviewId, exception.getMessage());
+        verify(solutionReviewRepository).findById(reviewId);
+        verify(solutionReviewRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldThrowExceptionWhenDTOIsNull() {
+        // Act & Assert
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.updateSolutionReviewConcerns(null)
+        );
+
+        assertEquals("Modified SolutionReview cannot be null", exception.getMessage());
+        verify(solutionReviewRepository, never()).findById(any());
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldThrowExceptionWhenCurrentStateReview() {
+        // Arrange
+        String reviewId = "review-123";
+        SolutionReview currentReview = SolutionReview.newDraftBuilder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.CURRENT)
+                .build();
+
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(currentReview));
+
+        // Act & Assert
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> service.updateSolutionReviewConcerns(modifiedDTO)
+        );
+
+        assertEquals("Only SUBMITTED reviews can have concerns updated", exception.getMessage());
+        verify(solutionReviewRepository).findById(reviewId);
+        verify(solutionReviewRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldHandleNullSolutionOverview() {
+        // Arrange
+        String reviewId = "review-123";
+        SolutionReview existingReview = SolutionReview.newDraftBuilder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .build();
+
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(null) // No solution overview provided
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
+        when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(existingReview);
+
+        // Act
+        SolutionReview result = service.updateSolutionReviewConcerns(modifiedDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(solutionReviewRepository).findById(reviewId);
+        verify(solutionReviewRepository).save(any(SolutionReview.class));
+        // Should not call solutionOverviewRepository.save when overview is null
+        verify(solutionOverviewRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSolutionReviewConcerns_ShouldUpdateLastModifiedAt() {
+        // Arrange
+        String reviewId = "review-123";
+        LocalDateTime originalTime = LocalDateTime.now().minusHours(1);
+        SolutionReview existingReview = SolutionReview.newDraftBuilder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .lastModifiedAt(originalTime)
+                .build();
+
+        SolutionReviewDTO modifiedDTO = SolutionReviewDTO.builder()
+                .id(reviewId)
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .build();
+
+        when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
+        when(solutionOverviewRepository.save(any(SolutionOverview.class))).thenReturn(overview);
+        when(solutionReviewRepository.save(any(SolutionReview.class))).thenAnswer(invocation -> {
+            SolutionReview savedReview = invocation.getArgument(0);
+            // Verify that lastModifiedAt was updated
+            assertTrue(savedReview.getLastModifiedAt().isAfter(originalTime));
+            return savedReview;
+        });
+
+        // Act
+        SolutionReview result = service.updateSolutionReviewConcerns(modifiedDTO);
+
+        // Assert
+        assertNotNull(result);
+        verify(solutionReviewRepository).save(any(SolutionReview.class));
+    }
+
+    @Test
     void deleteSolutionReview_FoundAndDraft() {
         when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
 
