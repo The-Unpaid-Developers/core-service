@@ -2,8 +2,6 @@ package com.project.core_service.repositories;
 
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
@@ -49,4 +47,32 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      */
     Optional<SolutionReview> findFirstBySystemCodeAndDocumentStateIn(String systemCode,
             List<DocumentState> documentStates);
+
+    /**
+     * Checks if a document exists in exclusive states (DRAFT, SUBMITTED, APPROVED)
+     * for the given system code.
+     *
+     * @param systemCode     the system code to check
+     * @param documentStates the exclusive states to check for
+     * @return true if any document exists in the specified exclusive states
+     */
+    boolean existsBySystemCodeAndDocumentStateIn(String systemCode, List<DocumentState> documentStates);
+
+    /**
+     * Finds all documents in exclusive states for the given system code.
+     *
+     * @param systemCode     the system code to check
+     * @param documentStates the exclusive states to check for
+     * @return list of documents in exclusive states
+     */
+    List<SolutionReview> findAllBySystemCodeAndDocumentStateIn(String systemCode, List<DocumentState> documentStates);
+
+    /**
+     * Counts documents in exclusive states for the given system code.
+     *
+     * @param systemCode     the system code to check
+     * @param documentStates the exclusive states to count
+     * @return count of documents in exclusive states
+     */
+    long countBySystemCodeAndDocumentStateIn(String systemCode, List<DocumentState> documentStates);
 }

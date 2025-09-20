@@ -1,7 +1,7 @@
 package com.project.core_service.controllers;
 
 import com.project.core_service.commands.LifecycleTransitionCommand;
-import com.project.core_service.service.SolutionReviewLifecycleService;
+import com.project.core_service.services.SolutionReviewLifecycleService;
 
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;

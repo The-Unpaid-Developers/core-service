@@ -11,7 +11,8 @@ import com.project.core_service.exceptions.IllegalStateTransitionException;
  * <p>
  * This enum tracks the document through its review and approval process,
  * from initial creation to final approval and eventual obsolescence.
- * State transitions typically follow: DRAFT → SUBMITTED → CURRENT → OUTDATED
+ * State transitions typically follow: DRAFT → SUBMITTED → APPROVED → ACTIVE →
+ * OUTDATED
  * 
  * @see com.project.core_service.models.solutions_review.SolutionReview
  * @since 1.0
@@ -42,34 +43,45 @@ public enum DocumentState {
     SUBMITTED,
 
     /**
+     * Document has been approved but not yet activated.
+     * <p>
+     * This state indicates that the document has passed the review process
+     * and is ready to become the active version. From this state, the document
+     * can be activated to become the current working version.
+     * 
+     * @see SolutionReview#activate()
+     */
+    APPROVED,
+
+    /**
      * Document has been approved and is the current active version.
      * <p>
      * This represents the approved, official version of the solution review
      * that should be used for decision-making and reference. Only one
-     * document per solution should typically be in CURRENT state at a time.
+     * document per solution should typically be in ACTIVE state at a time.
      * 
      * @see SolutionReview#markAsOutdated()
-     * @see SolutionReview#unApproveCurrent()
      */
-    CURRENT,
+    ACTIVE,
 
     /**
-     * Document was previously current but has been superseded.
+     * Document was previously active but has been superseded.
      * <p>
-     * When a new version of a solution review is approved, the previous
-     * CURRENT document transitions to OUTDATED. This state preserves
+     * When a new version of a solution review is approved and activated, the
+     * previous
+     * ACTIVE document transitions to OUTDATED. This state preserves
      * historical versions while clearly indicating they should not be
      * used for current decision-making.
      * 
-     * @see SolutionReview#resetAsCurrent()
      */
     OUTDATED;
 
     // Define valid transitions for each state
     private static final Set<DocumentState> DRAFT_TRANSITIONS = EnumSet.of(SUBMITTED);
-    private static final Set<DocumentState> SUBMITTED_TRANSITIONS = EnumSet.of(CURRENT, DRAFT);
-    private static final Set<DocumentState> CURRENT_TRANSITIONS = EnumSet.of(OUTDATED, SUBMITTED);
-    private static final Set<DocumentState> OUTDATED_TRANSITIONS = EnumSet.of(CURRENT);
+    private static final Set<DocumentState> SUBMITTED_TRANSITIONS = EnumSet.of(APPROVED, DRAFT);
+    private static final Set<DocumentState> APPROVED_TRANSITIONS = EnumSet.of(ACTIVE, SUBMITTED);
+    private static final Set<DocumentState> ACTIVE_TRANSITIONS = EnumSet.of(OUTDATED);
+    private static final Set<DocumentState> OUTDATED_TRANSITIONS = EnumSet.noneOf(DocumentState.class);
 
     /**
      * Validates if a transition from this state to the target state is allowed.
@@ -101,8 +113,10 @@ public enum DocumentState {
                 return DRAFT_TRANSITIONS;
             case SUBMITTED:
                 return SUBMITTED_TRANSITIONS;
-            case CURRENT:
-                return CURRENT_TRANSITIONS;
+            case APPROVED:
+                return APPROVED_TRANSITIONS;
+            case ACTIVE:
+                return ACTIVE_TRANSITIONS;
             case OUTDATED:
                 return OUTDATED_TRANSITIONS;
             default:
@@ -146,10 +160,12 @@ public enum DocumentState {
                 return "Document is being edited and is not ready for review";
             case SUBMITTED:
                 return "Document has been submitted for review and approval";
-            case CURRENT:
+            case APPROVED:
+                return "Document has been approved and is ready to be activated";
+            case ACTIVE:
                 return "Document is approved and represents the current active version";
             case OUTDATED:
-                return "Document was previously current but has been superseded";
+                return "Document was previously active but has been superseded";
             default:
                 return "Unknown state";
         }
@@ -165,21 +181,48 @@ public enum DocumentState {
     }
 
     /**
-     * Checks if this state represents an active document.
+     * Checks if this state represents a finalized document.
      * 
-     * @return true if the document is active (CURRENT or SUBMITTED)
+     * @return true if the document is in a final state (ACTIVE or OUTDATED)
      */
-    public boolean isActive() {
-        return this == CURRENT || this == SUBMITTED;
+    public boolean isFinalized() {
+        return this == ACTIVE || this == OUTDATED;
     }
 
     /**
-     * Checks if this state represents a finalized document.
+     * Checks if this state requires exclusive existence constraint.
+     * <p>
+     * Only one document per system should exist in DRAFT, SUBMITTED, or APPROVED
+     * states at any given time. This ensures proper workflow management and
+     * prevents conflicting working versions. ACTIVE state has its own separate
+     * constraint.
      * 
-     * @return true if the document is in a final state (CURRENT or OUTDATED)
+     * @return true if only one document should exist in this state per system
      */
-    public boolean isFinalized() {
-        return this == CURRENT || this == OUTDATED;
+    public boolean requiresExclusiveConstraint() {
+        return this == DRAFT || this == SUBMITTED || this == APPROVED;
+    }
+
+    /**
+     * Gets all states that should have exclusive constraint (max 1 document per
+     * system).
+     * Only one of DRAFT, SUBMITTED, or APPROVED should exist per system.
+     * 
+     * @return set of states that require exclusive existence
+     */
+    public static Set<DocumentState> getExclusiveStates() {
+        return EnumSet.of(DRAFT, SUBMITTED, APPROVED);
+    }
+
+    /**
+     * Gets all states that allow multiple documents per system.
+     * ACTIVE and OUTDATED states allow multiple documents (though ACTIVE should
+     * still be limited to 1).
+     * 
+     * @return set of states that allow multiple documents
+     */
+    public static Set<DocumentState> getNonExclusiveStates() {
+        return EnumSet.of(ACTIVE, OUTDATED);
     }
 
     /**
@@ -188,10 +231,10 @@ public enum DocumentState {
     public enum StateOperation {
         SUBMIT("submit document", SUBMITTED),
         REMOVE_SUBMISSION("remove submission", DRAFT),
-        APPROVE("approve document", CURRENT),
+        APPROVE("approve document", APPROVED),
+        ACTIVATE("activate document", ACTIVE),
         UNAPPROVE("un-approve document", SUBMITTED),
-        MARK_OUTDATED("mark as outdated", OUTDATED),
-        RESET_CURRENT("reset as current", CURRENT);
+        MARK_OUTDATED("mark as outdated", OUTDATED);
 
         private final String operationName;
         private final DocumentState targetState;
@@ -217,9 +260,9 @@ public enum DocumentState {
             StateOperation.SUBMIT, DRAFT,
             StateOperation.REMOVE_SUBMISSION, SUBMITTED,
             StateOperation.APPROVE, SUBMITTED,
-            StateOperation.UNAPPROVE, CURRENT,
-            StateOperation.MARK_OUTDATED, CURRENT,
-            StateOperation.RESET_CURRENT, OUTDATED);
+            StateOperation.ACTIVATE, APPROVED,
+            StateOperation.UNAPPROVE, APPROVED,
+            StateOperation.MARK_OUTDATED, ACTIVE);
 
     /**
      * Validates if an operation can be executed from this state.

@@ -26,9 +26,11 @@ import java.util.stream.Collectors;
 /**
  * Service layer for managing {@link SolutionReview} entities.
  *
- * <p>This service provides CRUD operations for solution reviews, as well as
+ * <p>
+ * This service provides CRUD operations for solution reviews, as well as
  * support for pagination and partial updates. It acts as the business logic
- * layer between the controller and repository.</p>
+ * layer between the controller and repository.
+ * </p>
  */
 @Service
 public class SolutionReviewService {
@@ -66,8 +68,7 @@ public class SolutionReviewService {
             DataAssetRepository dataAssetRepository,
             TechnologyComponentRepository technologyComponentRepository,
             EnterpriseToolRepository enterpriseToolRepository,
-            ProcessCompliantRepository processCompliantRepository
-    ) {
+            ProcessCompliantRepository processCompliantRepository) {
         this.solutionReviewRepository = solutionReviewRepository;
         this.solutionOverviewRepository = solutionOverviewRepository;
         this.concernRepository = concernRepository;
@@ -81,13 +82,12 @@ public class SolutionReviewService {
         this.processCompliantRepository = processCompliantRepository;
     }
 
-
     /**
      * Retrieves a {@link SolutionReview} by its ID.
      *
      * @param id the identifier of the solution review
      * @return an {@link Optional} containing the solution review if found,
-     * or empty if no review exists for the given ID
+     *         or empty if no review exists for the given ID
      */
     public Optional<SolutionReview> getSolutionReviewById(String id) {
         return solutionReviewRepository.findById(id);
@@ -112,6 +112,11 @@ public class SolutionReviewService {
         return solutionReviewRepository.findAll(pageable);
     }
 
+    public Optional<SolutionReview> getActiveSolutionReviewBySystemCode(String systemCode) {
+        return solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(systemCode,
+                List.of(DocumentState.ACTIVE));
+    }
+
     /**
      * Retrieves {@link SolutionReview} entries filtered by system code.
      *
@@ -130,10 +135,7 @@ public class SolutionReviewService {
      * @return the newly created solution review
      */
     public SolutionReview createSolutionReview(String systemCode, NewSolutionOverviewRequestDTO solutionOverview) {
-        List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
-        if (!solutionReviews.isEmpty()) {
-            throw new IllegalOperationException("System " + systemCode + " already exists. Use /existing/{systemCode} to create a new draft from existing.");
-        }
+        validateExclusiveStateConstraint(systemCode);
 
         if (solutionOverview == null) {
             throw new IllegalArgumentException("SolutionOverview cannot be null");
@@ -150,32 +152,47 @@ public class SolutionReviewService {
     }
 
     /**
-     * Creates a new draft {@link SolutionReview} for existing systems
+     * Creates a new draft {@link SolutionReview} from existing ACTIVE solution
+     * review
      *
      * @param systemCode the system code associated with the review
      * @return the newly created solution review
+     * @throws NotFoundException if no ACTIVE solution review exists for the system
      */
     public SolutionReview createSolutionReview(String systemCode) {
-        List<SolutionReview> solutionReviews = getSolutionReviewsBySystemCode(systemCode);
-        String newId = getNewId(systemCode, solutionReviews);
+        // step 1: query for active solution review by system code (should only have 1,
+        // optionally nothing -> throw error)
+        Optional<SolutionReview> activeSolutionReviewOpt = getActiveSolutionReviewBySystemCode(systemCode);
+        if (activeSolutionReviewOpt.isEmpty()) {
+            throw new NotFoundException("No ACTIVE solution review found for system " + systemCode +
+                    ". Cannot create new draft without an active reference.");
+        }
 
+        SolutionReview activeSolutionReview = activeSolutionReviewOpt.get();
+
+        // Validate exclusive state constraint before creating new draft
+        validateExclusiveStateConstraint(systemCode);
+
+        // step 2: copy from existing ACTIVE solution review
         SolutionOverview savedOverview = saveSolutionOverview(
                 SolutionOverview
-                        .fromExisting(solutionReviews.getFirst().getSolutionOverview())
-                        .build()
-        );
-
-        SolutionReview solutionReview = SolutionReview.fromExisting(solutionReviews.getFirst(), null)
-                .id(newId)
+                        .fromExisting(activeSolutionReview.getSolutionOverview())
+                        .build());
+        SolutionReview solutionReview = SolutionReview.fromExisting(activeSolutionReview, null)
                 .solutionOverview(savedOverview).build();
 
-        saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
-        saveIfNotEmpty(solutionReview.getSystemComponents(), systemComponentRepository, solutionReview::setSystemComponents);
-        saveIfNotEmpty(solutionReview.getIntegrationFlows(), integrationFlowRepository, solutionReview::setIntegrationFlows);
+        saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository,
+                solutionReview::setBusinessCapabilities);
+        saveIfNotEmpty(solutionReview.getSystemComponents(), systemComponentRepository,
+                solutionReview::setSystemComponents);
+        saveIfNotEmpty(solutionReview.getIntegrationFlows(), integrationFlowRepository,
+                solutionReview::setIntegrationFlows);
         saveIfNotEmpty(solutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
-        saveIfNotEmpty(solutionReview.getTechnologyComponents(), technologyComponentRepository, solutionReview::setTechnologyComponents);
+        saveIfNotEmpty(solutionReview.getTechnologyComponents(), technologyComponentRepository,
+                solutionReview::setTechnologyComponents);
         saveEnterpriseTools(solutionReview, solutionReview.getEnterpriseTools());
-        saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
+        saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository,
+                solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
     }
 
@@ -184,7 +201,7 @@ public class SolutionReviewService {
             throw new NotFoundException("System " + systemCode + " does not exist");
         }
 
-        if (solutionReviews.getFirst().getDocumentState().ordinal() < DocumentState.CURRENT.ordinal()) {
+        if (solutionReviews.getFirst().getDocumentState().ordinal() < DocumentState.ACTIVE.ordinal()) {
             throw new IllegalOperationException("A SUBMITTED or DRAFT review already exists for system " + systemCode);
         }
 
@@ -195,9 +212,11 @@ public class SolutionReviewService {
     /**
      * Updates an existing {@link SolutionReview} with partial update logic.
      *
-     * <p>Only non-null or non-empty fields from the provided DTO are applied
+     * <p>
+     * Only non-null or non-empty fields from the provided DTO are applied
      * to the existing entity. If the entity does not exist, a
-     * {@link NotFoundException} is thrown.</p>
+     * {@link NotFoundException} is thrown.
+     * </p>
      *
      * @param modifiedSolutionReview the DTO containing modified fields
      * @return the updated solution review
@@ -223,13 +242,18 @@ public class SolutionReviewService {
             solutionReview.setSolutionOverview(overview);
         }
 
-        saveIfNotEmpty(modifiedSolutionReview.getBusinessCapabilities(), businessCapabilityRepository, solutionReview::setBusinessCapabilities);
-        saveIfNotEmpty(modifiedSolutionReview.getSystemComponents(), systemComponentRepository, solutionReview::setSystemComponents);
-        saveIfNotEmpty(modifiedSolutionReview.getIntegrationFlows(), integrationFlowRepository, solutionReview::setIntegrationFlows);
+        saveIfNotEmpty(modifiedSolutionReview.getBusinessCapabilities(), businessCapabilityRepository,
+                solutionReview::setBusinessCapabilities);
+        saveIfNotEmpty(modifiedSolutionReview.getSystemComponents(), systemComponentRepository,
+                solutionReview::setSystemComponents);
+        saveIfNotEmpty(modifiedSolutionReview.getIntegrationFlows(), integrationFlowRepository,
+                solutionReview::setIntegrationFlows);
         saveIfNotEmpty(modifiedSolutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
-        saveIfNotEmpty(modifiedSolutionReview.getTechnologyComponents(), technologyComponentRepository, solutionReview::setTechnologyComponents);
+        saveIfNotEmpty(modifiedSolutionReview.getTechnologyComponents(), technologyComponentRepository,
+                solutionReview::setTechnologyComponents);
         saveEnterpriseTools(solutionReview, modifiedSolutionReview.getEnterpriseTools());
-        saveIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), processCompliantRepository, solutionReview::setProcessCompliances);
+        saveIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), processCompliantRepository,
+                solutionReview::setProcessCompliances);
 
         solutionReview.setLastModifiedAt(LocalDateTime.now());
 
@@ -257,7 +281,8 @@ public class SolutionReviewService {
         integrationFlowRepository.deleteAll(solutionReview.getIntegrationFlows());
         dataAssetRepository.deleteAll(solutionReview.getDataAssets());
         technologyComponentRepository.deleteAll(solutionReview.getTechnologyComponents());
-        toolRepository.deleteAll(solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).collect(Collectors.toList()));
+        toolRepository.deleteAll(
+                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).collect(Collectors.toList()));
         enterpriseToolRepository.deleteAll(solutionReview.getEnterpriseTools());
         processCompliantRepository.deleteAll(solutionReview.getProcessCompliances());
         if (solutionReview.getSolutionOverview().getConcerns() != null) {
@@ -272,8 +297,7 @@ public class SolutionReviewService {
             saveIfNotEmpty(
                     solutionOverview.getConcerns(),
                     concernRepository,
-                    solutionOverview::setConcerns
-            );
+                    solutionOverview::setConcerns);
         }
         return solutionOverviewRepository.save(solutionOverview);
     }
@@ -281,10 +305,10 @@ public class SolutionReviewService {
     private void saveEnterpriseTools(SolutionReview solutionReview, List<EnterpriseTool> enterpriseTools) {
         if (enterpriseTools != null && !enterpriseTools.isEmpty()) {
             enterpriseTools.stream()
-                .forEach(enterpriseTool -> {
-                    Tool tool = toolRepository.save(enterpriseTool.getTool());
-                    enterpriseTool.setTool(tool);
-                });
+                    .forEach(enterpriseTool -> {
+                        Tool tool = toolRepository.save(enterpriseTool.getTool());
+                        enterpriseTool.setTool(tool);
+                    });
             List<EnterpriseTool> savedEnterpriseTools = enterpriseToolRepository.saveAll(enterpriseTools);
 
             solutionReview.setEnterpriseTools(savedEnterpriseTools);
@@ -298,4 +322,89 @@ public class SolutionReviewService {
             setter.accept(saved);
         }
     }
+
+    // ====== CONSTRAINT VALIDATION METHODS ======
+
+    /**
+     * Validates that only one document exists in exclusive states (DRAFT,
+     * SUBMITTED, APPROVED) for the given system code.
+     * 
+     * @param systemCode the system code to validate
+     * @param excludeId  optional document ID to exclude from the check (for
+     *                   updates)
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateExclusiveStateConstraint(String systemCode, String excludeId) {
+        List<DocumentState> exclusiveStates = List.copyOf(DocumentState.getExclusiveStates());
+        List<SolutionReview> existingDocs = solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(systemCode,
+                exclusiveStates);
+
+        // Filter out the document being updated if excludeId is provided
+        if (excludeId != null) {
+            existingDocs = existingDocs.stream()
+                    .filter(doc -> !doc.getId().equals(excludeId))
+                    .collect(Collectors.toList());
+        }
+
+        if (!existingDocs.isEmpty()) {
+            String existingStates = existingDocs.stream()
+                    .map(doc -> doc.getDocumentState().toString())
+                    .collect(Collectors.joining(", "));
+            throw new IllegalOperationException(
+                    String.format("Cannot create/update document for system %s. " +
+                            "Documents already exist in exclusive states: %s. " +
+                            "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.",
+                            systemCode, existingStates));
+        }
+    }
+
+    /**
+     * Validates that only one document exists in exclusive states for the given
+     * system code.
+     * 
+     * @param systemCode the system code to validate
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateExclusiveStateConstraint(String systemCode) {
+        validateExclusiveStateConstraint(systemCode, null);
+    }
+
+    /**
+     * Validates that only one ACTIVE document exists for the given system code.
+     * 
+     * @param systemCode the system code to validate
+     * @param excludeId  optional document ID to exclude from the check (for
+     *                   updates)
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateActiveStateConstraint(String systemCode, String excludeId) {
+        List<SolutionReview> activeDocs = solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(systemCode,
+                List.of(DocumentState.ACTIVE));
+
+        // Filter out the document being updated if excludeId is provided
+        if (excludeId != null) {
+            activeDocs = activeDocs.stream()
+                    .filter(doc -> !doc.getId().equals(excludeId))
+                    .collect(Collectors.toList());
+        }
+
+        if (!activeDocs.isEmpty()) {
+            throw new IllegalOperationException(
+                    String.format("Cannot create/update document for system %s. " +
+                            "An ACTIVE document already exists. " +
+                            "Only one document can be in ACTIVE state at a time.",
+                            systemCode));
+        }
+    }
+
+    /**
+     * Validates that only one ACTIVE document exists for the given system code.
+     * 
+     * @param systemCode the system code to validate
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateActiveStateConstraint(String systemCode) {
+        validateActiveStateConstraint(systemCode, null);
+    }
+
 }

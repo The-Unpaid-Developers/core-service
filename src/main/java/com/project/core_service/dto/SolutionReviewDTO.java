@@ -133,8 +133,12 @@ public class SolutionReviewDTO {
         return this.documentState == DocumentState.SUBMITTED;
     }
 
-    public boolean isCurrent() {
-        return this.documentState == DocumentState.CURRENT;
+    public boolean isApproved() {
+        return this.documentState == DocumentState.APPROVED;
+    }
+
+    public boolean isActive() {
+        return this.documentState == DocumentState.ACTIVE;
     }
 
     public boolean isOutdated() {
