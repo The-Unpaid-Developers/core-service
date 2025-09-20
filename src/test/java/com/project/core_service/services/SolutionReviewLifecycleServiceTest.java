@@ -177,7 +177,7 @@ class SolutionReviewLifecycleServiceTest {
             testCommand.setOperation("ACTIVATE");
             when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
             when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
-            doNothing().when(solutionReviewService).validateExclusiveStateConstraint(anyString(),
+            doNothing().when(solutionReviewService).validateActiveStateConstraint(anyString(),
                     anyString());
 
             // Act
@@ -188,7 +188,7 @@ class SolutionReviewLifecycleServiceTest {
             assertEquals("user2", testSolutionReview.getLastModifiedBy());
             verify(solutionReviewRepository).findById("sr-1");
             verify(solutionReviewRepository).save(testSolutionReview);
-            verify(solutionReviewService).validateExclusiveStateConstraint("SYS-001", "sr-1");
+            verify(solutionReviewService).validateActiveStateConstraint("SYS-001", "sr-1");
         }
 
         @Test
@@ -358,6 +358,7 @@ class SolutionReviewLifecycleServiceTest {
 
             // Test APPROVED -> ACTIVE (ACTIVATE)
             testCommand.setOperation("ACTIVATE");
+            doNothing().when(solutionReviewService).validateActiveStateConstraint("SYS-001", "sr-1");
 
             lifecycleService.executeTransition(testCommand);
             assertEquals(DocumentState.ACTIVE, testSolutionReview.getDocumentState());

@@ -252,8 +252,8 @@ class DocumentStateTest {
 
     // Tests for isFinalized() method
     @Test
-    @DisplayName("isFinalized() should return true for APPROVED, ACTIVE and OUTDATED")
-    void isFinalizedShouldReturnTrueForApprovedActiveAndOutdated() {
+    @DisplayName("isFinalized() should return true for ACTIVE and OUTDATED")
+    void isFinalizedShouldReturnTrueForActiveAndOutdated() {
         assertFalse(DocumentState.DRAFT.isFinalized());
         assertFalse(DocumentState.SUBMITTED.isFinalized());
         assertFalse(DocumentState.APPROVED.isFinalized());
@@ -594,5 +594,72 @@ class DocumentStateTest {
         DocumentState result = approved.executeOperation(DocumentState.StateOperation.UNAPPROVE);
         assertEquals(DocumentState.SUBMITTED, result,
                 "UNAPPROVE operation should successfully transition from APPROVED to SUBMITTED");
+    }
+
+    // Tests for exclusive state constraints
+    @Test
+    @DisplayName("getExclusiveStates should return DRAFT, SUBMITTED, APPROVED only")
+    void getExclusiveStatesShouldReturnCorrectStates() {
+        Set<DocumentState> exclusiveStates = DocumentState.getExclusiveStates();
+
+        assertEquals(3, exclusiveStates.size());
+        assertTrue(exclusiveStates.contains(DocumentState.DRAFT));
+        assertTrue(exclusiveStates.contains(DocumentState.SUBMITTED));
+        assertTrue(exclusiveStates.contains(DocumentState.APPROVED));
+        assertFalse(exclusiveStates.contains(DocumentState.ACTIVE));
+        assertFalse(exclusiveStates.contains(DocumentState.OUTDATED));
+    }
+
+    @Test
+    @DisplayName("getNonExclusiveStates should return ACTIVE and OUTDATED")
+    void getNonExclusiveStatesShouldReturnCorrectStates() {
+        Set<DocumentState> nonExclusiveStates = DocumentState.getNonExclusiveStates();
+
+        assertEquals(2, nonExclusiveStates.size());
+        assertTrue(nonExclusiveStates.contains(DocumentState.ACTIVE));
+        assertTrue(nonExclusiveStates.contains(DocumentState.OUTDATED));
+        assertFalse(nonExclusiveStates.contains(DocumentState.DRAFT));
+        assertFalse(nonExclusiveStates.contains(DocumentState.SUBMITTED));
+        assertFalse(nonExclusiveStates.contains(DocumentState.APPROVED));
+    }
+
+    @Test
+    @DisplayName("requiresExclusiveConstraint should be true for DRAFT, SUBMITTED, APPROVED only")
+    void requiresExclusiveConstraintShouldReturnCorrectValues() {
+        assertTrue(DocumentState.DRAFT.requiresExclusiveConstraint());
+        assertTrue(DocumentState.SUBMITTED.requiresExclusiveConstraint());
+        assertTrue(DocumentState.APPROVED.requiresExclusiveConstraint());
+        assertFalse(DocumentState.ACTIVE.requiresExclusiveConstraint());
+        assertFalse(DocumentState.OUTDATED.requiresExclusiveConstraint());
+    }
+
+    @Test
+    @DisplayName("Should validate constraint separation between working states and ACTIVE")
+    void shouldValidateConstraintSeparationBetweenWorkingStatesAndActive() {
+        // Verify that ACTIVE is not in exclusive states - this allows for:
+        // 1. One working document (DRAFT, SUBMITTED, or APPROVED)
+        // 2. Plus one ACTIVE document
+        // to coexist in the same system
+
+        Set<DocumentState> exclusiveStates = DocumentState.getExclusiveStates();
+        Set<DocumentState> nonExclusiveStates = DocumentState.getNonExclusiveStates();
+
+        // Ensure no overlap between exclusive and non-exclusive states
+        Set<DocumentState> intersection = new java.util.HashSet<>(exclusiveStates);
+        intersection.retainAll(nonExclusiveStates);
+        assertTrue(intersection.isEmpty(), "Exclusive and non-exclusive states should not overlap");
+
+        // Verify ACTIVE is treated separately
+        assertFalse(DocumentState.ACTIVE.requiresExclusiveConstraint(),
+                "ACTIVE state should not require exclusive constraint with working states");
+
+        // This design allows scenarios like:
+        // - System A: has 1 ACTIVE document and 1 DRAFT document (allowed)
+        // - System A: has 1 ACTIVE document and 1 SUBMITTED document (allowed)
+        // - System A: has 1 ACTIVE document and 1 APPROVED document (allowed)
+        // But prevents:
+        // - System A: has 1 DRAFT and 1 SUBMITTED document (not allowed - both are
+        // exclusive)
+        // - System A: has 2 ACTIVE documents (not allowed - separate ACTIVE constraint)
     }
 }

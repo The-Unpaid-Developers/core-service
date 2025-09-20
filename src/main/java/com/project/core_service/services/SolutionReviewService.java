@@ -312,8 +312,7 @@ public class SolutionReviewService {
 
     /**
      * Validates that only one document exists in exclusive states (DRAFT,
-     * SUBMITTED, APPROVED, ACTIVE)
-     * for the given system code.
+     * SUBMITTED, APPROVED) for the given system code.
      * 
      * @param systemCode the system code to validate
      * @param excludeId  optional document ID to exclude from the check (for
@@ -339,7 +338,7 @@ public class SolutionReviewService {
             throw new IllegalOperationException(
                     String.format("Cannot create/update document for system %s. " +
                             "Documents already exist in exclusive states: %s. " +
-                            "Only one document can be in DRAFT, SUBMITTED, APPROVED, or ACTIVE state at a time.",
+                            "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.",
                             systemCode, existingStates));
         }
     }
@@ -353,6 +352,44 @@ public class SolutionReviewService {
      */
     public void validateExclusiveStateConstraint(String systemCode) {
         validateExclusiveStateConstraint(systemCode, null);
+    }
+
+    /**
+     * Validates that only one ACTIVE document exists for the given system code.
+     * 
+     * @param systemCode the system code to validate
+     * @param excludeId  optional document ID to exclude from the check (for
+     *                   updates)
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateActiveStateConstraint(String systemCode, String excludeId) {
+        List<SolutionReview> activeDocs = solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(systemCode,
+                List.of(DocumentState.ACTIVE));
+
+        // Filter out the document being updated if excludeId is provided
+        if (excludeId != null) {
+            activeDocs = activeDocs.stream()
+                    .filter(doc -> !doc.getId().equals(excludeId))
+                    .collect(Collectors.toList());
+        }
+
+        if (!activeDocs.isEmpty()) {
+            throw new IllegalOperationException(
+                    String.format("Cannot create/update document for system %s. " +
+                            "An ACTIVE document already exists. " +
+                            "Only one document can be in ACTIVE state at a time.",
+                            systemCode));
+        }
+    }
+
+    /**
+     * Validates that only one ACTIVE document exists for the given system code.
+     * 
+     * @param systemCode the system code to validate
+     * @throws IllegalOperationException if constraint is violated
+     */
+    public void validateActiveStateConstraint(String systemCode) {
+        validateActiveStateConstraint(systemCode, null);
     }
 
 }

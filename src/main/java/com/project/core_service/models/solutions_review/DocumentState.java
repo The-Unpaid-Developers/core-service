@@ -192,35 +192,37 @@ public enum DocumentState {
     /**
      * Checks if this state requires exclusive existence constraint.
      * <p>
-     * Only one document per system should exist in DRAFT, SUBMITTED, APPROVED, or
-     * ACTIVE
+     * Only one document per system should exist in DRAFT, SUBMITTED, or APPROVED
      * states at any given time. This ensures proper workflow management and
-     * prevents
-     * conflicting working versions.
+     * prevents conflicting working versions. ACTIVE state has its own separate
+     * constraint.
      * 
      * @return true if only one document should exist in this state per system
      */
     public boolean requiresExclusiveConstraint() {
-        return this == DRAFT || this == SUBMITTED || this == APPROVED || this == ACTIVE;
+        return this == DRAFT || this == SUBMITTED || this == APPROVED;
     }
 
     /**
      * Gets all states that should have exclusive constraint (max 1 document per
      * system).
+     * Only one of DRAFT, SUBMITTED, or APPROVED should exist per system.
      * 
      * @return set of states that require exclusive existence
      */
     public static Set<DocumentState> getExclusiveStates() {
-        return EnumSet.of(DRAFT, SUBMITTED, APPROVED, ACTIVE);
+        return EnumSet.of(DRAFT, SUBMITTED, APPROVED);
     }
 
     /**
      * Gets all states that allow multiple documents per system.
+     * ACTIVE and OUTDATED states allow multiple documents (though ACTIVE should
+     * still be limited to 1).
      * 
      * @return set of states that allow multiple documents
      */
     public static Set<DocumentState> getNonExclusiveStates() {
-        return EnumSet.of(OUTDATED);
+        return EnumSet.of(ACTIVE, OUTDATED);
     }
 
     /**

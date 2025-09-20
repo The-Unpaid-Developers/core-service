@@ -213,11 +213,14 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithActiveState() {
-        // Arrange - existing ACTIVE review
+    void createSolutionReview_ShouldAllowIfSystemCodeExistsWithActiveState() {
+        // Arrange - existing ACTIVE review (should allow creation of new draft)
         review.setDocumentState(DocumentState.ACTIVE);
         when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
-                .thenReturn(List.of(review));
+                .thenReturn(Collections.emptyList()); // Empty because ACTIVE is not in exclusive states
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
+
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
@@ -225,10 +228,13 @@ class SolutionReviewServiceTest {
                 overview.getApplicationUsers(),
                 overview.getConcerns());
 
-        // Act & Assert
-        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
-                () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123", dto);
+            assertNotNull(result);
+        });
+
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
     @Test
@@ -333,17 +339,50 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(Optional.of(review));
 
-        // Mock constraint validation passes
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+        // Mock constraint validation passes for exclusive states (DRAFT, SUBMITTED,
+        // APPROVED)
+        // This should return empty because ACTIVE is not in exclusive states anymore
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.copyOf(DocumentState.getExclusiveStates()))))
                 .thenReturn(Collections.emptyList());
 
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class)))
                 .thenReturn(review);
 
-        SolutionReview review1 = service.createSolutionReview("SYS-123");
-        assertNotNull(review1);
-        assertEquals("SYS-123", review1.getSystemCode());
+        SolutionReview result = service.createSolutionReview("SYS-123");
+        assertNotNull(result);
+        assertEquals("SYS-123", result.getSystemCode());
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
+    }
+
+    @Test
+    void createSolutionReviewFromExisting_ShouldAllowDraftWhenActiveExists() {
+        // This test verifies the bug fix: we can create a DRAFT when an ACTIVE exists
+        // because they have separate constraints
+
+        // Mock active review exists
+        review.setDocumentState(DocumentState.ACTIVE);
+        when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.of(DocumentState.ACTIVE))))
+                .thenReturn(Optional.of(review));
+
+        // Mock that no exclusive state documents exist (DRAFT, SUBMITTED, APPROVED)
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.copyOf(DocumentState.getExclusiveStates()))))
+                .thenReturn(Collections.emptyList());
+
+        when(solutionOverviewRepository.save(any())).thenReturn(overview);
+        when(solutionReviewRepository.insert(any(SolutionReview.class)))
+                .thenReturn(review);
+
+        // This should not throw an exception
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123");
+            assertNotNull(result);
+            assertEquals("SYS-123", result.getSystemCode());
+        });
+
         verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
@@ -436,7 +475,7 @@ class SolutionReviewServiceTest {
                 () -> service.validateExclusiveStateConstraint("SYS-123"));
         assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
         assertTrue(exception.getMessage()
-                .contains("Only one document can be in DRAFT, SUBMITTED, APPROVED, or ACTIVE state"));
+                .contains("Only one document can be in DRAFT, SUBMITTED, or APPROVED state"));
     }
 
     @Test
@@ -463,6 +502,60 @@ class SolutionReviewServiceTest {
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.validateExclusiveStateConstraint("SYS-123", "different-id"));
         assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
+    }
+
+    @Test
+    void validateActiveStateConstraint_ShouldPassWhenNoActiveDocumentExists() {
+        // Arrange
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.of(DocumentState.ACTIVE))))
+                .thenReturn(Collections.emptyList());
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> service.validateActiveStateConstraint("SYS-123"));
+    }
+
+    @Test
+    void validateActiveStateConstraint_ShouldThrowWhenActiveDocumentExists() {
+        // Arrange
+        review.setDocumentState(DocumentState.ACTIVE);
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.of(DocumentState.ACTIVE))))
+                .thenReturn(List.of(review));
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.validateActiveStateConstraint("SYS-123"));
+        assertTrue(exception.getMessage().contains("An ACTIVE document already exists"));
+        assertTrue(exception.getMessage().contains("Only one document can be in ACTIVE state at a time"));
+    }
+
+    @Test
+    void validateActiveStateConstraint_ShouldPassWhenExcludingSpecificDocument() {
+        // Arrange
+        review.setDocumentState(DocumentState.ACTIVE);
+        review.setId("rev-1");
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.of(DocumentState.ACTIVE))))
+                .thenReturn(List.of(review));
+
+        // Act & Assert - Should not throw exception when excluding the same document
+        assertDoesNotThrow(() -> service.validateActiveStateConstraint("SYS-123", "rev-1"));
+    }
+
+    @Test
+    void validateActiveStateConstraint_ShouldThrowWhenExcludingDifferentDocument() {
+        // Arrange
+        review.setDocumentState(DocumentState.ACTIVE);
+        review.setId("rev-1");
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
+                eq(List.of(DocumentState.ACTIVE))))
+                .thenReturn(List.of(review));
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.validateActiveStateConstraint("SYS-123", "different-id"));
+        assertTrue(exception.getMessage().contains("An ACTIVE document already exists"));
     }
 
 }

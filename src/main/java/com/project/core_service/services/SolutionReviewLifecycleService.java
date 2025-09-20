@@ -113,10 +113,15 @@ public class SolutionReviewLifecycleService {
 
         DocumentState targetState = operation.getTargetState();
 
-        // Validate exclusive state constraint for transitions TO exclusive states
+        // Validate constraints for transitions TO different states
         if (targetState.requiresExclusiveConstraint()) {
             // Use excludeId to allow the current document to remain during the transition
             solutionReviewService.validateExclusiveStateConstraint(
+                    solutionReview.getSystemCode(),
+                    solutionReview.getId());
+        } else if (targetState == DocumentState.ACTIVE) {
+            // Validate ACTIVE state constraint separately (singular exclusive constraint)
+            solutionReviewService.validateActiveStateConstraint(
                     solutionReview.getSystemCode(),
                     solutionReview.getId());
         }
