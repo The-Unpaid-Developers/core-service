@@ -2,7 +2,7 @@ package com.project.core_service.controllers;
 
 import com.project.core_service.exceptions.IllegalStateTransitionException;
 import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.service.SolutionReviewLifecycleService;
+import com.project.core_service.services.SolutionReviewLifecycleService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

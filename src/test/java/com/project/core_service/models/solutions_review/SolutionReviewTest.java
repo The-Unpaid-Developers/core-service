@@ -256,7 +256,7 @@ class SolutionReviewTest {
         @Test
         @DisplayName("submit() should throw exception if not in DRAFT state")
         void submitShouldThrowExceptionIfNotInDraftState() {
-            review.setDocumentState(DocumentState.CURRENT);
+            review.setDocumentState(DocumentState.APPROVED);
 
             assertThrows(IllegalStateTransitionException.class, () -> review.submit(modifiedBy));
         }
@@ -280,14 +280,14 @@ class SolutionReviewTest {
         }
 
         @Test
-        @DisplayName("approve() should transition from SUBMITTED to CURRENT")
-        void approveShouldTransitionFromSubmittedToCurrent() {
+        @DisplayName("approve() should transition from SUBMITTED to APPROVED")
+        void approveShouldTransitionFromSubmittedToApproved() {
             review.submit(modifiedBy); // DRAFT -> SUBMITTED
             LocalDateTime beforeApproval = review.getLastModifiedAt();
 
             review.approve(modifiedBy);
 
-            assertEquals(DocumentState.CURRENT, review.getDocumentState());
+            assertEquals(DocumentState.APPROVED, review.getDocumentState());
             assertTrue(review.getLastModifiedAt().isAfter(beforeApproval));
         }
 
@@ -298,29 +298,49 @@ class SolutionReviewTest {
         }
 
         @Test
-        @DisplayName("unApproveCurrent() should transition from CURRENT to SUBMITTED")
-        void unApproveCurrentShouldTransitionFromCurrentToSubmitted() {
+        @DisplayName("activate() should transition from APPROVED to ACTIVE")
+        void activateShouldTransitionFromApprovedToActive() {
             review.submit(modifiedBy); // DRAFT -> SUBMITTED
-            review.approve(modifiedBy); // SUBMITTED -> CURRENT
+            review.approve(modifiedBy); // SUBMITTED -> APPROVED
+            LocalDateTime beforeActivation = review.getLastModifiedAt();
+
+            review.activate(modifiedBy);
+
+            assertEquals(DocumentState.ACTIVE, review.getDocumentState());
+            assertTrue(review.getLastModifiedAt().isAfter(beforeActivation));
+        }
+
+        @Test
+        @DisplayName("activate() should throw exception if not in APPROVED state")
+        void activateShouldThrowExceptionIfNotInApprovedState() {
+            assertThrows(IllegalStateTransitionException.class, () -> review.activate(modifiedBy));
+        }
+
+        @Test
+        @DisplayName("unApprove() should transition from APPROVED to SUBMITTED")
+        void unApproveShouldTransitionFromApprovedToSubmitted() {
+            review.submit(modifiedBy); // DRAFT -> SUBMITTED
+            review.approve(modifiedBy); // SUBMITTED -> APPROVED
             LocalDateTime beforeUnApproval = review.getLastModifiedAt();
 
-            review.unApproveCurrent(modifiedBy);
+            review.unApprove(modifiedBy);
 
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
             assertTrue(review.getLastModifiedAt().isAfter(beforeUnApproval));
         }
 
         @Test
-        @DisplayName("unApproveCurrent() should throw exception if not in CURRENT state")
-        void unApproveCurrentShouldThrowExceptionIfNotInCurrentState() {
-            assertThrows(IllegalStateTransitionException.class, () -> review.unApproveCurrent(modifiedBy));
+        @DisplayName("unApprove() should throw exception if not in APPROVED state")
+        void unApproveShouldThrowExceptionIfNotInApprovedState() {
+            assertThrows(IllegalStateTransitionException.class, () -> review.unApprove(modifiedBy));
         }
 
         @Test
-        @DisplayName("markAsOutdated() should transition from CURRENT to OUTDATED")
-        void markAsOutdatedShouldTransitionFromCurrentToOutdated() {
+        @DisplayName("markAsOutdated() should transition from ACTIVE to OUTDATED")
+        void markAsOutdatedShouldTransitionFromActiveToOutdated() {
             review.submit(modifiedBy); // DRAFT -> SUBMITTED
-            review.approve(modifiedBy); // SUBMITTED -> CURRENT
+            review.approve(modifiedBy); // SUBMITTED -> APPROVED
+            review.activate(modifiedBy); // APPROVED -> ACTIVE
             LocalDateTime beforeOutdating = review.getLastModifiedAt();
 
             review.markAsOutdated(modifiedBy);
@@ -330,29 +350,9 @@ class SolutionReviewTest {
         }
 
         @Test
-        @DisplayName("markAsOutdated() should throw exception if not in CURRENT state")
-        void markAsOutdatedShouldThrowExceptionIfNotInCurrentState() {
+        @DisplayName("markAsOutdated() should throw exception if not in ACTIVE state")
+        void markAsOutdatedShouldThrowExceptionIfNotInActiveState() {
             assertThrows(IllegalStateTransitionException.class, () -> review.markAsOutdated(modifiedBy));
-        }
-
-        @Test
-        @DisplayName("resetAsCurrent() should transition from OUTDATED to CURRENT")
-        void resetAsCurrentShouldTransitionFromOutdatedToCurrent() {
-            review.submit(modifiedBy); // DRAFT -> SUBMITTED
-            review.approve(modifiedBy); // SUBMITTED -> CURRENT
-            review.markAsOutdated(modifiedBy); // CURRENT -> OUTDATED
-            LocalDateTime beforeReset = review.getLastModifiedAt();
-
-            review.resetAsCurrent(modifiedBy);
-
-            assertEquals(DocumentState.CURRENT, review.getDocumentState());
-            assertTrue(review.getLastModifiedAt().isAfter(beforeReset));
-        }
-
-        @Test
-        @DisplayName("resetAsCurrent() should throw exception if not in OUTDATED state")
-        void resetAsCurrentShouldThrowExceptionIfNotInOutdatedState() {
-            assertThrows(IllegalStateTransitionException.class, () -> review.resetAsCurrent(modifiedBy));
         }
 
         @Test
@@ -372,7 +372,7 @@ class SolutionReviewTest {
         @DisplayName("transitionTo() should throw exception for invalid transition")
         void transitionToShouldThrowExceptionForInvalidTransition() {
             assertThrows(IllegalStateTransitionException.class,
-                    () -> review.transitionTo(DocumentState.CURRENT, "test.modifier"));
+                    () -> review.transitionTo(DocumentState.APPROVED, "test.modifier"));
         }
     }
 
@@ -389,7 +389,8 @@ class SolutionReviewTest {
 
             assertTrue(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertFalse(review.isOutdated());
         }
 
@@ -401,20 +402,37 @@ class SolutionReviewTest {
 
             assertFalse(review.isDraft());
             assertTrue(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertFalse(review.isOutdated());
         }
 
         @Test
-        @DisplayName("isCurrent() should return true only for CURRENT state")
-        void isCurrentShouldReturnTrueOnlyForCurrentState() {
+        @DisplayName("isApproved() should return true only for APPROVED state")
+        void isApprovedShouldReturnTrueOnlyForApprovedState() {
             SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.submit(modifiedBy);
             review.approve(modifiedBy);
 
             assertFalse(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertTrue(review.isCurrent());
+            assertTrue(review.isApproved());
+            assertFalse(review.isActive());
+            assertFalse(review.isOutdated());
+        }
+
+        @Test
+        @DisplayName("isActive() should return true only for ACTIVE state")
+        void isActiveShouldReturnTrueOnlyForActiveState() {
+            SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
+            review.submit(modifiedBy);
+            review.approve(modifiedBy);
+            review.activate(modifiedBy);
+
+            assertFalse(review.isDraft());
+            assertFalse(review.isSubmitted());
+            assertFalse(review.isApproved());
+            assertTrue(review.isActive());
             assertFalse(review.isOutdated());
         }
 
@@ -424,11 +442,13 @@ class SolutionReviewTest {
             SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
             review.submit(modifiedBy);
             review.approve(modifiedBy);
+            review.activate(modifiedBy);
             review.markAsOutdated(modifiedBy);
 
             assertFalse(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertTrue(review.isOutdated());
         }
     }
@@ -627,7 +647,7 @@ class SolutionReviewTest {
         void fromExistingShouldCopyFieldsButResetIdAndLastModifiedAt() {
             // Arrange: create an existing review
             SolutionReview existing = new SolutionReview("sys-123", realSolutionOverview);
-            existing.setDocumentState(DocumentState.CURRENT);
+            existing.setDocumentState(DocumentState.ACTIVE);
 
             // Act: build a new review from existing
             SolutionReview copied = SolutionReview.fromExisting(existing, null).build();
@@ -674,24 +694,28 @@ class SolutionReviewTest {
         void shouldHandleRapidStateTransitionsCorrectly() {
             SolutionReview review = new SolutionReview("sys-001", realSolutionOverview);
 
-            // Complete lifecycle
+            // Complete lifecycle: DRAFT -> SUBMITTED -> APPROVED -> ACTIVE -> OUTDATED
             review.submit(modifiedBy);
             assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
 
             review.approve(modifiedBy);
-            assertEquals(DocumentState.CURRENT, review.getDocumentState());
+            assertEquals(DocumentState.APPROVED, review.getDocumentState());
+
+            review.activate(modifiedBy);
+            assertEquals(DocumentState.ACTIVE, review.getDocumentState());
 
             review.markAsOutdated(modifiedBy);
             assertEquals(DocumentState.OUTDATED, review.getDocumentState());
 
-            review.resetAsCurrent(modifiedBy);
-            assertEquals(DocumentState.CURRENT, review.getDocumentState());
+            // Test reverse transitions before reaching final state
+            SolutionReview review2 = new SolutionReview("sys-002", realSolutionOverview);
+            review2.submit(modifiedBy);
+            review2.approve(modifiedBy);
+            review2.unApprove(modifiedBy);
+            assertEquals(DocumentState.SUBMITTED, review2.getDocumentState());
 
-            review.unApproveCurrent(modifiedBy);
-            assertEquals(DocumentState.SUBMITTED, review.getDocumentState());
-
-            review.removeSubmission(modifiedBy);
-            assertEquals(DocumentState.DRAFT, review.getDocumentState());
+            review2.removeSubmission(modifiedBy);
+            assertEquals(DocumentState.DRAFT, review2.getDocumentState());
         }
 
         @Test
@@ -766,18 +790,23 @@ class SolutionReviewTest {
         assertTrue(submittedOperations.contains(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertTrue(submittedOperations.contains(DocumentState.StateOperation.APPROVE));
 
-        // Move to CURRENT state
+        // Move to APPROVED state
         review.approve(modifiedBy);
-        var currentOperations = review.getAvailableOperations();
-        assertEquals(2, currentOperations.size());
-        assertTrue(currentOperations.contains(DocumentState.StateOperation.UNAPPROVE));
-        assertTrue(currentOperations.contains(DocumentState.StateOperation.MARK_OUTDATED));
+        var approvedOperations = review.getAvailableOperations();
+        assertEquals(2, approvedOperations.size());
+        assertTrue(approvedOperations.contains(DocumentState.StateOperation.UNAPPROVE));
+        assertTrue(approvedOperations.contains(DocumentState.StateOperation.ACTIVATE));
 
-        // Move to OUTDATED state
+        // Move to ACTIVE state
+        review.activate(modifiedBy);
+        var activeOperations = review.getAvailableOperations();
+        assertEquals(1, activeOperations.size());
+        assertTrue(activeOperations.contains(DocumentState.StateOperation.MARK_OUTDATED));
+
+        // Move to OUTDATED state (final state with no operations)
         review.markAsOutdated(modifiedBy);
         var outdatedOperations = review.getAvailableOperations();
-        assertEquals(1, outdatedOperations.size());
-        assertTrue(outdatedOperations.contains(DocumentState.StateOperation.RESET_CURRENT));
+        assertEquals(0, outdatedOperations.size());
     }
 
     @Nested
@@ -821,7 +850,7 @@ class SolutionReviewTest {
             SolutionReview review = SolutionReview.completeBuilder()
                     .id("complete-test")
                     .systemCode("sys-001")
-                    .documentState(DocumentState.CURRENT)
+                    .documentState(DocumentState.ACTIVE)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(Arrays.asList(mockBusinessCapability))
                     .createdBy("complete.creator")
@@ -832,7 +861,7 @@ class SolutionReviewTest {
 
             assertEquals("complete-test", review.getId());
             assertEquals("sys-001", review.getSystemCode());
-            assertEquals(DocumentState.CURRENT, review.getDocumentState());
+            assertEquals(DocumentState.ACTIVE, review.getDocumentState());
             assertEquals(realSolutionOverview, review.getSolutionOverview());
             assertEquals("complete.creator", review.getCreatedBy());
             assertEquals("complete.modifier", review.getLastModifiedBy());
@@ -999,25 +1028,36 @@ class SolutionReviewTest {
             review.setDocumentState(DocumentState.DRAFT);
             assertTrue(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertFalse(review.isOutdated());
 
             review.setDocumentState(DocumentState.SUBMITTED);
             assertFalse(review.isDraft());
             assertTrue(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertFalse(review.isOutdated());
 
-            review.setDocumentState(DocumentState.CURRENT);
+            review.setDocumentState(DocumentState.APPROVED);
             assertFalse(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertTrue(review.isCurrent());
+            assertTrue(review.isApproved());
+            assertFalse(review.isActive());
+            assertFalse(review.isOutdated());
+
+            review.setDocumentState(DocumentState.ACTIVE);
+            assertFalse(review.isDraft());
+            assertFalse(review.isSubmitted());
+            assertFalse(review.isApproved());
+            assertTrue(review.isActive());
             assertFalse(review.isOutdated());
 
             review.setDocumentState(DocumentState.OUTDATED);
             assertFalse(review.isDraft());
             assertFalse(review.isSubmitted());
-            assertFalse(review.isCurrent());
+            assertFalse(review.isApproved());
+            assertFalse(review.isActive());
             assertTrue(review.isOutdated());
         }
     }

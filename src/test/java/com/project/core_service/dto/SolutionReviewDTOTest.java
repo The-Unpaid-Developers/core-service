@@ -349,7 +349,7 @@ class SolutionReviewDTOTest {
                     .build();
             SolutionReviewDTO currentDto = SolutionReviewDTO.builder()
                     .systemCode("sys-001")
-                    .documentState(DocumentState.CURRENT)
+                    .documentState(DocumentState.ACTIVE)
                     .build();
             SolutionReviewDTO outdatedDto = SolutionReviewDTO.builder()
                     .systemCode("sys-001")
@@ -358,22 +358,22 @@ class SolutionReviewDTOTest {
 
             assertTrue(draftDto.isDraft());
             assertFalse(draftDto.isSubmitted());
-            assertFalse(draftDto.isCurrent());
+            assertFalse(draftDto.isActive());
             assertFalse(draftDto.isOutdated());
 
             assertFalse(submittedDto.isDraft());
             assertTrue(submittedDto.isSubmitted());
-            assertFalse(submittedDto.isCurrent());
+            assertFalse(submittedDto.isActive());
             assertFalse(submittedDto.isOutdated());
 
             assertFalse(currentDto.isDraft());
             assertFalse(currentDto.isSubmitted());
-            assertTrue(currentDto.isCurrent());
+            assertTrue(currentDto.isActive());
             assertFalse(currentDto.isOutdated());
 
             assertFalse(outdatedDto.isDraft());
             assertFalse(outdatedDto.isSubmitted());
-            assertFalse(outdatedDto.isCurrent());
+            assertFalse(outdatedDto.isActive());
             assertTrue(outdatedDto.isOutdated());
         }
 
@@ -438,7 +438,7 @@ class SolutionReviewDTOTest {
             SolutionReviewDTO dto = SolutionReviewDTO.builder()
                     .id("builder-test")
                     .systemCode("sys-001")
-                    .documentState(DocumentState.CURRENT)
+                    .documentState(DocumentState.ACTIVE)
                     .solutionOverview(realSolutionOverview)
                     .businessCapabilities(capabilities)
                     .systemComponents(components)
@@ -455,7 +455,7 @@ class SolutionReviewDTOTest {
 
             assertEquals("builder-test", dto.getId());
             assertEquals("sys-001", dto.getSystemCode());
-            assertEquals(DocumentState.CURRENT, dto.getDocumentState());
+            assertEquals(DocumentState.ACTIVE, dto.getDocumentState());
             assertEquals(realSolutionOverview, dto.getSolutionOverview());
             assertEquals(capabilities, dto.getBusinessCapabilities());
             assertEquals(components, dto.getSystemComponents());
@@ -523,8 +523,8 @@ class SolutionReviewDTOTest {
             assertTrue(dto.isSubmitted());
             assertFalse(dto.isDraft());
 
-            dto.setDocumentState(DocumentState.CURRENT);
-            assertTrue(dto.isCurrent());
+            dto.setDocumentState(DocumentState.ACTIVE);
+            assertTrue(dto.isActive());
             assertFalse(dto.isSubmitted());
         }
 

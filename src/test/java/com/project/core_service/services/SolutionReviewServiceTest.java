@@ -1,4 +1,4 @@
-package com.project.core_service.service;
+package com.project.core_service.services;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -11,7 +11,6 @@ import com.project.core_service.models.solution_overview.*;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.repositories.*;
-import com.project.core_service.services.SolutionReviewService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -179,7 +178,7 @@ class SolutionReviewServiceTest {
     void createSolutionReview_ShouldThrowIfSystemCodeExistsWithDraftState() {
         // Arrange - existing DRAFT review
         review.setDocumentState(DocumentState.DRAFT);
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(List.of(review));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
@@ -191,14 +190,14 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
     }
 
     @Test
     void createSolutionReview_ShouldThrowIfSystemCodeExistsWithSubmittedState() {
         // Arrange - existing SUBMITTED review
         review.setDocumentState(DocumentState.SUBMITTED);
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(List.of(review));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
@@ -210,14 +209,14 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
     }
 
     @Test
-    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithCurrentState() {
-        // Arrange - existing CURRENT review
-        review.setDocumentState(DocumentState.CURRENT);
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithActiveState() {
+        // Arrange - existing ACTIVE review
+        review.setDocumentState(DocumentState.ACTIVE);
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(List.of(review));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
@@ -229,15 +228,34 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalOperationException exception = assertThrows(IllegalOperationException.class,
                 () -> service.createSolutionReview("SYS-123", dto));
-        assertTrue(exception.getMessage().contains("A CURRENT or SUBMITTED or DRAFT review already exists"));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
+    }
+
+    @Test
+    void createSolutionReview_ShouldThrowIfSystemCodeExistsWithApprovedState() {
+        // Arrange - existing APPROVED review
+        review.setDocumentState(DocumentState.APPROVED);
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(List.of(review));
+        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
+                overview.getBusinessUnit(),
+                overview.getBusinessDriver(),
+                overview.getValueOutcome(),
+                overview.getApplicationUsers(),
+                overview.getConcerns());
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.createSolutionReview("SYS-123", dto));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
     }
 
     @Test
     void createSolutionReview_ShouldAllowIfSystemCodeExistsWithOutdatedState() {
         // Arrange - existing OUTDATED review (should allow creation of new draft)
         review.setDocumentState(DocumentState.OUTDATED);
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
-                .thenReturn(List.of(review));
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(Collections.emptyList()); // Empty because OUTDATED is not in exclusive states
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
 
@@ -277,6 +295,8 @@ class SolutionReviewServiceTest {
 
     @Test
     void createSolutionReview_ShouldSaveAndInsert() {
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(Collections.emptyList()); // No existing exclusive state documents
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
@@ -300,17 +320,24 @@ class SolutionReviewServiceTest {
 
     @Test
     void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeNotFound() {
-        when(solutionReviewRepository.findAllBySystemCode(eq("NOT-EXIST"), any(Sort.class)))
-                .thenReturn(Collections.emptyList());
+        when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(eq("NOT-EXIST"), anyList()))
+                .thenReturn(Optional.empty());
 
         assertThrows(NotFoundException.class, () -> service.createSolutionReview("NOT-EXIST"));
     }
 
     @Test
-    void createSolutionReviewFromExisting_ShouldThrowIfSystemCodeExists() {
+    void createSolutionReviewFromExisting_ShouldCreateFromActiveReview() {
+        // Mock active review exists
+        review.setDocumentState(DocumentState.ACTIVE);
+        when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(Optional.of(review));
+
+        // Mock constraint validation passes
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(Collections.emptyList());
+
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
-                .thenReturn(List.of(review));
         when(solutionReviewRepository.insert(any(SolutionReview.class)))
                 .thenReturn(review);
 
@@ -386,4 +413,56 @@ class SolutionReviewServiceTest {
 
         assertThrows(IllegalStateException.class, () -> service.deleteSolutionReview("rev-1"));
     }
+
+    @Test
+    void validateExclusiveStateConstraint_ShouldPassWhenNoExistingDocuments() {
+        // Arrange
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(Collections.emptyList());
+
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> service.validateExclusiveStateConstraint("SYS-123"));
+    }
+
+    @Test
+    void validateExclusiveStateConstraint_ShouldThrowWhenExistingDocumentFound() {
+        // Arrange
+        review.setDocumentState(DocumentState.DRAFT);
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(List.of(review));
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.validateExclusiveStateConstraint("SYS-123"));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
+        assertTrue(exception.getMessage()
+                .contains("Only one document can be in DRAFT, SUBMITTED, APPROVED, or ACTIVE state"));
+    }
+
+    @Test
+    void validateExclusiveStateConstraint_ShouldPassWhenExcludingSpecificDocument() {
+        // Arrange
+        review.setDocumentState(DocumentState.DRAFT);
+        review.setId("rev-1");
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(List.of(review));
+
+        // Act & Assert - Should not throw exception when excluding the same document
+        assertDoesNotThrow(() -> service.validateExclusiveStateConstraint("SYS-123", "rev-1"));
+    }
+
+    @Test
+    void validateExclusiveStateConstraint_ShouldThrowWhenExcludingDifferentDocument() {
+        // Arrange
+        review.setDocumentState(DocumentState.DRAFT);
+        review.setId("rev-1");
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
+                .thenReturn(List.of(review));
+
+        // Act & Assert
+        IllegalOperationException exception = assertThrows(IllegalOperationException.class,
+                () -> service.validateExclusiveStateConstraint("SYS-123", "different-id"));
+        assertTrue(exception.getMessage().contains("Documents already exist in exclusive states"));
+    }
+
 }
