@@ -3,7 +3,6 @@ package com.project.core_service.models.solutions_review;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -167,7 +166,7 @@ public class SolutionReview {
     }
 
     /**
-     * Approves the document and sets it as current.
+     * Approves the document.
      * Only documents in SUBMITTED state can be approved.
      * 
      * @throws IllegalStateTransitionException if not in SUBMITTED
@@ -179,36 +178,35 @@ public class SolutionReview {
     }
 
     /**
-     * UnApproves a current document and returns it to submitted state.
-     * Only documents in CURRENT state can be unapproved.
+     * Activates an approved document.
+     * Only documents in APPROVED state can be activated.
      * 
-     * @throws IllegalStateTransitionException if not in CURRENT state
+     * @throws IllegalStateTransitionException if not in APPROVED state
      */
-    public void unApproveCurrent(String modifiedBy) {
+    public void activate(String modifiedBy) {
+        executeStateOperation(DocumentState.StateOperation.ACTIVATE);
+        this.setLastModifiedBy(modifiedBy);
+    }
+
+    /**
+     * UnApproves an approved document and returns it to submitted state.
+     * Only documents in APPROVED state can be unapproved.
+     * 
+     * @throws IllegalStateTransitionException if not in APPROVED state
+     */
+    public void unApprove(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.UNAPPROVE);
         this.setLastModifiedBy(modifiedBy);
     }
 
     /**
-     * Marks the current document as outdated.
-     * Only documents in CURRENT state can be marked as outdated.
+     * Marks the active document as outdated.
+     * Only documents in ACTIVE state can be marked as outdated.
      * 
-     * @throws IllegalStateTransitionException if not in CURRENT state
+     * @throws IllegalStateTransitionException if not in ACTIVE state
      */
     public void markAsOutdated(String modifiedBy) {
         executeStateOperation(DocumentState.StateOperation.MARK_OUTDATED);
-        this.setLastModifiedBy(modifiedBy);
-    }
-
-    /**
-     * Resets an outdated document back to current status.
-     * Only documents in OUTDATED state can be reset to current.
-     * 
-     * @throws IllegalStateTransitionException if not in OUTDATED
-     *                                         state
-     */
-    public void resetAsCurrent(String modifiedBy) {
-        executeStateOperation(DocumentState.StateOperation.RESET_CURRENT);
         this.setLastModifiedBy(modifiedBy);
     }
 
@@ -235,8 +233,12 @@ public class SolutionReview {
         return this.documentState == DocumentState.SUBMITTED;
     }
 
-    public boolean isCurrent() {
-        return this.documentState == DocumentState.CURRENT;
+    public boolean isApproved() {
+        return this.documentState == DocumentState.APPROVED;
+    }
+
+    public boolean isActive() {
+        return this.documentState == DocumentState.ACTIVE;
     }
 
     public boolean isOutdated() {
@@ -333,38 +335,31 @@ public class SolutionReview {
                 .businessCapabilities(new ArrayList<>(original.businessCapabilities
                         .stream()
                         .peek(businessCapability -> businessCapability.setId(null))
-                        .toList())
-                )
+                        .toList()))
                 .systemComponents(new ArrayList<>(original.systemComponents
                         .stream()
                         .peek(systemComponent -> systemComponent.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .integrationFlows(new ArrayList<>(original.integrationFlows
                         .stream()
                         .peek(integrationFlow -> integrationFlow.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .dataAssets(new ArrayList<>(original.dataAssets
                         .stream()
                         .peek(dataAsset -> dataAsset.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .technologyComponents(new ArrayList<>(original.technologyComponents
                         .stream()
                         .peek(technologyComponent -> technologyComponent.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .enterpriseTools(new ArrayList<>(original.enterpriseTools
                         .stream()
                         .peek(enterpriseTool -> enterpriseTool.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .processCompliances(new ArrayList<>(original.processCompliances
                         .stream()
                         .peek(processCompliant -> processCompliant.setId(null))
-                        .toList()
-                ))
+                        .toList()))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())
                 .createdBy(original.createdBy)

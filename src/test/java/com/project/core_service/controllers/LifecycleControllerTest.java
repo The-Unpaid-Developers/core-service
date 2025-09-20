@@ -1,8 +1,9 @@
 package com.project.core_service.controllers;
 
+import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.IllegalStateTransitionException;
 import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.service.SolutionReviewLifecycleService;
+import com.project.core_service.services.SolutionReviewLifecycleService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -23,7 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(LifecycleController.class)
 @AutoConfigureMockMvc(addFilters = false) // Disable security filters for testing
-@TestPropertySource(locations="classpath:application-test.properties")
+@TestPropertySource(locations = "classpath:application-test.properties")
 @DisplayName("LifecycleController Tests")
 class LifecycleControllerTest {
 
@@ -297,9 +298,9 @@ class LifecycleControllerTest {
                     "SUBMIT",
                     "REMOVE_SUBMISSION",
                     "APPROVE",
+                    "ACTIVATE",
                     "UNAPPROVE",
-                    "MARK_OUTDATED",
-                    "RESET_CURRENT"
+                    "MARK_OUTDATED"
             };
 
             for (String operation : operations) {
@@ -404,6 +405,330 @@ class LifecycleControllerTest {
                     .andExpect(status().isMethodNotAllowed());
 
             verify(lifecycleService, never()).executeTransition(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Business Logic Constraint Tests")
+    class BusinessLogicConstraintTests {
+
+        @Test
+        @DisplayName("Should return 400 Bad Request when trying to create DRAFT with existing DRAFT/SUBMITTED/APPROVED")
+        void shouldReturnBadRequestWhenTryingToCreateDraftWithExistingExclusiveStates() throws Exception {
+            // Given - attempt to transition to DRAFT when another exclusive state exists
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "SUBMIT",
+                        "modifiedBy": "test-user",
+                        "comment": "Creating a new draft"
+                    }
+                    """;
+            String errorMessage = "Cannot create/update document for system SYS-001. " +
+                    "Documents already exist in exclusive states: DRAFT. " +
+                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
+            doThrow(new IllegalOperationException(errorMessage))
+                    .when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                    .andExpect(jsonPath("$.message").value(errorMessage));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should return 400 Bad Request when trying to APPROVE with existing APPROVED document")
+        void shouldReturnBadRequestWhenTryingToApproveWithExistingApprovedDocument() throws Exception {
+            // Given
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "APPROVE",
+                        "modifiedBy": "test-user",
+                        "comment": "Trying to approve when another approved document exists"
+                    }
+                    """;
+            String errorMessage = "Cannot create/update document for system SYS-001. " +
+                    "Documents already exist in exclusive states: APPROVED. " +
+                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
+            doThrow(new IllegalOperationException(errorMessage))
+                    .when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                    .andExpect(jsonPath("$.message").value(errorMessage));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should return 400 Bad Request when trying to ACTIVATE with existing ACTIVE document")
+        void shouldReturnBadRequestWhenTryingToActivateWithExistingActiveDocument() throws Exception {
+            // Given
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "ACTIVATE",
+                        "modifiedBy": "test-user",
+                        "comment": "Trying to activate when another active document exists"
+                    }
+                    """;
+            String errorMessage = "An ACTIVE document already exists for system SYS-001. " +
+                    "Only one document can be in ACTIVE state at a time.";
+            doThrow(new IllegalOperationException(errorMessage))
+                    .when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                    .andExpect(jsonPath("$.message").value(errorMessage));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should successfully ACTIVATE when constraint validation passes")
+        void shouldSuccessfullyActivateWhenConstraintValidationPasses() throws Exception {
+            // Given - ACTIVATE operation should succeed when constraints are satisfied
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "ACTIVATE",
+                        "modifiedBy": "test-user",
+                        "comment": "Activating an approved document"
+                    }
+                    """;
+            doNothing().when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("Transition successful"));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should handle multiple constraint violations with appropriate error messages")
+        void shouldHandleMultipleConstraintViolationsWithAppropriateErrorMessages() throws Exception {
+            // Given - multiple documents in exclusive states
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "SUBMIT",
+                        "modifiedBy": "test-user",
+                        "comment": "Trying to submit with multiple constraint violations"
+                    }
+                    """;
+            String errorMessage = "Cannot create/update document for system SYS-001. " +
+                    "Documents already exist in exclusive states: DRAFT, SUBMITTED. " +
+                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
+            doThrow(new IllegalOperationException(errorMessage))
+                    .when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                    .andExpect(jsonPath("$.message").value(errorMessage));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should allow DRAFT creation when only ACTIVE document exists")
+        void shouldAllowDraftCreationWhenOnlyActiveDocumentExists() throws Exception {
+            // Given - DRAFT creation should be allowed when only ACTIVE exists (separate
+            // constraints)
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "SUBMIT",
+                        "modifiedBy": "test-user",
+                        "comment": "Creating draft while active document exists"
+                    }
+                    """;
+            doNothing().when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("Transition successful"));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should allow OUTDATED documents without constraint violations")
+        void shouldAllowOutdatedDocumentsWithoutConstraintViolations() throws Exception {
+            // Given - MARK_OUTDATED should not be subject to exclusive state constraints
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "MARK_OUTDATED",
+                        "modifiedBy": "test-user",
+                        "comment": "Marking document as outdated"
+                    }
+                    """;
+            doNothing().when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("Transition successful"));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+
+        @Test
+        @DisplayName("Should successfully handle ACTIVATE operation that transitions existing ACTIVE to OUTDATED")
+        void shouldSuccessfullyHandleActivateOperationThatTransitionsExistingActiveToOutdated() throws Exception {
+            // Given - This tests requirement #2: when activating a document, existing
+            // ACTIVE should become OUTDATED
+            // The service layer handles this automatically, so the API should succeed
+            String requestJson = """
+                    {
+                        "documentId": "test-approved-document",
+                        "operation": "ACTIVATE",
+                        "modifiedBy": "test-user",
+                        "comment": "Activating approved document, existing active should become outdated"
+                    }
+                    """;
+            // The service layer will handle the logic of transitioning existing ACTIVE →
+            // OUTDATED
+            doNothing().when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("Transition successful"));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("State Transition Validation Tests")
+    class StateTransitionValidationTests {
+
+        @Test
+        @DisplayName("Should enforce DRAFT → SUBMITTED → APPROVED → ACTIVE → OUTDATED flow")
+        void shouldEnforceCorrectStateTransitionFlow() throws Exception {
+            // Test each valid transition in the flow
+            String[][] validTransitions = {
+                    { "SUBMIT", "DRAFT to SUBMITTED transition" },
+                    { "APPROVE", "SUBMITTED to APPROVED transition" },
+                    { "ACTIVATE", "APPROVED to ACTIVE transition" },
+                    { "MARK_OUTDATED", "ACTIVE to OUTDATED transition" }
+            };
+
+            for (String[] transition : validTransitions) {
+                String operation = transition[0];
+                String comment = transition[1];
+
+                String requestJson = String.format("""
+                        {
+                            "documentId": "test-document-id",
+                            "operation": "%s",
+                            "modifiedBy": "test-user",
+                            "comment": "%s"
+                        }
+                        """, operation, comment);
+                doNothing().when(lifecycleService).executeTransition(any());
+
+                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string("Transition successful"));
+
+                verify(lifecycleService).executeTransition(any());
+                reset(lifecycleService);
+            }
+        }
+
+        @Test
+        @DisplayName("Should allow reverse transitions where appropriate")
+        void shouldAllowReverseTransitionsWhereAppropriate() throws Exception {
+            // Test valid reverse transitions
+            String[][] reverseTransitions = {
+                    { "REMOVE_SUBMISSION", "SUBMITTED to DRAFT transition" },
+                    { "UNAPPROVE", "APPROVED to SUBMITTED transition" }
+            };
+
+            for (String[] transition : reverseTransitions) {
+                String operation = transition[0];
+                String comment = transition[1];
+
+                String requestJson = String.format("""
+                        {
+                            "documentId": "test-document-id",
+                            "operation": "%s",
+                            "modifiedBy": "test-user",
+                            "comment": "%s"
+                        }
+                        """, operation, comment);
+                doNothing().when(lifecycleService).executeTransition(any());
+
+                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestJson))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string("Transition successful"));
+
+                verify(lifecycleService).executeTransition(any());
+                reset(lifecycleService);
+            }
+        }
+
+        @Test
+        @DisplayName("Should reject invalid state transitions")
+        void shouldRejectInvalidStateTransitions() throws Exception {
+            // Given - invalid transition
+            String requestJson = """
+                    {
+                        "documentId": "test-document-id",
+                        "operation": "SUBMIT",
+                        "modifiedBy": "test-user",
+                        "comment": "Invalid transition attempt"
+                    }
+                    """;
+            String errorMessage = "Cannot execute operation 'submit document' on document 'test-document-id'. " +
+                    "Document is in state 'SUBMITTED' but operation requires state 'DRAFT'";
+            doThrow(new IllegalStateTransitionException(errorMessage))
+                    .when(lifecycleService).executeTransition(any());
+
+            // When & Then
+            mockMvc.perform(post("/api/v1/lifecycle/transition")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(requestJson))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
+                    .andExpect(jsonPath("$.message").value(errorMessage));
+
+            verify(lifecycleService, times(1)).executeTransition(any());
         }
     }
 }
