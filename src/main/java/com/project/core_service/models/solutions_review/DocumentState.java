@@ -79,7 +79,7 @@ public enum DocumentState {
     // Define valid transitions for each state
     private static final Set<DocumentState> DRAFT_TRANSITIONS = EnumSet.of(SUBMITTED);
     private static final Set<DocumentState> SUBMITTED_TRANSITIONS = EnumSet.of(APPROVED, DRAFT);
-    private static final Set<DocumentState> APPROVED_TRANSITIONS = EnumSet.of(ACTIVE);
+    private static final Set<DocumentState> APPROVED_TRANSITIONS = EnumSet.of(ACTIVE, SUBMITTED);
     private static final Set<DocumentState> ACTIVE_TRANSITIONS = EnumSet.of(OUTDATED);
     private static final Set<DocumentState> OUTDATED_TRANSITIONS = EnumSet.noneOf(DocumentState.class);
 

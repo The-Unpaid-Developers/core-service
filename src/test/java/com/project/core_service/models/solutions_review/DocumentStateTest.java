@@ -56,13 +56,13 @@ class DocumentStateTest {
     }
 
     @Test
-    @DisplayName("APPROVED can transition to ACTIVE only")
-    void approvedCanTransitionToActiveOnly() {
+    @DisplayName("APPROVED can transition to ACTIVE and SUBMITTED")
+    void approvedCanTransitionToActiveAndSubmitted() {
         DocumentState approved = DocumentState.APPROVED;
 
         assertTrue(approved.canTransitionTo(DocumentState.ACTIVE));
+        assertTrue(approved.canTransitionTo(DocumentState.SUBMITTED));
         assertFalse(approved.canTransitionTo(DocumentState.DRAFT));
-        assertFalse(approved.canTransitionTo(DocumentState.SUBMITTED));
         assertFalse(approved.canTransitionTo(DocumentState.OUTDATED));
         assertFalse(approved.canTransitionTo(DocumentState.APPROVED));
     }
@@ -137,14 +137,14 @@ class DocumentStateTest {
     }
 
     @Test
-    @DisplayName("APPROVED should have valid transitions to ACTIVE only")
-    void approvedShouldHaveValidTransitionsToActiveOnly() {
+    @DisplayName("APPROVED should have valid transitions to ACTIVE and SUBMITTED")
+    void approvedShouldHaveValidTransitionsToActiveAndSubmitted() {
         Set<DocumentState> validTransitions = DocumentState.APPROVED.getValidTransitions();
 
-        assertEquals(1, validTransitions.size());
+        assertEquals(2, validTransitions.size());
         assertTrue(validTransitions.contains(DocumentState.ACTIVE));
+        assertTrue(validTransitions.contains(DocumentState.SUBMITTED));
         assertFalse(validTransitions.contains(DocumentState.DRAFT));
-        assertFalse(validTransitions.contains(DocumentState.SUBMITTED));
         assertFalse(validTransitions.contains(DocumentState.APPROVED));
         assertFalse(validTransitions.contains(DocumentState.OUTDATED));
     }
@@ -184,6 +184,7 @@ class DocumentStateTest {
         assertDoesNotThrow(() -> DocumentState.SUBMITTED.validateTransition(DocumentState.APPROVED));
         assertDoesNotThrow(() -> DocumentState.SUBMITTED.validateTransition(DocumentState.DRAFT));
         assertDoesNotThrow(() -> DocumentState.APPROVED.validateTransition(DocumentState.ACTIVE));
+        assertDoesNotThrow(() -> DocumentState.APPROVED.validateTransition(DocumentState.SUBMITTED));
         assertDoesNotThrow(() -> DocumentState.ACTIVE.validateTransition(DocumentState.OUTDATED));
     }
 
@@ -565,5 +566,33 @@ class DocumentStateTest {
         assertTrue(state.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
         state = state.executeOperation(DocumentState.StateOperation.UNAPPROVE);
         assertEquals(DocumentState.SUBMITTED, state);
+    }
+
+    @Test
+    @DisplayName("Should validate UNAPPROVE operation consistency between canExecuteOperation and canTransitionTo")
+    void shouldValidateUnapproveOperationConsistency() {
+        DocumentState approved = DocumentState.APPROVED;
+
+        // Test the bug fix: UNAPPROVE operation should be executable from APPROVED
+        assertTrue(approved.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE),
+                "UNAPPROVE operation should be executable from APPROVED state");
+
+        // Test the bug fix: APPROVED should be able to transition to SUBMITTED
+        // (UNAPPROVE target)
+        DocumentState unapproveTarget = DocumentState.StateOperation.UNAPPROVE.getTargetState();
+        assertEquals(DocumentState.SUBMITTED, unapproveTarget,
+                "UNAPPROVE operation should target SUBMITTED state");
+
+        assertTrue(approved.canTransitionTo(unapproveTarget),
+                "APPROVED state should be able to transition to SUBMITTED (UNAPPROVE target)");
+
+        // Validate that the transition works without throwing an exception
+        assertDoesNotThrow(() -> approved.validateTransition(DocumentState.SUBMITTED),
+                "Transition from APPROVED to SUBMITTED should be valid");
+
+        // Execute the operation to ensure it works end-to-end
+        DocumentState result = approved.executeOperation(DocumentState.StateOperation.UNAPPROVE);
+        assertEquals(DocumentState.SUBMITTED, result,
+                "UNAPPROVE operation should successfully transition from APPROVED to SUBMITTED");
     }
 }
