@@ -11,10 +11,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import com.mongodb.lang.NonNull;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Document
 @AllArgsConstructor
+@NoArgsConstructor
 @Builder
 public class SolutionOverview {
     @Id
