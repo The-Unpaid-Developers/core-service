@@ -12,12 +12,14 @@ import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -124,7 +126,76 @@ public class SolutionReviewService {
      * @return a {@link List} of solution reviews for the given system code
      */
     public List<SolutionReview> getSolutionReviewsBySystemCode(String systemCode) {
-        return solutionReviewRepository.findAllBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+        return solutionReviewRepository.findAllBySystemCode(systemCode);
+    }
+
+     /**
+     * Retrieves a paginated view of solution reviews grouped by system.
+     *
+     * <p>For each system, if an approved solution review exists, it is returned.
+     * Otherwise, the latest solution review for the system is returned.</p>
+     *
+     * @param pageable the pagination information
+     * @return a {@link Page} of solution reviews, one per system
+     */
+    public Page<SolutionReview> getPaginatedSystemView(Pageable pageable) {
+        List<String> allSystemCodes = solutionReviewRepository.findAllDistinctSystemCodes();
+
+        // Get ALL representative reviews first
+        List<SolutionReview> allRepresentativeReviews = allSystemCodes.stream()
+            .map(this::getRepresentativeReviewForSystem)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .collect(Collectors.toList());
+
+        // Apply pagination AFTER filtering
+        int total = allRepresentativeReviews.size();
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), total);
+
+        if (start >= total) {
+            return new PageImpl<>(List.of(), pageable, total);
+        }
+
+        List<SolutionReview> paginatedList = allRepresentativeReviews.subList(start, end);
+        return new PageImpl<>(paginatedList, pageable, total);
+    }
+
+    private Optional<SolutionReview> getRepresentativeReviewForSystem(String systemCode) {
+        Optional<SolutionReview> activeReview = solutionReviewRepository.findActiveBySystemCode(systemCode);
+        
+        if (activeReview.isPresent()) {
+            return activeReview;
+        }
+        
+        List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(
+            systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt")
+        );
+        
+        return reviews.isEmpty() ? Optional.empty() : Optional.of(reviews.get(0));
+    }
+
+    /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     *
+     * @param documentState the document state used for filtering
+     * @param pageable      the pagination information
+     * @return a {@link Page} of solution reviews with the specified document state
+     */
+    public Page<SolutionReview> getSolutionReviewsByDocumentState(String documentStateStr, Pageable pageable) {
+        if (documentStateStr == null || documentStateStr.trim().isEmpty()) {
+            throw new IllegalArgumentException("Invalid document state: " + documentStateStr + 
+                ". Valid values: " + Arrays.toString(DocumentState.values()));
+        }
+        DocumentState documentState;
+        try {
+            documentState = DocumentState.valueOf(documentStateStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid document state: " + documentStateStr + 
+                ". Valid values: " + Arrays.toString(DocumentState.values()));
+        }
+        
+        return solutionReviewRepository.findByDocumentState(documentState, pageable);
     }
 
     /**
@@ -239,6 +310,41 @@ public class SolutionReviewService {
         saveEnterpriseTools(solutionReview, modifiedSolutionReview.getEnterpriseTools());
         saveIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), processCompliantRepository,
                 solutionReview::setProcessCompliances);
+
+        solutionReview.setLastModifiedAt(LocalDateTime.now());
+
+        return solutionReviewRepository.save(solutionReview);
+    }
+
+    /**
+     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED state.
+     *
+     * The solution review must be in SUBMITTED state for this operation to be allowed.
+     *
+     * @param modifiedSolutionReview the DTO containing the updated concerns
+     * @return the updated solution review
+     * @throws NotFoundException if no solution review exists with the given ID
+     * @throws IllegalStateException if the solution review is not in SUBMITTED state
+     */
+    public SolutionReview updateSolutionReviewConcerns(SolutionReviewDTO modifiedSolutionReview) {
+        if (modifiedSolutionReview == null) {
+            throw new IllegalArgumentException("Modified SolutionReview cannot be null");
+        }
+
+        // Check exists throw not found if not exists
+        SolutionReview solutionReview = solutionReviewRepository.findById(modifiedSolutionReview.getId())
+                .orElseThrow(() -> new NotFoundException(modifiedSolutionReview.getId()));
+
+        // Validate that the solution review is in SUBMITTED state
+        if (solutionReview.getDocumentState() != DocumentState.SUBMITTED) {
+            throw new IllegalStateException("Only SUBMITTED reviews can have concerns updated");
+        }
+
+        // Update solution overview (including concerns)
+        if (modifiedSolutionReview.getSolutionOverview() != null) {
+            SolutionOverview overview = saveSolutionOverview(modifiedSolutionReview.getSolutionOverview());
+            solutionReview.setSolutionOverview(overview);
+        }
 
         solutionReview.setLastModifiedAt(LocalDateTime.now());
 

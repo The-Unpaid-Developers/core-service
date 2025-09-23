@@ -2,6 +2,7 @@ package com.project.core_service.controllers;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.services.SolutionReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,6 +79,40 @@ public class SolutionReviewController {
         return ResponseEntity.ok(solutionReviewService.getSolutionReviewsBySystemCode(systemCode));
     }
 
+    /**
+     * Retrieves all {@link SolutionReview} entries with pagination for system view.
+     *
+     * @param page the page index (0-based)
+     * @param size the number of items per page
+     * @return a {@link ResponseEntity} containing a paginated list of solution reviews
+     */
+    @GetMapping("/system-view")
+    public ResponseEntity<Page<SolutionReview>> getPaginatedSystemView(
+            @RequestParam int page,
+            @RequestParam int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<SolutionReview> systemView = solutionReviewService.getPaginatedSystemView(pageable);
+        return ResponseEntity.ok(systemView);
+    }
+
+    /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     *
+     * @param documentState the document state used for filtering (e.g., DRAFT, SUBMITTED, APPROVED, ACTIVE, OUTDATED)
+     * @param page          the page index (0-based)
+     * @param size          the number of items per page
+     * @return a {@link ResponseEntity} containing a paginated list of solution reviews with the specified document state
+     */
+    @GetMapping("/by-state")
+    public ResponseEntity<Page<SolutionReview>> getSolutionReviewsByDocumentState(
+            @RequestParam String documentState,
+            @RequestParam int page,
+            @RequestParam int size
+    ) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(solutionReviewService.getSolutionReviewsByDocumentState(documentState, pageable));
+    }
 
     /**
      * Creates a new {@link SolutionReview} for the given system code.
@@ -113,6 +148,19 @@ public class SolutionReviewController {
     @PutMapping
     public ResponseEntity<SolutionReview> updateSolutionReview(@RequestBody SolutionReviewDTO newSolutionReview) {
         return ResponseEntity.ok(solutionReviewService.updateSolutionReview(newSolutionReview));
+    }
+
+     /**
+     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED state.
+     *
+     * Only the concerns in the solution overview are updated. Other fields are ignored.
+     *
+     * @param solutionReviewWithConcerns the solution review object containing updated concerns
+     * @return a {@link ResponseEntity} containing the updated solution review
+     */
+    @PutMapping("/concerns")
+    public ResponseEntity<SolutionReview> updateSolutionReviewConcerns(@RequestBody SolutionReviewDTO solutionReviewWithConcerns) {
+        return ResponseEntity.ok(solutionReviewService.updateSolutionReviewConcerns(solutionReviewWithConcerns));
     }
 
     /**
