@@ -126,7 +126,7 @@ public class SolutionReviewService {
      * @return a {@link List} of solution reviews for the given system code
      */
     public List<SolutionReview> getSolutionReviewsBySystemCode(String systemCode) {
-        return solutionReviewRepository.findAllBySystemCode(systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+        return solutionReviewRepository.findAllBySystemCode(systemCode);
     }
 
      /**

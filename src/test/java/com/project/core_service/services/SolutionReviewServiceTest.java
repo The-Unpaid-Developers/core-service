@@ -143,7 +143,7 @@ class SolutionReviewServiceTest {
 
     @Test
     void getSolutionReviewsBySystemCode() {
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123"), any(Sort.class)))
+        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123")))
                 .thenReturn(List.of(review));
 
         List<SolutionReview> result = service.getSolutionReviewsBySystemCode("SYS-123");

@@ -31,15 +31,30 @@ import java.util.Optional;
 public interface SolutionReviewRepository extends MongoRepository<SolutionReview, String> {
 
     /**
-     * Retrieves a list of {@link SolutionReview} entries filtered by system code,
-     * with results sorted according to the provided {@link Sort} parameter.
+     * Retrieves all {@link SolutionReview} entries for a given system code with custom sorting:
+     * ACTIVE first, then DRAFT/SUBMITTED/APPROVED, then OUTDATED, all sorted by lastModifiedAt DESC.
      *
      * @param systemCode the system code used for filtering
-     * @param sort       the sorting criteria for the results
-     * @return a {@link List} of solution reviews that match the given system code,
-     *         sorted as specified
+     * @return a {@link List} of solution reviews sorted by priority and lastModifiedAt
      */
-    List<SolutionReview> findAllBySystemCode(String systemCode, Sort sort);
+    @Aggregation(pipeline = {
+        "{ $match: { 'systemCode': ?0 } }",
+        "{ $addFields: { " +
+            "'sortPriority': { " +
+                "$switch: { " +
+                    "branches: [ " +
+                        "{ case: { $eq: ['$documentState', 'ACTIVE'] }, then: 1 }, " +
+                        "{ case: { $in: ['$documentState', ['DRAFT', 'SUBMITTED', 'APPROVED']] }, then: 2 }, " +
+                        "{ case: { $eq: ['$documentState', 'OUTDATED'] }, then: 3 } " +
+                    "], " +
+                    "default: 4 " +
+                "} " +
+            "} " +
+        "} }",
+        "{ $sort: { 'sortPriority': 1, 'lastModifiedAt': -1 } }",
+        "{ $project: { 'sortPriority': 0 } }"
+    })
+    List<SolutionReview> findAllBySystemCode(String systemCode);
 
     /**
      * Retrieves the first {@link SolutionReview} entry filtered by system code and
