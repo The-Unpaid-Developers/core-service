@@ -3,6 +3,7 @@ package com.project.core_service.models.solution_overview;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.junit.jupiter.api.Nested;
@@ -31,7 +32,8 @@ class SolutionOverviewTest {
                 "desc",
                 "impact",
                 "disposition",
-                ConcernStatus.UNKNOWN
+                ConcernStatus.UNKNOWN,
+                LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)
         );
         return List.of(dummyConcern);
     }

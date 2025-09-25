@@ -82,7 +82,8 @@ class SolutionReviewServiceTest {
                 "desc",
                 "impact",
                 "disposition",
-                ConcernStatus.UNKNOWN);
+                ConcernStatus.UNKNOWN,
+                LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)); 
         return List.of(dummyConcern);
     }
 
@@ -775,7 +776,7 @@ class SolutionReviewServiceTest {
     @Test
     void createSolutionReview_ShouldThrowIfConcernInvalid() {
         List<Concern> invalidConcerns = List
-                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN));
+                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
@@ -925,7 +926,7 @@ class SolutionReviewServiceTest {
                 .documentState(DocumentState.SUBMITTED)
                 .build();
 
-        Concern newConcern = new Concern("concern-1", ConcernType.RISK, "New concern", "High impact", "Under review", ConcernStatus.UNKNOWN);
+        Concern newConcern = new Concern("concern-1", ConcernType.RISK, "New concern", "High impact", "Under review", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
         SolutionOverview modifiedOverview = SolutionOverview.fromExisting(overview)
                 .concerns(List.of(newConcern))
                 .build();

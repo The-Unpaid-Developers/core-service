@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Nested;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class NewSolutionOverviewDTORequestTest {
@@ -32,7 +33,7 @@ public class NewSolutionOverviewDTORequestTest {
                 valueOutcome,
                 List.of(ApplicationUser.EMPLOYEE),
                 List.of(new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact", "mitigation",
-                        ConcernStatus.UNKNOWN)));
+                        ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000))));
     }
 
     private void assertSolutionOverviewMapping(SolutionOverview overview, NewSolutionOverviewRequestDTO dto) {
@@ -61,7 +62,8 @@ public class NewSolutionOverviewDTORequestTest {
                     "Description of concern",
                     "impact",
                     "mitigation",
-                    ConcernStatus.UNKNOWN);
+                    ConcernStatus.UNKNOWN,
+                    LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
 
             NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(
                     details,
@@ -120,7 +122,7 @@ public class NewSolutionOverviewDTORequestTest {
         @Test
         void shouldThrowWhenSolutionDetailsIsNull() {
             Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN);
+                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
             List<Concern> concerns = List.of(concern);
 
             assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
@@ -136,7 +138,7 @@ public class NewSolutionOverviewDTORequestTest {
         void shouldThrowWhenBusinessUnitIsNull() {
             SolutionDetails details = dummySolutionDetails();
             Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN);
+                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
             List<Concern> concerns = List.of(concern);
 
             assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
@@ -152,7 +154,7 @@ public class NewSolutionOverviewDTORequestTest {
         void shouldThrowWhenBusinessDriverIsNull() {
             SolutionDetails details = dummySolutionDetails();
             Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN);
+                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
             List<Concern> concerns = List.of(concern);
 
             assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
@@ -168,7 +170,7 @@ public class NewSolutionOverviewDTORequestTest {
         void shouldThrowWhenValueOutcomeIsNull() {
             SolutionDetails details = dummySolutionDetails();
             Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN);
+                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
             List<Concern> concerns = List.of(concern);
 
             assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(

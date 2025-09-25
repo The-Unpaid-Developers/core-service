@@ -18,6 +18,7 @@ public class IntegrationFlowTest {
                 .integrationMethod(IntegrationMethod.API)
                 .frequency(Frequency.ANNUALLY)
                 .purpose("Data sync with external system")
+                .middleware(Middleware.OSP)
                 .build();
 
         assertEquals("if-123", flow.getId());
@@ -48,6 +49,7 @@ public class IntegrationFlowTest {
         IntegrationMethod method = IntegrationMethod.API;
         Frequency frequency = Frequency.DAILY;
         String purpose = "Data ingestion";
+        Middleware middleware = Middleware.OSP;
 
         IntegrationFlow flow = new IntegrationFlow(
                 id,
@@ -56,7 +58,8 @@ public class IntegrationFlowTest {
                 role,
                 method,
                 frequency,
-                purpose);
+                purpose,
+                middleware);
 
         assertEquals(id, flow.getId());
         assertEquals(componentName, flow.getComponentName());
@@ -65,6 +68,7 @@ public class IntegrationFlowTest {
         assertEquals(method, flow.getIntegrationMethod());
         assertEquals(frequency, flow.getFrequency());
         assertEquals(purpose, flow.getPurpose());
+        assertEquals(middleware, flow.getMiddleware());
     }
 
     @Test
@@ -79,7 +83,8 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose"));
+                "Purpose",
+                Middleware.OSP));
 
         // externalSystemRole null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -89,7 +94,8 @@ public class IntegrationFlowTest {
                 null,
                 IntegrationMethod.API,
                 Frequency.DAILY,
-                "Purpose"));
+                "Purpose",
+                Middleware.OSP));
 
         // integrationMethod null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -99,7 +105,8 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 null,
                 Frequency.DAILY,
-                "Purpose"));
+                "Purpose",
+                Middleware.OSP));
 
         // frequency null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -109,7 +116,8 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 null,
-                "Purpose"));
+                "Purpose",
+                Middleware.OSP));
 
         // purpose null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -119,6 +127,18 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.PRODUCER,
                 IntegrationMethod.API,
                 Frequency.DAILY,
+                null,
+                Middleware.OSP));
+
+        // middleware null
+        assertThrows(NullPointerException.class, () -> new IntegrationFlow(
+                id,
+                "MyComponent",
+                "BSO-002",
+                CounterpartSystemRole.PRODUCER,
+                IntegrationMethod.API,
+                Frequency.DAILY,
+                "Purpose",
                 null));
     }
 
@@ -131,12 +151,13 @@ public class IntegrationFlowTest {
         IntegrationMethod method = IntegrationMethod.BATCH;
         Frequency frequency = Frequency.WEEKLY;
         String purpose = "Report generation";
+        Middleware middleware = Middleware.NONE;
 
         IntegrationFlow f1 = new IntegrationFlow(
-                id, componentName, bsoCode, role, method, frequency, purpose);
+                id, componentName, bsoCode, role, method, frequency, purpose, middleware);
 
         IntegrationFlow f2 = new IntegrationFlow(
-                id, componentName, bsoCode, role, method, frequency, purpose);
+                id, componentName, bsoCode, role, method, frequency, purpose, middleware);
 
         assertEquals(f1, f2);
         assertEquals(f1.hashCode(), f2.hashCode());
@@ -151,7 +172,8 @@ public class IntegrationFlowTest {
                 CounterpartSystemRole.CONSUMER,
                 IntegrationMethod.EVENT,
                 Frequency.MONTHLY,
-                "Batch processing");
+                "Batch processing",
+                Middleware.OSP);
 
         String toString = flow.toString();
         assertTrue(toString.contains("flow-id"));
