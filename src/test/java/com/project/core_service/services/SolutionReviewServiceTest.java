@@ -8,8 +8,14 @@ import static org.mockito.Mockito.*;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
+import com.project.core_service.models.integration_flow.CounterpartSystemRole;
+import com.project.core_service.models.integration_flow.IntegrationFlow;
+import com.project.core_service.models.integration_flow.IntegrationMethod;
+import com.project.core_service.models.integration_flow.Middleware;
+import com.project.core_service.models.shared.Frequency;
 import com.project.core_service.models.solution_overview.*;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
@@ -248,14 +254,14 @@ class SolutionReviewServiceTest {
         
         // Create 5 reviews for different systems
         for (int i = 1; i <= 5; i++) {
-            SolutionReview review = SolutionReview.newDraftBuilder()
+            SolutionReview reviews = SolutionReview.newDraftBuilder()
                     .id("rev-" + i)
                     .systemCode("SYS-00" + i)
                     .solutionOverview(overview)
                     .documentState(DocumentState.ACTIVE)
                     .build();
             when(solutionReviewRepository.findActiveBySystemCode("SYS-00" + i))
-                    .thenReturn(Optional.of(review));
+                    .thenReturn(Optional.of(reviews));
         }
 
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
@@ -296,7 +302,7 @@ class SolutionReviewServiceTest {
         Pageable pageable = PageRequest.of(10, 10); // Page 10 with 10 items per page
         List<String> systemCodes = List.of("SYS-123");
         
-        SolutionReview review = SolutionReview.newDraftBuilder()
+        SolutionReview currentReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
                 .solutionOverview(overview)
@@ -305,7 +311,7 @@ class SolutionReviewServiceTest {
 
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
         when(solutionReviewRepository.findActiveBySystemCode("SYS-123"))
-                .thenReturn(Optional.of(review));
+                .thenReturn(Optional.of(currentReview));
 
         // Act
         Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
@@ -441,8 +447,8 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(1000, 10);
         List<String> systemCodes = List.of("SYS-123");
-        
-        SolutionReview review = SolutionReview.newDraftBuilder()
+
+        SolutionReview currentReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
                 .solutionOverview(overview)
@@ -451,7 +457,7 @@ class SolutionReviewServiceTest {
 
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
         when(solutionReviewRepository.findActiveBySystemCode("SYS-123"))
-                .thenReturn(Optional.of(review));
+                .thenReturn(Optional.of(currentReview));
 
         // Act
         Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
@@ -641,6 +647,295 @@ class SolutionReviewServiceTest {
         assertSame(mockPage, result); // Should return exactly what repository returns
         verify(solutionReviewRepository, times(1)).findByDocumentState(DocumentState.SUBMITTED, pageable);
         verifyNoMoreInteractions(solutionReviewRepository);
+    }
+
+    // Tests for getSystemDependencySolutionReviews method
+    @Test
+    void getSystemDependencySolutionReviews_ShouldReturnActiveSolutionReviews() {
+        // Arrange
+        SolutionReview activeReview1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(List.of())
+                .build();
+
+        SolutionReview activeReview2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(List.of())
+                .build();
+
+        List<SolutionReview> activeSolutionReviews = List.of(activeReview1, activeReview2);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(activeSolutionReviews);
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(2, result.size());
+        
+        SystemDependencyDTO dto1 = result.get(0);
+        assertEquals("SYS-123", dto1.getSystemCode());
+        assertEquals(overview, dto1.getSolutionOverview());
+        assertEquals(List.of(), dto1.getIntegrationFlows());
+        
+        SystemDependencyDTO dto2 = result.get(1);
+        assertEquals("SYS-456", dto2.getSystemCode());
+        assertEquals(overview, dto2.getSolutionOverview());
+        assertEquals(List.of(), dto2.getIntegrationFlows());
+        
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldReturnEmptyListWhenNoActiveReviews() {
+        // Arrange
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of());
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertTrue(result.isEmpty());
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldIncludeIntegrationFlowsWhenPresent() {
+        // Arrange
+        List<IntegrationFlow> integrationFlows = List.of(
+            IntegrationFlow.builder()
+                .id("if-1")
+                .componentName("Component1")
+                .counterpartSystemCode("EXT-001")
+                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                .integrationMethod(IntegrationMethod.API)
+                .frequency(Frequency.DAILY)
+                .purpose("Data sync")
+                .middleware(Middleware.API_GATEWAY)
+                .build()
+        );
+
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-789")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(integrationFlows)
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        SystemDependencyDTO dto = result.get(0);
+        assertEquals("SYS-789", dto.getSystemCode());
+        assertEquals(overview, dto.getSolutionOverview());
+        assertEquals(integrationFlows, dto.getIntegrationFlows());
+        assertEquals(1, dto.getIntegrationFlows().size());
+        assertEquals("if-1", dto.getIntegrationFlows().get(0).getId());
+        assertEquals("Component1", dto.getIntegrationFlows().get(0).getComponentName());
+        
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldOnlyReturnActiveDocumentState() {
+        // Arrange
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-active")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        // Create reviews with other document states (these should not be returned)
+        // We don't need to store these in variables as they're only for documentation
+
+        // Only return the active review from repository
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals("SYS-123", result.get(0).getSystemCode());
+        
+        // Verify only ACTIVE state was queried
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.DRAFT);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.APPROVED);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.SUBMITTED);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.OUTDATED);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldHandleMultipleActiveReviewsWithDifferentData() {
+        // Arrange
+        List<IntegrationFlow> integrationFlows1 = List.of(
+            IntegrationFlow.builder()
+                .id("if-1")
+                .componentName("Component1")
+                .counterpartSystemCode("EXT-001")
+                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                .integrationMethod(IntegrationMethod.API)
+                .frequency(Frequency.DAILY)
+                .purpose("Data sync")
+                .middleware(Middleware.API_GATEWAY)
+                .build()
+        );
+
+        List<IntegrationFlow> integrationFlows2 = List.of(
+            IntegrationFlow.builder()
+                .id("if-2")
+                .componentName("Component2")
+                .counterpartSystemCode("EXT-002")
+                .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
+                .integrationMethod(IntegrationMethod.BATCH)
+                .frequency(Frequency.WEEKLY)
+                .purpose("Report generation")
+                .middleware(Middleware.OSB)
+                .build(),
+            IntegrationFlow.builder()
+                .id("if-3")
+                .componentName("Component3")
+                .counterpartSystemCode("EXT-003")
+                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                .integrationMethod(IntegrationMethod.EVENT)
+                .frequency(Frequency.MONTHLY)
+                .purpose("Event processing")
+                .middleware(Middleware.NONE)
+                .build()
+        );
+
+        SolutionOverview overview2 = SolutionOverview.newDraftBuilder()
+                .id("id-002")
+                .solutionDetails(dummySolutionDetails())
+                .reviewedBy("ReviewerName2")
+                .businessUnit(BusinessUnit.UNKNOWN)
+                .businessDriver(BusinessDriver.REGULATORY)
+                .valueOutcome("Different outcome")
+                .applicationUsers(dummyApplicationUsers())
+                .concerns(dummyConcerns())
+                .build();
+
+        SolutionReview activeReview1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(integrationFlows1)
+                .build();
+
+        SolutionReview activeReview2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview2)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(integrationFlows2)
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview1, activeReview2));
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(2, result.size());
+        
+        // First review
+        SystemDependencyDTO dto1 = result.get(0);
+        assertEquals("SYS-123", dto1.getSystemCode());
+        assertEquals(overview, dto1.getSolutionOverview());
+        assertEquals(1, dto1.getIntegrationFlows().size());
+        assertEquals("if-1", dto1.getIntegrationFlows().get(0).getId());
+        
+        // Second review
+        SystemDependencyDTO dto2 = result.get(1);
+        assertEquals("SYS-456", dto2.getSystemCode());
+        assertEquals(overview2, dto2.getSolutionOverview());
+        assertEquals(2, dto2.getIntegrationFlows().size());
+        assertEquals("if-2", dto2.getIntegrationFlows().get(0).getId());
+        assertEquals("if-3", dto2.getIntegrationFlows().get(1).getId());
+        
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldPreserveOrderFromRepository() {
+        // Arrange
+        SolutionReview review1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-AAA")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        SolutionReview review2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-ZZZ")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        SolutionReview review3 = SolutionReview.newDraftBuilder()
+                .id("rev-3")
+                .systemCode("SYS-MMM")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        // Repository returns in specific order
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(review2, review1, review3)); // ZZZ, AAA, MMM
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(3, result.size());
+        assertEquals("SYS-ZZZ", result.get(0).getSystemCode());
+        assertEquals("SYS-AAA", result.get(1).getSystemCode());
+        assertEquals("SYS-MMM", result.get(2).getSystemCode());
+        
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getSystemDependencySolutionReviews_ShouldUseCorrectFactoryMethod() {
+        // Arrange
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .integrationFlows(List.of())
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+
+        // Act
+        List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        SystemDependencyDTO dto = result.get(0);
+        
+        // Verify all three required fields are properly mapped
+        assertEquals(activeReview.getSystemCode(), dto.getSystemCode());
+        assertEquals(activeReview.getSolutionOverview(), dto.getSolutionOverview());
+        assertEquals(activeReview.getIntegrationFlows(), dto.getIntegrationFlows());
+        
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
 
 

@@ -1,7 +1,7 @@
 package com.project.core_service.models.integration_flow;
 
 public enum Middleware {
-    OSP,
+    OSB,
     API_GATEWAY,
     NONE
 }

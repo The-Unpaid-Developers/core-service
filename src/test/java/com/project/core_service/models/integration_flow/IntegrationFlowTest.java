@@ -18,7 +18,7 @@ public class IntegrationFlowTest {
                 .integrationMethod(IntegrationMethod.API)
                 .frequency(Frequency.ANNUALLY)
                 .purpose("Data sync with external system")
-                .middleware(Middleware.OSP)
+                .middleware(Middleware.OSB)
                 .build();
 
         assertEquals("if-123", flow.getId());
@@ -49,7 +49,7 @@ public class IntegrationFlowTest {
         IntegrationMethod method = IntegrationMethod.API;
         Frequency frequency = Frequency.DAILY;
         String purpose = "Data ingestion";
-        Middleware middleware = Middleware.OSP;
+        Middleware middleware = Middleware.OSB;
 
         IntegrationFlow flow = new IntegrationFlow(
                 id,
@@ -84,7 +84,7 @@ public class IntegrationFlowTest {
                 IntegrationMethod.API,
                 Frequency.DAILY,
                 "Purpose",
-                Middleware.OSP));
+                Middleware.OSB));
 
         // externalSystemRole null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -95,7 +95,7 @@ public class IntegrationFlowTest {
                 IntegrationMethod.API,
                 Frequency.DAILY,
                 "Purpose",
-                Middleware.OSP));
+                Middleware.OSB));
 
         // integrationMethod null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -106,7 +106,7 @@ public class IntegrationFlowTest {
                 null,
                 Frequency.DAILY,
                 "Purpose",
-                Middleware.OSP));
+                Middleware.OSB));
 
         // frequency null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -117,7 +117,7 @@ public class IntegrationFlowTest {
                 IntegrationMethod.API,
                 null,
                 "Purpose",
-                Middleware.OSP));
+                Middleware.OSB));
 
         // purpose null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -128,7 +128,7 @@ public class IntegrationFlowTest {
                 IntegrationMethod.API,
                 Frequency.DAILY,
                 null,
-                Middleware.OSP));
+                Middleware.OSB));
 
         // middleware null
         assertThrows(NullPointerException.class, () -> new IntegrationFlow(
@@ -173,7 +173,7 @@ public class IntegrationFlowTest {
                 IntegrationMethod.EVENT,
                 Frequency.MONTHLY,
                 "Batch processing",
-                Middleware.OSP);
+                Middleware.OSB);
 
         String toString = flow.toString();
         assertTrue(toString.contains("flow-id"));
