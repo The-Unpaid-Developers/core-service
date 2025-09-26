@@ -143,5 +143,13 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      */
     Page<SolutionReview> findByDocumentState(DocumentState documentState, Pageable pageable);
 
+    /**
+     * Retrieves all {@link SolutionReview} entries with a specific document state.
+     *
+     * @param documentState the document state used for filtering
+     * @return a {@link List} of solution reviews with the specified document state
+     */
+    List<SolutionReview> findByDocumentState(DocumentState documentState);
+
     Optional<SolutionReview> findBySystemCodeAndDocumentState(String systemCode, DocumentState documentState);
 }

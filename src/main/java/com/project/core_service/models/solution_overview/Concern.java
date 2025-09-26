@@ -1,6 +1,9 @@
 package com.project.core_service.models.solution_overview;
 
 import lombok.AllArgsConstructor;
+
+import java.time.LocalDateTime;
+
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -29,4 +32,6 @@ public class Concern {
     @NonNull
     private ConcernStatus status;
 
+    @NonNull
+    private LocalDateTime followUpDate;
 }

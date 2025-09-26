@@ -2,7 +2,7 @@ package com.project.core_service.controllers;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
-import com.project.core_service.models.solutions_review.DocumentState;
+import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.services.SolutionReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,6 +112,17 @@ public class SolutionReviewController {
     ) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(solutionReviewService.getSolutionReviewsByDocumentState(documentState, pageable));
+    }
+
+    /**
+     * Retrieves all {@link SolutionReview} entries with ACTIVE document state.
+     * Returns only the essential fields: systemCode, solutionOverview, and integrationFlows.
+     *
+     * @return a {@link ResponseEntity} containing a list of active solution reviews with limited fields
+     */
+    @GetMapping("/system-dependencies")
+    public ResponseEntity<List<SystemDependencyDTO>> getSystemDependencySolutionReviews() {
+        return ResponseEntity.ok(solutionReviewService.getSystemDependencySolutionReviews());
     }
 
     /**

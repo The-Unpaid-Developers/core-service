@@ -35,4 +35,7 @@ public class IntegrationFlow {
     @NonNull
     private String purpose;
 
+    @NonNull
+    private Middleware middleware;
+
 }
