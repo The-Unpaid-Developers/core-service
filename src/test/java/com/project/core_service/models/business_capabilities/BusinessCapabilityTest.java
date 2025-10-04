@@ -6,22 +6,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 public class BusinessCapabilityTest {
+    private final List<Capability> capabilities = List.of(
+            new Capability("Capability1", CapabilityType.L1),
+            new Capability("Capability2", CapabilityType.L2),
+            new Capability("Capability3", CapabilityType.L3)
+    );
 
     @Test
     void shouldCreateBusinessCapabilitySuccessfully() {
         BusinessCapability capability = new BusinessCapability(
                 "bc-001",
-                L1Capability.UNKNOWN,
-                L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN,
-                "Handles UNKNOWN operations"
-                );
+                "Handles UNKNOWN operations",
+                capabilities
+        );
 
         assertThat(capability.getId()).isEqualTo("bc-001");
-        assertThat(capability.getL1Capability()).isEqualTo(L1Capability.UNKNOWN);
-        assertThat(capability.getL2Capability()).isEqualTo(L2Capability.UNKNOWN);
-        assertThat(capability.getL3Capability()).isEqualTo(L3Capability.UNKNOWN);
+        assertThat(capability.getCapabilities()).isEqualTo(capabilities);
         assertThat(capability.getRemarks()).isEqualTo("Handles UNKNOWN operations");
     }
 
@@ -32,69 +35,31 @@ public class BusinessCapabilityTest {
         L3Capability l3 = L3Capability.UNKNOWN;
         BusinessCapability bc = BusinessCapability.builder()
                 .id("cap-123")
-                .l1Capability(l1)
-                .l2Capability(l2)
-                .l3Capability(l3)
+                .capabilities(capabilities)
                 .remarks("Core payment capability")
                 .build();
 
         assertEquals("cap-123", bc.getId());
-        assertEquals(l1, bc.getL1Capability());
-        assertEquals(l2, bc.getL2Capability());
-        assertEquals(l3, bc.getL3Capability());
+        assertEquals(capabilities, bc.getCapabilities());
     }
 
-    @Test
-    void shouldThrowExceptionWhenSettingNullForNonNullFields() {
-        BusinessCapability capability = new BusinessCapability(
-                "bc-001",
-                L1Capability.UNKNOWN,
-                L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN,
-                "Handles UNKNOWN operations"
-                );
-
-        assertThatThrownBy(() -> capability.setL1Capability(null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> capability.setL2Capability(null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> capability.setL3Capability(null))
-                .isInstanceOf(NullPointerException.class);
-    }
 
     @Test
     void shouldRespectEqualsAndHashCode() {
         BusinessCapability a = new BusinessCapability(
                 "bc-001",
-                L1Capability.UNKNOWN,
-                L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN,
-                "Handles UNKNOWN operations"
-                );
+                "Handles UNKNOWN operations",
+                capabilities
+        );
 
         BusinessCapability b = new BusinessCapability(
                 "bc-001",
-                L1Capability.UNKNOWN,
-                L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN,
-                "Handles UNKNOWN operations"
-                );
+                "Handles UNKNOWN operations",
+                capabilities
+        );
 
         assertThat(a).isEqualTo(b);
         assertThat(a.hashCode()).isEqualTo(b.hashCode());
     }
 
-    @Test
-    void toStringShouldContainMeaningfulInfo() {
-        BusinessCapability capability = new BusinessCapability(
-                "bc-002",
-                L1Capability.UNKNOWN,
-                L2Capability.UNKNOWN,
-                L3Capability.UNKNOWN,
-                ""
-                );
-
-        String output = capability.toString();
-        assertThat(output).contains("bc-002", "UNKNOWN", "UNKNOWN", "UNKNOWN");
-    }
 }
