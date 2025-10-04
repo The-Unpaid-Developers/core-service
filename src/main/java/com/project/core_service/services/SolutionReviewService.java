@@ -226,8 +226,10 @@ public class SolutionReviewService {
             throw new IllegalArgumentException("SolutionOverview cannot be null");
         }
 
-        SolutionOverview savedOverview = saveSolutionOverview(solutionOverview.toNewDraftEntity());
+        SolutionOverview overview = solutionOverview.toNewDraftEntity();
+        SolutionOverview savedOverview = saveSolutionOverview(overview);
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
+                .id(solutionOverview.getSolutionDetails().getSolutionName().replace(" ", "-") + "-1")
                 .systemCode(systemCode)
                 .solutionOverview(savedOverview)
                 .build();
@@ -277,6 +279,19 @@ public class SolutionReviewService {
         saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository,
                 solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
+    }
+
+    private static String getNewId(String systemCode, List<SolutionReview> solutionReviews) {
+        if (solutionReviews.isEmpty()) {
+            throw new NotFoundException("System " + systemCode + " does not exist");
+        }
+
+        if (solutionReviews.getFirst().getDocumentState().ordinal() < DocumentState.ACTIVE.ordinal()) {
+            throw new IllegalOperationException("A SUBMITTED or DRAFT review already exists for system " + systemCode);
+        }
+
+        SolutionReview lastReview = solutionReviews.getFirst();
+        return lastReview.getId().replaceAll("-\\d+$", "") + "-" + (Integer.parseInt(lastReview.getId().replaceAll("^.*-(\\d+)$", "$1")) + 1);
     }
 
     /**
