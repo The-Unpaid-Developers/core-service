@@ -39,8 +39,8 @@ jobs:
             type=semver,pattern={{major}}
             # Tag with branch name
             type=ref,event=branch
-            # Tag with commit SHA (short)
-            type=sha,prefix={{branch}}-
+            # Tag with commit SHA (short) - only for branch pushes
+            type=sha,prefix={{branch}}-,enable={{is_default_branch}}
             # Tag as latest for main branch
             type=raw,value=latest,enable={{is_default_branch}}
 
