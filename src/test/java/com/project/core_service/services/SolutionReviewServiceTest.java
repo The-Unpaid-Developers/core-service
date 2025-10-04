@@ -1054,9 +1054,13 @@ class SolutionReviewServiceTest {
                 overview.getApplicationUsers(),
                 overview.getConcerns());
 
-        assertThrows(IllegalOperationException.class, () -> {
-            service.createSolutionReview("SYS-123", dto);
+        // Act & Assert - Should not throw exception
+        assertDoesNotThrow(() -> {
+            SolutionReview result = service.createSolutionReview("SYS-123", dto);
+            assertNotNull(result);
         });
+
+        verify(solutionReviewRepository).insert(any(SolutionReview.class));
     }
 
     @Test
