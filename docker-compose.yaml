@@ -9,12 +9,10 @@ services:
       - MONGODB_INITDB_ROOT_USERNAME=user
       - MONGODB_INITDB_ROOT_PASSWORD=pass
   core-service:
-    build: 
-      context: .
-      dockerfile: Dockerfile
+    image: smithquaz/fyp-core-service:latest
     container_name: core_service
     environment:
-      - CONN_STR=mongodb://user:pass@mongodb/solutions?authSource=admin
+      - CONN_STR=${CONN_STR:-mongodb://user:pass@mongodb/solutions?authSource=admin}
     ports:
       - "8080:8080"
     depends_on:
