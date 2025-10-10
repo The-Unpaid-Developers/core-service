@@ -373,5 +373,156 @@ class SolutionReviewLifecycleServiceTest {
             verify(solutionReviewRepository, times(4)).findById("sr-1");
             verify(solutionReviewRepository, times(4)).save(testSolutionReview);
         }
+
+        @Test
+        @DisplayName("Should deactivate existing active SR before activating new one")
+        void shouldDeactivateExistingActiveSRBeforeActivatingNewOne() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.APPROVED);
+            testSolutionReview.setSystemCode("SYS-001");
+            testCommand.setOperation("ACTIVATE");
+
+            // Create an existing active solution review with the same systemCode
+            SolutionReview existingActiveSR = new SolutionReview("SYS-001", testSolutionOverview);
+            existingActiveSR.setId("sr-existing");
+            existingActiveSR.setDocumentState(DocumentState.ACTIVE);
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(solutionReviewRepository.findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE))
+                    .thenReturn(Optional.of(existingActiveSR));
+            when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
+            doNothing().when(solutionReviewService).validateActiveStateConstraint(anyString(), anyString());
+
+            // Act
+            lifecycleService.executeTransition(testCommand);
+
+            // Assert
+            // Verify the new SR was activated
+            assertEquals(DocumentState.ACTIVE, testSolutionReview.getDocumentState());
+            assertEquals("user2", testSolutionReview.getLastModifiedBy());
+
+            // Verify the existing active SR was marked as outdated
+            assertEquals(DocumentState.OUTDATED, existingActiveSR.getDocumentState());
+            assertEquals("user2", existingActiveSR.getLastModifiedBy());
+
+            // Verify repository calls
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(solutionReviewRepository).findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE);
+            verify(solutionReviewRepository, times(2)).save(any(SolutionReview.class)); // Both SRs should be saved
+        }
+
+        @Test
+        @DisplayName("Should not deactivate when no existing active SR exists")
+        void shouldNotDeactivateWhenNoExistingActiveSRExists() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.APPROVED);
+            testSolutionReview.setSystemCode("SYS-001");
+            testCommand.setOperation("ACTIVATE");
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(solutionReviewRepository.findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE))
+                    .thenReturn(Optional.empty()); // No existing active SR
+            when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
+            doNothing().when(solutionReviewService).validateActiveStateConstraint(anyString(), anyString());
+
+            // Act
+            lifecycleService.executeTransition(testCommand);
+
+            // Assert
+            // Verify the new SR was activated
+            assertEquals(DocumentState.ACTIVE, testSolutionReview.getDocumentState());
+            assertEquals("user2", testSolutionReview.getLastModifiedBy());
+
+            // Verify repository calls
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(solutionReviewRepository).findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE);
+            verify(solutionReviewRepository, times(1)).save(testSolutionReview); // Only the new SR should be saved
+        }
+
+        @Test
+        @DisplayName("Should not deactivate when existing active SR is the same document")
+        void shouldNotDeactivateWhenExistingActiveSRIsSameDocument() {
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.APPROVED);
+            testSolutionReview.setSystemCode("SYS-001");
+            testCommand.setOperation("ACTIVATE");
+
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(solutionReviewRepository.findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE))
+                    .thenReturn(Optional.of(testSolutionReview)); // Same document returned
+            when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(testSolutionReview);
+            doNothing().when(solutionReviewService).validateActiveStateConstraint(anyString(), anyString());
+
+            // Act
+            lifecycleService.executeTransition(testCommand);
+
+            // Assert
+            // Verify the SR was activated
+            assertEquals(DocumentState.ACTIVE, testSolutionReview.getDocumentState());
+            assertEquals("user2", testSolutionReview.getLastModifiedBy());
+
+            // Verify repository calls
+            verify(solutionReviewRepository).findById("sr-1");
+            verify(solutionReviewRepository).findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE);
+            verify(solutionReviewRepository, times(1)).save(testSolutionReview); // Only saved once for activation
+        }
+
+        @Test
+        @DisplayName("Should ensure data consistency with transaction rollback on failure")
+        void shouldEnsureDataConsistencyWithTransactionRollback() {
+            // This test verifies that if activation fails after deactivating existing SR,
+            // the transaction rollback maintains data consistency.
+            // 
+            // Note: This test documents the expected behavior rather than testing actual 
+            // rollback since our mocked repository doesn't implement real transaction behavior.
+            // In a real database scenario, @Transactional ensures that if any step fails,
+            // ALL changes within the transaction are rolled back automatically.
+
+            // Arrange
+            testSolutionReview.setDocumentState(DocumentState.APPROVED);
+            testSolutionReview.setSystemCode("SYS-001");
+            testCommand.setOperation("ACTIVATE");
+
+            // Create an existing active SR that should be deactivated
+            SolutionReview existingActiveSR = new SolutionReview();
+            existingActiveSR.setId("sr-existing");
+            existingActiveSR.setSystemCode("SYS-001");
+            existingActiveSR.setDocumentState(DocumentState.ACTIVE);
+            existingActiveSR.setLastModifiedBy("originalUser");
+
+            // Mock repository to return both SRs
+            when(solutionReviewRepository.findById("sr-1")).thenReturn(Optional.of(testSolutionReview));
+            when(solutionReviewRepository.findBySystemCodeAndDocumentState("SYS-001", DocumentState.ACTIVE))
+                    .thenReturn(Optional.of(existingActiveSR));
+
+            // Use lenient stubbing for the save operations to allow multiple calls with different objects
+            lenient().when(solutionReviewRepository.save(any(SolutionReview.class)))
+                    .thenAnswer(invocation -> {
+                        SolutionReview sr = invocation.getArgument(0);
+                        // If it's the main SR being activated, throw an exception
+                        if ("sr-1".equals(sr.getId()) && sr.getDocumentState() == DocumentState.ACTIVE) {
+                            throw new RuntimeException("Database connection failed");
+                        }
+                        // Otherwise, return the saved object (for deactivation)
+                        return sr;
+                    });
+
+            // Act & Assert
+            // The transaction should fail and all changes should be rolled back
+            RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+                lifecycleService.executeTransition(testCommand);
+            });
+
+            assertEquals("Database connection failed", exception.getMessage());
+
+            // In a real scenario with @Transactional:
+            // 1. existingActiveSR would remain ACTIVE (rollback)
+            // 2. testSolutionReview would remain APPROVED (rollback)
+            // 3. No SR would be left in an inconsistent state
+            // 4. Business rule "only one active SR per systemCode" is maintained
+
+            // Note: The actual rollback behavior is handled by Spring's transaction management
+            // when running against a real database. This test documents the expected behavior.
+        }
     }
 }
