@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-public class BusinessCapabilityTest {
+class BusinessCapabilityTest {
     private final List<Capability> capabilities = List.of(
             new Capability("Capability1", CapabilityType.L1),
             new Capability("Capability2", CapabilityType.L2),
@@ -50,7 +50,7 @@ public class BusinessCapabilityTest {
                 capabilities);
 
         assertThat(a).isEqualTo(b);
-        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a).hasSameHashCodeAs(b);
     }
 
 }

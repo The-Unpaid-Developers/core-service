@@ -386,20 +386,22 @@ class LifecycleControllerTest {
     @DisplayName("Business Logic Constraint Tests")
     class BusinessLogicConstraintTests {
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when trying to create DRAFT with existing DRAFT/SUBMITTED/APPROVED")
-        void shouldReturnBadRequestWhenTryingToCreateDraftWithExistingExclusiveStates() throws Exception {
-            // Given - attempt to transition to DRAFT when another exclusive state exists
-            String requestJson = """
+        @ParameterizedTest
+        @MethodSource("exclusiveStateConstraintTestCases")
+        @DisplayName("Should return 400 Bad Request when trying to create/update document with existing exclusive states")
+        void shouldReturnBadRequestWhenTryingToCreateOrUpdateDocumentWithExistingExclusiveStates(
+                String operation, String comment, String exclusiveStates) throws Exception {
+            // Given
+            String requestJson = String.format("""
                     {
                         "documentId": "test-document-id",
-                        "operation": "SUBMIT",
+                        "operation": "%s",
                         "modifiedBy": "test-user",
-                        "comment": "Creating a new draft"
+                        "comment": "%s"
                     }
-                    """;
+                    """, operation, comment);
             String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: DRAFT. " +
+                    "Documents already exist in exclusive states: " + exclusiveStates + ". " +
                     "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
             doThrow(new IllegalOperationException(errorMessage))
                     .when(lifecycleService).executeTransition(any());
@@ -415,33 +417,11 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when trying to APPROVE with existing APPROVED document")
-        void shouldReturnBadRequestWhenTryingToApproveWithExistingApprovedDocument() throws Exception {
-            // Given
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "APPROVE",
-                        "modifiedBy": "test-user",
-                        "comment": "Trying to approve when another approved document exists"
-                    }
-                    """;
-            String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: APPROVED. " +
-                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
-            doThrow(new IllegalOperationException(errorMessage))
-                    .when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
-                    .andExpect(jsonPath("$.message").value(errorMessage));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
+        static Stream<Arguments> exclusiveStateConstraintTestCases() {
+            return Stream.of(
+                    Arguments.of("SUBMIT", "Creating a new draft", "DRAFT"),
+                    Arguments.of("APPROVE", "Trying to approve when another approved document exists", "APPROVED"),
+                    Arguments.of("SUBMIT", "Trying to submit with multiple constraint violations", "DRAFT, SUBMITTED"));
         }
 
         @Test
@@ -472,18 +452,20 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should successfully ACTIVATE when constraint validation passes")
-        void shouldSuccessfullyActivateWhenConstraintValidationPasses() throws Exception {
-            // Given - ACTIVATE operation should succeed when constraints are satisfied
-            String requestJson = """
+        @ParameterizedTest
+        @MethodSource("successfulTransitionTestCases")
+        @DisplayName("Should successfully handle transitions when constraints are satisfied")
+        void shouldSuccessfullyHandleTransitionsWhenConstraintsAreSatisfied(
+                String documentId, String operation, String comment) throws Exception {
+            // Given
+            String requestJson = String.format("""
                     {
-                        "documentId": "test-document-id",
-                        "operation": "ACTIVATE",
+                        "documentId": "%s",
+                        "operation": "%s",
                         "modifiedBy": "test-user",
-                        "comment": "Activating an approved document"
+                        "comment": "%s"
                     }
-                    """;
+                    """, documentId, operation, comment);
             doNothing().when(lifecycleService).executeTransition(any());
 
             // When & Then
@@ -496,111 +478,13 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should handle multiple constraint violations with appropriate error messages")
-        void shouldHandleMultipleConstraintViolationsWithAppropriateErrorMessages() throws Exception {
-            // Given - multiple documents in exclusive states
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Trying to submit with multiple constraint violations"
-                    }
-                    """;
-            String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: DRAFT, SUBMITTED. " +
-                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
-            doThrow(new IllegalOperationException(errorMessage))
-                    .when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
-                    .andExpect(jsonPath("$.message").value(errorMessage));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should allow DRAFT creation when only ACTIVE document exists")
-        void shouldAllowDraftCreationWhenOnlyActiveDocumentExists() throws Exception {
-            // Given - DRAFT creation should be allowed when only ACTIVE exists (separate
-            // constraints)
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Creating draft while active document exists"
-                    }
-                    """;
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should allow OUTDATED documents without constraint violations")
-        void shouldAllowOutdatedDocumentsWithoutConstraintViolations() throws Exception {
-            // Given - MARK_OUTDATED should not be subject to exclusive state constraints
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "MARK_OUTDATED",
-                        "modifiedBy": "test-user",
-                        "comment": "Marking document as outdated"
-                    }
-                    """;
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should successfully handle ACTIVATE operation that transitions existing ACTIVE to OUTDATED")
-        void shouldSuccessfullyHandleActivateOperationThatTransitionsExistingActiveToOutdated()
-                throws Exception {
-            // Given - This tests requirement #2: when activating a document, existing
-            // ACTIVE should become OUTDATED
-            // The service layer handles this automatically, so the API should succeed
-            String requestJson = """
-                    {
-                        "documentId": "test-approved-document",
-                        "operation": "ACTIVATE",
-                        "modifiedBy": "test-user",
-                        "comment": "Activating approved document, existing active should become outdated"
-                    }
-                    """;
-            // The service layer will handle the logic of transitioning existing ACTIVE →
-            // OUTDATED
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
+        static Stream<Arguments> successfulTransitionTestCases() {
+            return Stream.of(
+                    Arguments.of("test-document-id", "ACTIVATE", "Activating an approved document"),
+                    Arguments.of("test-document-id", "SUBMIT", "Creating draft while active document exists"),
+                    Arguments.of("test-document-id", "MARK_OUTDATED", "Marking document as outdated"),
+                    Arguments.of("test-approved-document", "ACTIVATE",
+                            "Activating approved document, existing active should become outdated"));
         }
     }
 

@@ -3,7 +3,7 @@ package com.project.core_service.models.process_compliance;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ProcessCompliantTest {
+class ProcessCompliantTest {
     @Test
     void builderSetsFieldsCorrectly() {
         ProcessCompliant process = ProcessCompliant.builder()

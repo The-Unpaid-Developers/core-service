@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDateTime;
 
-public class ConcernTest {
+class ConcernTest {
 
     @Test
     void testConstructorAndGetters() {
@@ -16,8 +16,7 @@ public class ConcernTest {
                 "High impact on confidentiality",
                 "Mitigation plan required",
                 ConcernStatus.UNKNOWN,
-                followUpDate
-        );
+                followUpDate);
 
         assertEquals("concern-001", concern.getId());
         assertEquals(ConcernType.RISK, concern.getType());
@@ -30,73 +29,52 @@ public class ConcernTest {
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
-        LocalDateTime testDate = LocalDateTime.now().plusDays(7);
-        
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-002",
-                null, // type
-                "Description",
-                "Impact",
-                "Disposition",
-                ConcernStatus.UNKNOWN,
-                testDate
-        ));
+        assertThrows(NullPointerException.class, this::createConcernWithNullType);
+        assertThrows(NullPointerException.class, this::createConcernWithNullDescription);
+        assertThrows(NullPointerException.class, this::createConcernWithNullImpact);
+        assertThrows(NullPointerException.class, this::createConcernWithNullDisposition);
+        assertThrows(NullPointerException.class, this::createConcernWithNullStatus);
+        assertThrows(NullPointerException.class, this::createConcernWithNullFollowUpDate);
+    }
 
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-003",
-                ConcernType.DECISION,
-                null, // description
-                "Impact",
-                "Disposition",
-                ConcernStatus.UNKNOWN,
-                testDate
-        ));
+    private LocalDateTime getTestDate() {
+        return LocalDateTime.now().plusDays(7);
+    }
 
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-004",
-                ConcernType.DEVIATION,
-                "Description",
-                null, // impact
-                "Disposition",
-                ConcernStatus.UNKNOWN,
-                testDate
-        ));
+    private void createConcernWithNullType() {
+        new Concern("concern-002", null, "Description", "Impact", "Disposition", ConcernStatus.UNKNOWN,
+                getTestDate());
+    }
 
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-005",
-                ConcernType.RISK,
-                "Description",
-                "Impact",
-                null, // disposition
-                ConcernStatus.UNKNOWN,
-                testDate
-        ));
+    private void createConcernWithNullDescription() {
+        new Concern("concern-003", ConcernType.DECISION, null, "Impact", "Disposition", ConcernStatus.UNKNOWN,
+                getTestDate());
+    }
 
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-006",
-                ConcernType.RISK,
-                "Description",
-                "Impact",
-                "Disposition",
-                null, // status
-                testDate
-        ));
+    private void createConcernWithNullImpact() {
+        new Concern("concern-004", ConcernType.DEVIATION, "Description", null, "Disposition",
+                ConcernStatus.UNKNOWN, getTestDate());
+    }
 
-        assertThrows(NullPointerException.class, () -> new Concern(
-                "concern-007",
-                ConcernType.RISK,
-                "Description",
-                "Impact",
-                "Disposition",
-                ConcernStatus.UNKNOWN,
-                null // followUpDate
-        ));
+    private void createConcernWithNullDisposition() {
+        new Concern("concern-005", ConcernType.RISK, "Description", "Impact", null, ConcernStatus.UNKNOWN,
+                getTestDate());
+    }
+
+    private void createConcernWithNullStatus() {
+        new Concern("concern-006", ConcernType.RISK, "Description", "Impact", "Disposition", null,
+                getTestDate());
+    }
+
+    private void createConcernWithNullFollowUpDate() {
+        new Concern("concern-007", ConcernType.RISK, "Description", "Impact", "Disposition",
+                ConcernStatus.UNKNOWN, null);
     }
 
     @Test
     void testEqualsAndHashCode() {
         LocalDateTime testDate = LocalDateTime.now().plusDays(7);
-        
+
         Concern c1 = new Concern(
                 "concern-007",
                 ConcernType.RISK,
@@ -104,8 +82,7 @@ public class ConcernTest {
                 "High impact on confidentiality",
                 "Mitigation plan required",
                 ConcernStatus.UNKNOWN,
-                testDate
-        );
+                testDate);
 
         Concern c2 = new Concern(
                 "concern-007",
@@ -114,8 +91,7 @@ public class ConcernTest {
                 "High impact on confidentiality",
                 "Mitigation plan required",
                 ConcernStatus.UNKNOWN,
-                testDate
-        );
+                testDate);
 
         assertEquals(c1, c2);
         assertEquals(c1.hashCode(), c2.hashCode());
@@ -124,7 +100,7 @@ public class ConcernTest {
     @Test
     void testToStringContainsKeyFields() {
         LocalDateTime testDate = LocalDateTime.now().plusDays(7);
-        
+
         Concern concern = new Concern(
                 "concern-008",
                 ConcernType.RISK,
@@ -132,8 +108,7 @@ public class ConcernTest {
                 "High impact on confidentiality",
                 "Mitigation plan required",
                 ConcernStatus.UNKNOWN,
-                testDate
-        );
+                testDate);
 
         String toString = concern.toString();
         assertTrue(toString.contains("concern-008"));

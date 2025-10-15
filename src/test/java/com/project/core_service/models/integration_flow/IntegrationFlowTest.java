@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.UUID;
 
-public class IntegrationFlowTest {
+class IntegrationFlowTest {
 
     @Test
     void builderSetsFieldsCorrectly() {

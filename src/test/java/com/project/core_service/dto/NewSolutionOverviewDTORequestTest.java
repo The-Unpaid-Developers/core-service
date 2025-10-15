@@ -119,67 +119,70 @@ public class NewSolutionOverviewDTORequestTest {
     @DisplayName("Null safety tests")
     class NullSafetyTests {
 
-        @Test
-        void shouldThrowWhenSolutionDetailsIsNull() {
+        private List<Concern> createTestConcerns() {
             Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
                     "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
-            List<Concern> concerns = List.of(concern);
+            return List.of(concern);
+        }
 
-            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
+        private void createDTOWithNullSolutionDetails() {
+            new NewSolutionOverviewRequestDTO(
                     null,
                     BusinessUnit.UNKNOWN,
                     BusinessDriver.RISK_MANAGEMENT,
                     "Outcome",
                     List.of(ApplicationUser.EMPLOYEE),
-                    concerns));
+                    createTestConcerns());
+        }
+
+        private void createDTOWithNullBusinessUnit() {
+            new NewSolutionOverviewRequestDTO(
+                    dummySolutionDetails(),
+                    null,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
+                    createTestConcerns());
+        }
+
+        private void createDTOWithNullBusinessDriver() {
+            new NewSolutionOverviewRequestDTO(
+                    dummySolutionDetails(),
+                    BusinessUnit.UNKNOWN,
+                    null,
+                    "Outcome",
+                    List.of(ApplicationUser.EMPLOYEE),
+                    createTestConcerns());
+        }
+
+        private void createDTOWithNullValueOutcome() {
+            new NewSolutionOverviewRequestDTO(
+                    dummySolutionDetails(),
+                    BusinessUnit.UNKNOWN,
+                    BusinessDriver.RISK_MANAGEMENT,
+                    null,
+                    List.of(ApplicationUser.EMPLOYEE),
+                    createTestConcerns());
+        }
+
+        @Test
+        void shouldThrowWhenSolutionDetailsIsNull() {
+            assertThrows(NullPointerException.class, this::createDTOWithNullSolutionDetails);
         }
 
         @Test
         void shouldThrowWhenBusinessUnitIsNull() {
-            SolutionDetails details = dummySolutionDetails();
-            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
-            List<Concern> concerns = List.of(concern);
-
-            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
-                    details,
-                    null,
-                    BusinessDriver.RISK_MANAGEMENT,
-                    "Outcome",
-                    List.of(ApplicationUser.EMPLOYEE),
-                    concerns));
+            assertThrows(NullPointerException.class, this::createDTOWithNullBusinessUnit);
         }
 
         @Test
         void shouldThrowWhenBusinessDriverIsNull() {
-            SolutionDetails details = dummySolutionDetails();
-            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
-            List<Concern> concerns = List.of(concern);
-
-            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
-                    details,
-                    BusinessUnit.UNKNOWN,
-                    null,
-                    "Outcome",
-                    List.of(ApplicationUser.EMPLOYEE),
-                    concerns));
+            assertThrows(NullPointerException.class, this::createDTOWithNullBusinessDriver);
         }
 
         @Test
         void shouldThrowWhenValueOutcomeIsNull() {
-            SolutionDetails details = dummySolutionDetails();
-            Concern concern = new Concern("Concern-01", ConcernType.RISK, "Description of concern", "impact",
-                    "mitigation", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
-            List<Concern> concerns = List.of(concern);
-
-            assertThrows(NullPointerException.class, () -> new NewSolutionOverviewRequestDTO(
-                    details,
-                    BusinessUnit.UNKNOWN,
-                    BusinessDriver.RISK_MANAGEMENT,
-                    null,
-                    List.of(ApplicationUser.EMPLOYEE),
-                    concerns));
+            assertThrows(NullPointerException.class, this::createDTOWithNullValueOutcome);
         }
     }
 }
