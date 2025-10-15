@@ -5,6 +5,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +25,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -396,55 +400,33 @@ class RestExceptionHandlerTest {
             assertEquals("Database constraint violation", body.get("message"));
         }
 
-        @Test
-        @DisplayName("Should handle DataIntegrityViolationException without root cause")
+        @ParameterizedTest
+        @MethodSource("provideDataIntegrityViolationExceptionTestCases")
+        @DisplayName("Should handle DataIntegrityViolationException with various messages")
         @SuppressWarnings("unchecked")
-        void shouldHandleDataIntegrityViolationExceptionWithoutRootCause() {
+        void shouldHandleDataIntegrityViolationExceptionWithVariousMessages(
+                String exceptionMessage,
+                String expectedMessage,
+                String testDescription) {
             // Arrange
-            DataIntegrityViolationException exception = new DataIntegrityViolationException("Constraint error");
+            DataIntegrityViolationException exception = new DataIntegrityViolationException(exceptionMessage);
 
             // Act
             ResponseEntity<Object> response = exceptionHandler.handleDataIntegrityViolationException(exception);
 
             // Assert
-            assertNotNull(response);
+            assertNotNull(response, "Response should not be null for: " + testDescription);
             Map<String, Object> body = (Map<String, Object>) response.getBody();
-            assertNotNull(body);
-            assertEquals("Constraint error", body.get("message"));
+            assertNotNull(body, "Response body should not be null for: " + testDescription);
+            assertEquals(expectedMessage, body.get("message"),
+                    "Expected message should match for: " + testDescription);
         }
 
-        @Test
-        @DisplayName("Should handle DataIntegrityViolationException with null root cause and empty message")
-        @SuppressWarnings("unchecked")
-        void shouldHandleDataIntegrityViolationExceptionWithNullRootCauseAndEmptyMessage() {
-            // Arrange
-            DataIntegrityViolationException exception = new DataIntegrityViolationException("   ");
-
-            // Act
-            ResponseEntity<Object> response = exceptionHandler.handleDataIntegrityViolationException(exception);
-
-            // Assert
-            assertNotNull(response);
-            Map<String, Object> body = (Map<String, Object>) response.getBody();
-            assertNotNull(body);
-            assertEquals("Database constraint violation", body.get("message"));
-        }
-
-        @Test
-        @DisplayName("Should handle DataIntegrityViolationException with null message")
-        @SuppressWarnings("unchecked")
-        void shouldHandleDataIntegrityViolationExceptionWithNullMessage() {
-            // Arrange
-            DataIntegrityViolationException exception = new DataIntegrityViolationException(null);
-
-            // Act
-            ResponseEntity<Object> response = exceptionHandler.handleDataIntegrityViolationException(exception);
-
-            // Assert
-            assertNotNull(response);
-            Map<String, Object> body = (Map<String, Object>) response.getBody();
-            assertNotNull(body);
-            assertEquals("Database constraint violation", body.get("message"));
+        private static Stream<Arguments> provideDataIntegrityViolationExceptionTestCases() {
+            return Stream.of(
+                    Arguments.of("Constraint error", "Constraint error", "without root cause"),
+                    Arguments.of("   ", "Database constraint violation", "with empty/whitespace message"),
+                    Arguments.of(null, "Database constraint violation", "with null message"));
         }
     }
 

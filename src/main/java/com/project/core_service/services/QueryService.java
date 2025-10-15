@@ -32,7 +32,7 @@ public class QueryService {
     private final QueryRepository queryRepository;
     private final MongoTemplate mongoTemplate;
 
-    private final static String COLLECTION_FIELD = "collection";
+    private static final String COLLECTION_FIELD = "collection";
 
     @Autowired
     public QueryService(QueryRepository queryRepository, MongoTemplate mongoTemplate) {
