@@ -9,8 +9,6 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -303,10 +301,15 @@ public class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                 void shouldEnforceExclusiveDraftConstraint() throws Exception {
                         // Given - system with existing DRAFT
                         String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_A;
-                        SolutionReview existingDraft = createAndSaveSolutionReview(systemCode, DocumentState.DRAFT);
+                        createAndSaveSolutionReview(systemCode, DocumentState.DRAFT);
 
                         // Create another review in SUBMITTED state then try to move it to DRAFT
-                        SolutionReview review2 = createAndSaveSolutionReview(systemCode, DocumentState.SUBMITTED);
+                        com.project.core_service.models.solution_overview.SolutionOverview overview2 = TestDataFactory
+                                        .createSolutionOverview("Another Solution");
+                        overview2 = mongoTemplate.save(overview2);
+
+                        SolutionReview review2 = TestDataFactory.createSolutionReviewWithOverview(systemCode,
+                                        DocumentState.SUBMITTED, overview2);
                         review2.setId("another-review-id");
                         review2 = solutionReviewRepository.save(review2);
 
@@ -331,10 +334,15 @@ public class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                 void shouldEnforceSingleActiveConstraint() throws Exception {
                         // Given - system with existing ACTIVE review
                         String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_A;
-                        SolutionReview activeReview = createAndSaveSolutionReview(systemCode, DocumentState.ACTIVE);
+                        createAndSaveSolutionReview(systemCode, DocumentState.ACTIVE);
 
                         // Create another APPROVED review and try to activate it
-                        SolutionReview approvedReview = createAndSaveSolutionReview(systemCode, DocumentState.APPROVED);
+                        com.project.core_service.models.solution_overview.SolutionOverview overview2 = TestDataFactory
+                                        .createSolutionOverview("Another Approved Solution");
+                        overview2 = mongoTemplate.save(overview2);
+
+                        SolutionReview approvedReview = TestDataFactory.createSolutionReviewWithOverview(systemCode,
+                                        DocumentState.APPROVED, overview2);
                         approvedReview.setId("another-approved-review");
                         approvedReview = solutionReviewRepository.save(approvedReview);
 
@@ -372,7 +380,12 @@ public class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                                         .andExpect(status().isOk());
 
                         // Second review: ACTIVE → OUTDATED
-                        SolutionReview review2 = createAndSaveSolutionReview(systemCode, DocumentState.ACTIVE);
+                        com.project.core_service.models.solution_overview.SolutionOverview overview2 = TestDataFactory
+                                        .createSolutionOverview("Second Active Solution");
+                        overview2 = mongoTemplate.save(overview2);
+
+                        SolutionReview review2 = TestDataFactory.createSolutionReviewWithOverview(systemCode,
+                                        DocumentState.ACTIVE, overview2);
                         review2.setId("second-review-id");
                         review2 = solutionReviewRepository.save(review2);
 
@@ -604,7 +617,12 @@ public class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                 void shouldUpdateAuditFieldsOnTransition() throws Exception {
                         // Given
                         String systemCode = TestDataFactory.createSystemCode();
-                        SolutionReview review = TestDataFactory.createSolutionReview(systemCode, DocumentState.DRAFT);
+                        com.project.core_service.models.solution_overview.SolutionOverview overview = TestDataFactory
+                                        .createSolutionOverview("Test Solution");
+                        overview = mongoTemplate.save(overview);
+
+                        SolutionReview review = TestDataFactory.createSolutionReviewWithOverview(systemCode,
+                                        DocumentState.DRAFT, overview);
                         review.setLastModifiedBy("original-user");
                         review = solutionReviewRepository.save(review);
 
