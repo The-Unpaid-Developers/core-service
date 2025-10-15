@@ -10,7 +10,6 @@ import io.qameta.allure.*;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.util.List;
 
@@ -74,7 +73,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			NewSolutionOverviewRequestDTO dto = TestDataFactory
 					.createSolutionOverviewDTO("Payment Processing System");
 
-			MvcResult result = mockMvc.perform(post("/api/v1/solution-review/{systemCode}", systemCode)
+			mockMvc.perform(post("/api/v1/solution-review/{systemCode}", systemCode)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(dto)))
 					.andExpect(status().isCreated())
@@ -210,9 +209,8 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 1: Create Enhancement Version =====
 		String v2Id = Allure.step("Step 1: Create enhancement version from existing ACTIVE", () -> {
-			MvcResult result = mockMvc
-					.perform(post("/api/v1/solution-review/existing/{systemCode}", systemCode)
-							.contentType(MediaType.APPLICATION_JSON))
+			mockMvc.perform(post("/api/v1/solution-review/existing/{systemCode}", systemCode)
+					.contentType(MediaType.APPLICATION_JSON))
 					.andExpect(status().isCreated())
 					.andExpect(jsonPath("$.documentState").value("DRAFT"))
 					.andExpect(jsonPath("$.systemCode").value(systemCode))
@@ -314,7 +312,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			NewSolutionOverviewRequestDTO dto = TestDataFactory
 					.createSolutionOverviewDTO("Initial Solution");
 
-			MvcResult result = mockMvc.perform(post("/api/v1/solution-review/{systemCode}", systemCode)
+			mockMvc.perform(post("/api/v1/solution-review/{systemCode}", systemCode)
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(dto)))
 					.andExpect(status().isCreated())

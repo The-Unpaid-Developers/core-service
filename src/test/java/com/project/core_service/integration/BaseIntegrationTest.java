@@ -63,6 +63,7 @@ public abstract class BaseIntegrationTest {
      * The container is shared across all tests and reused between runs.
      */
     @Container
+    @SuppressWarnings("resource") // Lifecycle managed by TestContainers
     protected static final MongoDBContainer mongoDBContainer = new MongoDBContainer(
             DockerImageName.parse("mongo:7.0"))
             .withExposedPorts(27017)
