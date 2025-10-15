@@ -11,8 +11,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
@@ -51,23 +49,31 @@ import org.testcontainers.utility.DockerImageName;
  * </pre>
  * 
  * @see SpringBootTest
- * @see Testcontainers
+ * @see MongoDBContainer
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc(addFilters = false) // Disable security for integration tests
-@Testcontainers
 public abstract class BaseIntegrationTest {
 
     /**
-     * MongoDB container using the official MongoDB Docker image.
-     * The container is shared across all tests and reused between runs.
+     * Shared MongoDB container using the official MongoDB Docker image.
+     * The container is started once and shared across all test classes.
+     * This singleton pattern prevents container recreation between test classes.
      */
-    @Container
-    @SuppressWarnings("resource") // Lifecycle managed by TestContainers
-    protected static final MongoDBContainer mongoDBContainer = new MongoDBContainer(
-            DockerImageName.parse("mongo:7.0"))
-            .withExposedPorts(27017)
-            .withReuse(true);
+    protected static final MongoDBContainer mongoDBContainer = createMongoDBContainer();
+
+    /**
+     * Creates and starts the shared MongoDB container.
+     * 
+     * @return Started MongoDB container
+     */
+    @SuppressWarnings("resource") // Container lifecycle managed manually for test suite
+    private static MongoDBContainer createMongoDBContainer() {
+        MongoDBContainer container = new MongoDBContainer(DockerImageName.parse("mongo:7.0"))
+                .withExposedPorts(27017);
+        container.start();
+        return container;
+    }
 
     @Autowired
     protected MockMvc mockMvc;
