@@ -1,5 +1,9 @@
 name: Unit Tests
 
+# This workflow runs ONLY unit tests (no integration tests)
+# Unit tests use mocks and don't require database connections
+# For integration tests, see integration-tests.yml
+
 on:
   push:
     branches: ["main", "develop"]
@@ -17,17 +21,7 @@ jobs:
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
-
-    services:
-      mongodb:
-        image: mongodb/mongodb-community-server:7.0-ubi9
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'" 
-          --health-interval 10s 
-          --health-timeout 5s 
-          --health-retries 5
+    # No MongoDB service needed - unit tests use mocks, not real database
 
     steps:
       - name: Checkout code
@@ -46,10 +40,12 @@ jobs:
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
 
-      - name: Run unit tests
-        env:
-          CONN_STR: mongodb://localhost:27017/solutions-test
-        run: mvn clean test -Dspring.profiles.active=test
+      - name: Run unit tests (excluding integration tests)
+        run: |
+          mvn clean test \
+            -Dtest='!*IntegrationTest' \
+            -Dspring.profiles.active=test
+        # Excludes all *IntegrationTest files
 
       - name: Generate test report
         uses: dorny/test-reporter@v1
