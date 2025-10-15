@@ -148,8 +148,9 @@ class DataAssetTest {
                 dataEntities,
                 "Core Banking System");
 
-        assertThat(a).isEqualTo(b);
-        assertThat(a).hasSameHashCodeAs(b);
+        assertThat(a)
+                .isEqualTo(b)
+                .hasSameHashCodeAs(b);
     }
 
     @Test

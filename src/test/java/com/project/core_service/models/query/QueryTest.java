@@ -63,8 +63,9 @@ class QueryTest {
                 "sameQuery",
                 "{\"active\": true}");
 
-        assertThat(query1).isEqualTo(query2);
-        assertThat(query1.hashCode()).isEqualTo(query2.hashCode());
+        assertThat(query1)
+                .isEqualTo(query2)
+                .hasSameHashCodeAs(query2);
     }
 
     @Test
