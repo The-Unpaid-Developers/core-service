@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("End-to-End Workflow Integration Tests")
 @Epic("Solution Review Management")
 @Feature("Complete Business Workflows")
-public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
+class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 	@Autowired
 	private SolutionReviewRepository solutionReviewRepository;
@@ -62,7 +62,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			"Create → Submit → Approve → Activate")
 	@Severity(SeverityLevel.BLOCKER)
 	@Story("New Solution Review Workflow")
-	void completeNewSolutionReviewWorkflow() throws Exception {
+	void completeNewSolutionReviewWorkflow() {
 		String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_A;
 		String architect = TestDataFactory.TestUsers.ARCHITECT;
 		String reviewer = TestDataFactory.TestUsers.REVIEWER;
@@ -197,7 +197,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			"going through full lifecycle while old version becomes outdated")
 	@Severity(SeverityLevel.CRITICAL)
 	@Story("Solution Enhancement Workflow")
-	void completeSolutionEnhancementWorkflow() throws Exception {
+	void completeSolutionEnhancementWorkflow() {
 		String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_B;
 		String architect = TestDataFactory.TestUsers.ARCHITECT;
 		String admin = TestDataFactory.TestUsers.ADMIN;
@@ -304,7 +304,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			"Create → Submit → Reject (back to DRAFT) → Modify → Re-submit → Approve → Activate")
 	@Severity(SeverityLevel.NORMAL)
 	@Story("Review Rejection Workflow")
-	void reviewRejectionAndModificationWorkflow() throws Exception {
+	void reviewRejectionAndModificationWorkflow() {
 		String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_C;
 
 		// ===== STEP 1: Create and Submit =====
@@ -401,7 +401,7 @@ public class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 	@Description("Simulates managing multiple system reviews simultaneously with different states")
 	@Severity(SeverityLevel.NORMAL)
 	@Story("Multiple Systems Management")
-	void multipleConcurrentSystemsWorkflow() throws Exception {
+	void multipleConcurrentSystemsWorkflow() {
 		// ===== Create reviews for 3 different systems in different states =====
 		Allure.step("Setup: Create reviews for multiple systems", () -> {
 			// System A: Create to ACTIVE

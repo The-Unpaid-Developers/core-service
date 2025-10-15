@@ -149,7 +149,7 @@ public class SolutionReviewService {
                 .map(this::getRepresentativeReviewForSystem)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
-                .collect(Collectors.toList());
+                .toList();
 
         // Apply pagination AFTER filtering
         int total = allRepresentativeReviews.size();
@@ -212,7 +212,7 @@ public class SolutionReviewService {
         List<SolutionReview> activeSolutionReviews = solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE);
         return activeSolutionReviews.stream()
                 .map(SystemDependencyDTO::fromSolutionReview)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -395,7 +395,7 @@ public class SolutionReviewService {
         dataAssetRepository.deleteAll(solutionReview.getDataAssets());
         technologyComponentRepository.deleteAll(solutionReview.getTechnologyComponents());
         toolRepository.deleteAll(
-                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).collect(Collectors.toList()));
+                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).toList());
         enterpriseToolRepository.deleteAll(solutionReview.getEnterpriseTools());
         processCompliantRepository.deleteAll(solutionReview.getProcessCompliances());
         if (solutionReview.getSolutionOverview().getConcerns() != null) {
@@ -456,7 +456,7 @@ public class SolutionReviewService {
         if (excludeId != null) {
             existingDocs = existingDocs.stream()
                     .filter(doc -> !doc.getId().equals(excludeId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (!existingDocs.isEmpty()) {
@@ -498,7 +498,7 @@ public class SolutionReviewService {
         if (excludeId != null) {
             activeDocs = activeDocs.stream()
                     .filter(doc -> !doc.getId().equals(excludeId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (!activeDocs.isEmpty()) {

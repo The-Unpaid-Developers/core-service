@@ -1,6 +1,8 @@
 package com.project.core_service.services;
 
+import com.project.core_service.dto.CreateQueryRequestDTO;
 import com.project.core_service.dto.QueryExecutionRequestDTO;
+import com.project.core_service.dto.UpdateQueryRequestDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.query.Query;
 import com.project.core_service.repositories.QueryRepository;
@@ -29,6 +31,8 @@ public class QueryService {
 
     private final QueryRepository queryRepository;
     private final MongoTemplate mongoTemplate;
+
+    private final String COLLECTION = "collection";
 
     @Autowired
     public QueryService(QueryRepository queryRepository, MongoTemplate mongoTemplate) {
@@ -69,30 +73,36 @@ public class QueryService {
     /**
      * Creates a new {@link Query}.
      * 
-     * @param query the query to create
+     * @param request the DTO containing query creation data
      * @return the newly created query
-     * @throws IllegalArgumentException if query is null or name already exists
+     * @throws IllegalArgumentException if request is null or name already exists
      */
-    public Query createQuery(Query query) {
-        if (query == null) {
-            throw new IllegalArgumentException("Query cannot be null");
+    public Query createMongoQuery(CreateQueryRequestDTO request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Query request cannot be null");
         }
 
-        if (query.getName() == null || query.getName().trim().isEmpty()) {
+        if (request.getName() == null || request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Query name cannot be null or empty");
         }
 
-        if (query.getQuery() == null || query.getQuery().trim().isEmpty()) {
+        if (request.getMongoQuery() == null || request.getMongoQuery().trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
         // Validate that the query is a read-only MongoDB query
-        validateReadOnlyQuery(query.getQuery());
+        validateReadOnlyQuery(request.getMongoQuery());
 
         // Check if query with this name already exists
-        if (queryRepository.existsById(query.getName())) {
-            throw new IllegalArgumentException("Query with name '" + query.getName() + "' already exists");
+        if (queryRepository.existsById(request.getName())) {
+            throw new IllegalArgumentException("Query with name '" + request.getName() + "' already exists");
         }
+
+        // Map DTO to entity
+        Query query = Query.builder()
+                .name(request.getName())
+                .mongoQuery(request.getMongoQuery())
+                .build();
 
         return queryRepository.save(query);
     }
@@ -104,30 +114,30 @@ public class QueryService {
      * If the query does not exist, a {@link NotFoundException} is thrown.
      * </p>
      * 
-     * @param name         the name of the query to update
-     * @param updatedQuery the updated query data
+     * @param name    the name of the query to update
+     * @param request the DTO containing updated query data
      * @return the updated query
      * @throws NotFoundException        if no query exists with the given name
      * @throws IllegalArgumentException if updated query data is invalid
      */
-    public Query updateQuery(String name, Query updatedQuery) {
-        if (updatedQuery == null) {
-            throw new IllegalArgumentException("Updated query cannot be null");
+    public Query updateMongoQuery(String name, UpdateQueryRequestDTO request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Updated query request cannot be null");
         }
 
-        if (updatedQuery.getQuery() == null || updatedQuery.getQuery().trim().isEmpty()) {
+        if (request.getMongoQuery() == null || request.getMongoQuery().trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
         // Validate that the query is a read-only MongoDB query
-        validateReadOnlyQuery(updatedQuery.getQuery());
+        validateReadOnlyQuery(request.getMongoQuery());
 
         // Check if query exists
         Query existingQuery = queryRepository.findById(name)
                 .orElseThrow(() -> new NotFoundException("Query not found with name: " + name));
 
         // Update the query string
-        existingQuery.setQuery(updatedQuery.getQuery());
+        existingQuery.setMongoQuery(request.getMongoQuery());
 
         return queryRepository.save(existingQuery);
     }
@@ -138,7 +148,7 @@ public class QueryService {
      * @param name the name of the query to delete
      * @throws NotFoundException if no query exists with the given name
      */
-    public void deleteQuery(String name) {
+    public void deleteMongoQuery(String name) {
         if (!queryRepository.existsById(name)) {
             throw new NotFoundException("Query not found with name: " + name);
         }
@@ -155,22 +165,22 @@ public class QueryService {
      * @throws NotFoundException        if no query exists with the given name
      * @throws IllegalArgumentException if the query or parameters are invalid
      */
-    public List<Document> executeQuery(String name, QueryExecutionRequestDTO request) {
+    public List<Document> executeMongoQuery(String name, QueryExecutionRequestDTO request) {
         // Retrieve the stored query
         Query storedQuery = queryRepository.findById(name)
                 .orElseThrow(() -> new NotFoundException("Query not found with name: " + name));
 
         try {
             // Parse the stored query as a MongoDB query document
-            Document queryDoc = Document.parse(storedQuery.getQuery());
+            Document queryDoc = Document.parse(storedQuery.getMongoQuery());
 
             // Extract collection name
             String collection = request.getCollection();
             if (collection == null || collection.trim().isEmpty()) {
                 // Try to extract from query if it contains a collection field
-                if (queryDoc.containsKey("collection")) {
-                    collection = queryDoc.getString("collection");
-                    queryDoc.remove("collection");
+                if (queryDoc.containsKey(COLLECTION)) {
+                    collection = queryDoc.getString(COLLECTION);
+                    queryDoc.remove(COLLECTION);
                 } else {
                     throw new IllegalArgumentException(
                             "Collection name must be specified either in the request or in the stored query");
@@ -190,10 +200,7 @@ public class QueryService {
             }
 
             // Execute the query
-            List<Document> results = mongoTemplate.find(mongoQuery, Document.class, collection);
-
-            return results;
-
+            return mongoTemplate.find(mongoQuery, Document.class, collection);
         } catch (Exception e) {
             throw new IllegalArgumentException("Failed to execute query: " + e.getMessage(), e);
         }

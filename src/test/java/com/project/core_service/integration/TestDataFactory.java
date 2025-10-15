@@ -89,7 +89,7 @@ public class TestDataFactory {
      * @param name the user's name (not used, for API compatibility)
      * @return configured ApplicationUser
      */
-    public static ApplicationUser createApplicationUser(String name) {
+    public static ApplicationUser createApplicationUser() {
         return ApplicationUser.CUSTOMERS;
     }
 

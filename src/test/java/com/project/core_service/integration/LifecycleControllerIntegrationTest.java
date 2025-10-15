@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Lifecycle Controller Integration Tests")
 @Epic("Solution Review Lifecycle Management")
 @Feature("Lifecycle State Transitions")
-public class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
+class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private SolutionReviewRepository solutionReviewRepository;
