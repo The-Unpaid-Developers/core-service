@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 import java.util.UUID;
 
 @ExtendWith(MockitoExtension.class)
-public class EnterpriseToolTest {
+class EnterpriseToolTest {
     @Mock
     private Tool tool;
 
@@ -62,27 +62,21 @@ public class EnterpriseToolTest {
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
-        assertThrows(NullPointerException.class, () -> new EnterpriseTool(
-                "et-002",
-                null, // tool
-                OnboardingStatus.TRUE,
-                "integration status",
-                "issues"));
+        assertThrows(NullPointerException.class, this::createEnterpriseToolWithNullTool);
+        assertThrows(NullPointerException.class, this::createEnterpriseToolWithNullOnboarded);
+        assertThrows(NullPointerException.class, this::createEnterpriseToolWithNullIssues);
+    }
 
-        assertThrows(NullPointerException.class, () -> new EnterpriseTool(
-                "et-003",
-                tool,
-                null, // onboarded
-                "integration status",
-                "issues"));
+    private void createEnterpriseToolWithNullTool() {
+        new EnterpriseTool("et-002", null, OnboardingStatus.TRUE, "integration status", "issues");
+    }
 
-        assertThrows(NullPointerException.class, () -> new EnterpriseTool(
-                "et-004",
-                tool,
-                OnboardingStatus.TRUE,
-                "integration status",
-                null // issues
-        ));
+    private void createEnterpriseToolWithNullOnboarded() {
+        new EnterpriseTool("et-003", tool, null, "integration status", "issues");
+    }
+
+    private void createEnterpriseToolWithNullIssues() {
+        new EnterpriseTool("et-004", tool, OnboardingStatus.TRUE, "integration status", null);
     }
 
     @Test

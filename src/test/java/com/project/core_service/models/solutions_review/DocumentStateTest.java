@@ -391,41 +391,52 @@ class DocumentStateTest {
     }
 
     @Test
-    @DisplayName("canExecuteOperation should return correct results for each state")
-    void canExecuteOperationShouldReturnCorrectResultsForEachState() {
-        // DRAFT can only SUBMIT
+    @DisplayName("DRAFT state can only execute SUBMIT operation")
+    void draftStateCanOnlyExecuteSubmitOperation() {
         assertTrue(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
         assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.APPROVE));
         assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.ACTIVATE));
         assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
         assertFalse(DocumentState.DRAFT.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+    }
 
-        // SUBMITTED can REMOVE_SUBMISSION and APPROVE
-        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
+    @Test
+    @DisplayName("SUBMITTED state can execute REMOVE_SUBMISSION and APPROVE operations")
+    void submittedStateCanExecuteRemoveSubmissionAndApproveOperations() {
         assertTrue(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertTrue(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.APPROVE));
+        assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
         assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.ACTIVATE));
         assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
         assertFalse(DocumentState.SUBMITTED.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+    }
 
-        // APPROVED can ACTIVATE and UNAPPROVE
+    @Test
+    @DisplayName("APPROVED state can execute ACTIVATE and UNAPPROVE operations")
+    void approvedStateCanExecuteActivateAndUnapproveOperations() {
+        assertTrue(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.ACTIVATE));
+        assertTrue(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
         assertFalse(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
         assertFalse(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertFalse(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.APPROVE));
-        assertTrue(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.ACTIVATE));
-        assertTrue(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
         assertFalse(DocumentState.APPROVED.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+    }
 
-        // ACTIVE can only MARK_OUTDATED
+    @Test
+    @DisplayName("ACTIVE state can only execute MARK_OUTDATED operation")
+    void activeStateCanOnlyExecuteMarkOutdatedOperation() {
+        assertTrue(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
         assertFalse(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
         assertFalse(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertFalse(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.APPROVE));
         assertFalse(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.ACTIVATE));
         assertFalse(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.UNAPPROVE));
-        assertTrue(DocumentState.ACTIVE.canExecuteOperation(DocumentState.StateOperation.MARK_OUTDATED));
+    }
 
-        // OUTDATED cannot execute any operations
+    @Test
+    @DisplayName("OUTDATED state cannot execute any operations")
+    void outdatedStateCannotExecuteAnyOperations() {
         assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.SUBMIT));
         assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.REMOVE_SUBMISSION));
         assertFalse(DocumentState.OUTDATED.canExecuteOperation(DocumentState.StateOperation.APPROVE));

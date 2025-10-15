@@ -15,6 +15,9 @@ import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -26,6 +29,7 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 /**
  * Unit tests for {@link QueryService}.
@@ -147,49 +151,27 @@ class QueryServiceTest {
         verify(queryRepository, never()).save(any());
     }
 
-    @Test
-    void createMongoQuery_ThrowsWhenQueryContainsForbiddenOperations() {
+    @ParameterizedTest
+    @MethodSource("invalidMongoQueryTestCases")
+    void createMongoQuery_ThrowsForInvalidQueries(String name, String mongoQuery, String expectedMessageFragment) {
         CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
-                .name("dangerousQuery")
-                .mongoQuery("{\"$out\": \"newCollection\"}")
+                .name(name)
+                .mongoQuery(mongoQuery)
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
                 () -> queryService.createMongoQuery(invalidRequest));
 
-        assertTrue(exception.getMessage().contains("forbidden operation"));
+        assertTrue(exception.getMessage().contains(expectedMessageFragment));
         verify(queryRepository, never()).save(any());
     }
 
-    @Test
-    void createMongoQuery_ThrowsWhenQueryIsNotValidJSON() {
-        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
-                .name("invalidJSON")
-                .mongoQuery("this is not valid JSON")
-                .build();
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> queryService.createMongoQuery(invalidRequest));
-
-        assertTrue(exception.getMessage().contains("valid JSON format"));
-        verify(queryRepository, never()).save(any());
-    }
-
-    @Test
-    void createMongoQuery_ThrowsWhenQueryStringIsEmpty() {
-        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
-                .name("testQuery")
-                .mongoQuery("   ")
-                .build();
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> queryService.createMongoQuery(invalidRequest));
-
-        assertTrue(exception.getMessage().contains("cannot be null or empty"));
-        verify(queryRepository, never()).save(any());
+    static Stream<Arguments> invalidMongoQueryTestCases() {
+        return Stream.of(
+                Arguments.of("dangerousQuery", "{\"$out\": \"newCollection\"}", "forbidden operation"),
+                Arguments.of("invalidJSON", "this is not valid JSON", "valid JSON format"),
+                Arguments.of("testQuery", "   ", "cannot be null or empty"));
     }
 
     @Test

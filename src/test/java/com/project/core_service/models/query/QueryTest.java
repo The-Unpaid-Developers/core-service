@@ -87,8 +87,7 @@ class QueryTest {
                 "{\"active\": true}");
 
         String output = query.toString();
-        assertThat(output).contains("getCustomers");
-        assertThat(output).contains("{\"active\": true}");
+        assertThat(output).contains("getCustomers", "{\"active\": true}");
     }
 
     @Test
