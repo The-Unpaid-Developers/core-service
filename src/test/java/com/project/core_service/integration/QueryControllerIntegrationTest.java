@@ -1,5 +1,7 @@
 package com.project.core_service.integration;
 
+import com.project.core_service.dto.CreateQueryRequestDTO;
+import com.project.core_service.dto.UpdateQueryRequestDTO;
 import com.project.core_service.models.query.Query;
 import com.project.core_service.repositories.QueryRepository;
 import io.qameta.allure.*;
@@ -53,23 +55,23 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         @Severity(SeverityLevel.CRITICAL)
         void shouldCreateNewQuery() throws Exception {
             // Given
-            Query newQuery = Query.builder()
+            CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
                     .name("getUserByEmail")
-                    .query("{\"email\": \"test@example.com\"}")
+                    .mongoQuery("{\"email\": \"test@example.com\"}")
                     .build();
 
             // When & Then
             mockMvc.perform(post("/api/v1/queries")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(newQuery)))
+                    .content(toJson(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("getUserByEmail"))
-                    .andExpect(jsonPath("$.query").value("{\"email\": \"test@example.com\"}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("{\"email\": \"test@example.com\"}"));
 
             // Verify in database
             Optional<Query> saved = queryRepository.findById("getUserByEmail");
             assertThat(saved).isPresent();
-            assertThat(saved.get().getQuery()).isEqualTo("{\"email\": \"test@example.com\"}");
+            assertThat(saved.get().getMongoQuery()).isEqualTo("{\"email\": \"test@example.com\"}");
         }
 
         @Test
@@ -80,19 +82,19 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given - create first query
             Query firstQuery = Query.builder()
                     .name("getActiveOrders")
-                    .query("{\"status\": \"ACTIVE\"}")
+                    .mongoQuery("{\"status\": \"ACTIVE\"}")
                     .build();
             queryRepository.save(firstQuery);
 
             // When & Then - try to create duplicate
-            Query duplicateQuery = Query.builder()
+            CreateQueryRequestDTO duplicateRequest = CreateQueryRequestDTO.builder()
                     .name("getActiveOrders")
-                    .query("{\"status\": \"PENDING\"}")
+                    .mongoQuery("{\"status\": \"PENDING\"}")
                     .build();
 
             mockMvc.perform(post("/api/v1/queries")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(duplicateQuery)))
+                    .content(toJson(duplicateRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(containsString("already exists")));
         }
@@ -118,15 +120,15 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         @Severity(SeverityLevel.NORMAL)
         void shouldFailWhenNameIsEmpty() throws Exception {
             // Given
-            Query invalidQuery = Query.builder()
+            CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                     .name("")
-                    .query("{\"test\": \"value\"}")
+                    .mongoQuery("{\"test\": \"value\"}")
                     .build();
 
             // When & Then
             mockMvc.perform(post("/api/v1/queries")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(invalidQuery)))
+                    .content(toJson(invalidRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(containsString("cannot be null or empty")));
         }
@@ -137,15 +139,15 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         @Severity(SeverityLevel.CRITICAL)
         void shouldFailWhenQueryContainsForbiddenOperations() throws Exception {
             // Given
-            Query invalidQuery = Query.builder()
+            CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                     .name("dangerousQuery")
-                    .query("{\"$out\": \"newCollection\"}")
+                    .mongoQuery("{\"$out\": \"newCollection\"}")
                     .build();
 
             // When & Then
             mockMvc.perform(post("/api/v1/queries")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(invalidQuery)))
+                    .content(toJson(invalidRequest)))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.message").value(containsString("forbidden operation")));
         }
@@ -166,7 +168,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query query = Query.builder()
                     .name("getCustomers")
-                    .query("SELECT * FROM customers")
+                    .mongoQuery("SELECT * FROM customers")
                     .build();
             queryRepository.save(query);
 
@@ -175,7 +177,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("getCustomers"))
-                    .andExpect(jsonPath("$.query").value("SELECT * FROM customers"));
+                    .andExpect(jsonPath("$.mongoQuery").value("SELECT * FROM customers"));
         }
 
         @Test
@@ -197,15 +199,15 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given - create multiple queries
             queryRepository.save(Query.builder()
                     .name("query1")
-                    .query("{\"field1\": \"value1\"}")
+                    .mongoQuery("{\"field1\": \"value1\"}")
                     .build());
             queryRepository.save(Query.builder()
                     .name("query2")
-                    .query("{\"field2\": \"value2\"}")
+                    .mongoQuery("{\"field2\": \"value2\"}")
                     .build());
             queryRepository.save(Query.builder()
                     .name("query3")
-                    .query("{\"field3\": \"value3\"}")
+                    .mongoQuery("{\"field3\": \"value3\"}")
                     .build());
 
             // When & Then
@@ -225,7 +227,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             for (int i = 1; i <= 5; i++) {
                 queryRepository.save(Query.builder()
                         .name("query" + i)
-                        .query("{\"field" + i + "\": \"value" + i + "\"}")
+                        .mongoQuery("{\"field" + i + "\": \"value" + i + "\"}")
                         .build());
             }
 
@@ -269,27 +271,26 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query existingQuery = Query.builder()
                     .name("updateTest")
-                    .query("{\"active\": false}")
+                    .mongoQuery("{\"active\": false}")
                     .build();
             queryRepository.save(existingQuery);
 
             // Modify the query
-            Query updatedQuery = Query.builder()
-                    .name("updateTest")
-                    .query("{\"active\": true}")
+            UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
+                    .mongoQuery("{\"active\": true}")
                     .build();
 
             // When & Then
             mockMvc.perform(put("/api/v1/queries/{name}", "updateTest")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(updatedQuery)))
+                    .content(toJson(updateRequest)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("updateTest"))
-                    .andExpect(jsonPath("$.query").value("{\"active\": true}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("{\"active\": true}"));
 
             // Verify in database
             Query updated = queryRepository.findById("updateTest").orElseThrow();
-            assertThat(updated.getQuery()).isEqualTo("{\"active\": true}");
+            assertThat(updated.getMongoQuery()).isEqualTo("{\"active\": true}");
         }
 
         @Test
@@ -298,15 +299,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         @Severity(SeverityLevel.CRITICAL)
         void shouldFailToUpdateNonExistentQuery() throws Exception {
             // Given
-            Query updatedQuery = Query.builder()
-                    .name("nonExistent")
-                    .query("{\"test\": \"value\"}")
+            UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
+                    .mongoQuery("{\"test\": \"value\"}")
                     .build();
 
             // When & Then
             mockMvc.perform(put("/api/v1/queries/{name}", "nonExistent")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(updatedQuery)))
+                    .content(toJson(updateRequest)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.message").value(containsString("Query not found")));
         }
@@ -319,13 +319,12 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query existingQuery = Query.builder()
                     .name("testQuery")
-                    .query("{\"test\": \"value\"}")
+                    .mongoQuery("{\"test\": \"value\"}")
                     .build();
             queryRepository.save(existingQuery);
 
-            Query invalidUpdate = Query.builder()
-                    .name("testQuery")
-                    .query("   ")
+            UpdateQueryRequestDTO invalidUpdate = UpdateQueryRequestDTO.builder()
+                    .mongoQuery("   ")
                     .build();
 
             // When & Then
@@ -352,7 +351,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query query = Query.builder()
                     .name("deleteTest")
-                    .query("{\"temp\": true}")
+                    .mongoQuery("{\"temp\": true}")
                     .build();
             queryRepository.save(query);
 
@@ -394,14 +393,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             String queryName = "lifecycleTest";
 
             // Create
-            Query newQuery = Query.builder()
+            CreateQueryRequestDTO createRequest = CreateQueryRequestDTO.builder()
                     .name(queryName)
-                    .query("{\"active\": true}")
+                    .mongoQuery("{\"active\": true}")
                     .build();
 
             mockMvc.perform(post("/api/v1/queries")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(newQuery)))
+                    .content(toJson(createRequest)))
                     .andExpect(status().isCreated());
 
             // Read
@@ -411,16 +410,15 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$.name").value(queryName));
 
             // Update
-            Query updatedQuery = Query.builder()
-                    .name(queryName)
-                    .query("{\"active\": true, \"verified\": true}")
+            UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
+                    .mongoQuery("{\"active\": true, \"verified\": true}")
                     .build();
 
             mockMvc.perform(put("/api/v1/queries/{name}", queryName)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(updatedQuery)))
+                    .content(toJson(updateRequest)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.query").value("{\"active\": true, \"verified\": true}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("{\"active\": true, \"verified\": true}"));
 
             // Delete
             mockMvc.perform(delete("/api/v1/queries/{name}", queryName)
@@ -442,7 +440,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             for (int i = 1; i <= 10; i++) {
                 Query query = Query.builder()
                         .name("query" + i)
-                        .query(String.format("{\"field%d\": \"value%d\"}", i, i))
+                        .mongoQuery(String.format("{\"field%d\": \"value%d\"}", i, i))
                         .build();
                 queryRepository.save(query);
             }
@@ -454,14 +452,13 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$", hasSize(10)));
 
             // Update one - make sure it's valid JSON
-            Query updatedQuery = Query.builder()
-                    .name("query5")
-                    .query("{\"updated\": true}")
+            UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
+                    .mongoQuery("{\"updated\": true}")
                     .build();
 
             mockMvc.perform(put("/api/v1/queries/{name}", "query5")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(updatedQuery)))
+                    .content(toJson(updateRequest)))
                     .andExpect(status().isOk());
 
             // Delete one
@@ -492,7 +489,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given - save a query
             Query storedQuery = Query.builder()
                     .name("findActiveUsers")
-                    .query("{\"active\": true}")
+                    .mongoQuery("{\"active\": true}")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -520,7 +517,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query storedQuery = Query.builder()
                     .name("findAdultUsers")
-                    .query("{\"age\": {\"$gte\": 18}}")
+                    .mongoQuery("{\"age\": {\"$gte\": 18}}")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -547,7 +544,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query storedQuery = Query.builder()
                     .name("getAllUsers")
-                    .query("{}")
+                    .mongoQuery("{}")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -589,7 +586,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query storedQuery = Query.builder()
                     .name("testQuery")
-                    .query("{\"test\": true}")
+                    .mongoQuery("{\"test\": true}")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -611,7 +608,7 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query storedQuery = Query.builder()
                     .name("findNonExistent")
-                    .query("{\"nonExistentField\": \"value\"}")
+                    .mongoQuery("{\"nonExistentField\": \"value\"}")
                     .build();
             queryRepository.save(storedQuery);
 

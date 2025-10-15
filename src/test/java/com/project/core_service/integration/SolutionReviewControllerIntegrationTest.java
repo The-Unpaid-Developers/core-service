@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Solution Review Controller Integration Tests")
 @Epic("Solution Review Management")
 @Feature("Solution Review CRUD Operations")
-public class SolutionReviewControllerIntegrationTest extends BaseIntegrationTest {
+class SolutionReviewControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private SolutionReviewRepository solutionReviewRepository;

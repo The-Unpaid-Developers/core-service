@@ -15,28 +15,28 @@ class QueryTest {
     void builderSetsFieldsCorrectly() {
         Query query = Query.builder()
                 .name("getUserByEmail")
-                .query("SELECT * FROM users WHERE email = ?")
+                .mongoQuery("{\"email\": \"test@example.com\"}")
                 .build();
 
         assertEquals("getUserByEmail", query.getName());
-        assertEquals("SELECT * FROM users WHERE email = ?", query.getQuery());
+        assertEquals("{\"email\": \"test@example.com\"}", query.getMongoQuery());
     }
 
     @Test
     void shouldCreateQuerySuccessfully() {
         Query query = new Query(
                 "findActiveOrders",
-                "SELECT * FROM orders WHERE status = 'ACTIVE'");
+                "{\"status\": \"ACTIVE\"}");
 
         assertThat(query.getName()).isEqualTo("findActiveOrders");
-        assertThat(query.getQuery()).isEqualTo("SELECT * FROM orders WHERE status = 'ACTIVE'");
+        assertThat(query.getMongoQuery()).isEqualTo("{\"status\": \"ACTIVE\"}");
     }
 
     @Test
     void shouldThrowExceptionWhenSettingNullForNonNullFields() {
         assertThatThrownBy(() -> new Query(
                 null,
-                "SELECT * FROM products"))
+                "{\"category\": \"electronics\"}"))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new Query(
@@ -57,11 +57,11 @@ class QueryTest {
     void shouldRespectEqualsAndHashCode() {
         Query query1 = new Query(
                 "sameQuery",
-                "SELECT * FROM table1");
+                "{\"active\": true}");
 
         Query query2 = new Query(
                 "sameQuery",
-                "SELECT * FROM table1");
+                "{\"active\": true}");
 
         assertThat(query1).isEqualTo(query2);
         assertThat(query1.hashCode()).isEqualTo(query2.hashCode());
@@ -71,11 +71,11 @@ class QueryTest {
     void shouldNotBeEqualWithDifferentData() {
         Query query1 = new Query(
                 "query1",
-                "SELECT * FROM table1");
+                "{\"status\": \"active\"}");
 
         Query query2 = new Query(
                 "query2",
-                "SELECT * FROM table2");
+                "{\"status\": \"inactive\"}");
 
         assertThat(query1).isNotEqualTo(query2);
     }
@@ -84,11 +84,11 @@ class QueryTest {
     void toStringShouldContainMeaningfulInfo() {
         Query query = new Query(
                 "getCustomers",
-                "SELECT * FROM customers WHERE active = true");
+                "{\"active\": true}");
 
         String output = query.toString();
         assertThat(output).contains("getCustomers");
-        assertThat(output).contains("SELECT * FROM customers WHERE active = true");
+        assertThat(output).contains("{\"active\": true}");
     }
 
     @Test
@@ -101,9 +101,9 @@ class QueryTest {
     void settersAndGettersShouldWork() {
         Query query = new Query();
         query.setName("updateUser");
-        query.setQuery("UPDATE users SET last_login = NOW()");
+        query.setMongoQuery("{\"$set\": {\"lastLogin\": {\"$currentDate\": true}}}");
 
         assertEquals("updateUser", query.getName());
-        assertEquals("UPDATE users SET last_login = NOW()", query.getQuery());
+        assertEquals("{\"$set\": {\"lastLogin\": {\"$currentDate\": true}}}", query.getMongoQuery());
     }
 }

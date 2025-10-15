@@ -35,5 +35,5 @@ public class Query {
      * The actual database query string.
      */
     @NonNull
-    private String query;
+    private String mongoQuery;
 }

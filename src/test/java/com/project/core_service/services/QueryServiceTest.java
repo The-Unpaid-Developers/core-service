@@ -5,7 +5,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.project.core_service.dto.CreateQueryRequestDTO;
 import com.project.core_service.dto.QueryExecutionRequestDTO;
+import com.project.core_service.dto.UpdateQueryRequestDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.query.Query;
 import com.project.core_service.repositories.QueryRepository;
@@ -46,7 +48,7 @@ class QueryServiceTest {
     void setup() {
         testQuery = Query.builder()
                 .name("getUserByEmail")
-                .query("{\"email\": \"test@example.com\"}")
+                .mongoQuery("{\"email\": \"test@example.com\"}")
                 .build();
     }
 
@@ -75,7 +77,7 @@ class QueryServiceTest {
     void getAllQueries() {
         Query query2 = Query.builder()
                 .name("getActiveOrders")
-                .query("{\"status\": \"ACTIVE\"}")
+                .mongoQuery("{\"status\": \"ACTIVE\"}")
                 .build();
 
         when(queryRepository.findAll()).thenReturn(List.of(testQuery, query2));
@@ -103,95 +105,105 @@ class QueryServiceTest {
     }
 
     @Test
-    void createQuery_Success() {
-        when(queryRepository.existsById("getUserByEmail")).thenReturn(false);
-        when(queryRepository.save(testQuery)).thenReturn(testQuery);
+    void createMongoQuery_Success() {
+        CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
+                .name("getUserByEmail")
+                .mongoQuery("{\"email\": \"test@example.com\"}")
+                .build();
 
-        Query result = queryService.createQuery(testQuery);
+        when(queryRepository.existsById("getUserByEmail")).thenReturn(false);
+        when(queryRepository.save(any(Query.class))).thenReturn(testQuery);
+
+        Query result = queryService.createMongoQuery(request);
 
         assertNotNull(result);
         assertEquals("getUserByEmail", result.getName());
         verify(queryRepository).existsById("getUserByEmail");
-        verify(queryRepository).save(testQuery);
+        verify(queryRepository).save(any(Query.class));
     }
 
     @Test
-    void createQuery_ThrowsWhenNull() {
+    void createMongoQuery_ThrowsWhenNull() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(null));
+                () -> queryService.createMongoQuery(null));
 
-        assertEquals("Query cannot be null", exception.getMessage());
+        assertEquals("Query request cannot be null", exception.getMessage());
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void createQuery_ThrowsWhenNameIsEmpty() {
-        Query invalidQuery = Query.builder()
+    void createMongoQuery_ThrowsWhenNameIsEmpty() {
+        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name("   ")
-                .query("{\"test\": \"value\"}")
+                .mongoQuery("{\"test\": \"value\"}")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(invalidQuery));
+                () -> queryService.createMongoQuery(invalidRequest));
 
         assertEquals("Query name cannot be null or empty", exception.getMessage());
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void createQuery_ThrowsWhenQueryContainsForbiddenOperations() {
-        Query invalidQuery = Query.builder()
+    void createMongoQuery_ThrowsWhenQueryContainsForbiddenOperations() {
+        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name("dangerousQuery")
-                .query("{\"$out\": \"newCollection\"}")
+                .mongoQuery("{\"$out\": \"newCollection\"}")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(invalidQuery));
+                () -> queryService.createMongoQuery(invalidRequest));
 
         assertTrue(exception.getMessage().contains("forbidden operation"));
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void createQuery_ThrowsWhenQueryIsNotValidJSON() {
-        Query invalidQuery = Query.builder()
+    void createMongoQuery_ThrowsWhenQueryIsNotValidJSON() {
+        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name("invalidJSON")
-                .query("this is not valid JSON")
+                .mongoQuery("this is not valid JSON")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(invalidQuery));
+                () -> queryService.createMongoQuery(invalidRequest));
 
         assertTrue(exception.getMessage().contains("valid JSON format"));
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void createQuery_ThrowsWhenQueryStringIsEmpty() {
-        Query invalidQuery = Query.builder()
+    void createMongoQuery_ThrowsWhenQueryStringIsEmpty() {
+        CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name("testQuery")
-                .query("   ")
+                .mongoQuery("   ")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(invalidQuery));
+                () -> queryService.createMongoQuery(invalidRequest));
 
         assertTrue(exception.getMessage().contains("cannot be null or empty"));
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void createQuery_ThrowsWhenNameAlreadyExists() {
+    void createMongoQuery_ThrowsWhenNameAlreadyExists() {
+        CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
+                .name("getUserByEmail")
+                .mongoQuery("{\"email\": \"test@example.com\"}")
+                .build();
+
         when(queryRepository.existsById("getUserByEmail")).thenReturn(true);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.createQuery(testQuery));
+                () -> queryService.createMongoQuery(request));
 
         assertEquals("Query with name 'getUserByEmail' already exists", exception.getMessage());
         verify(queryRepository).existsById("getUserByEmail");
@@ -199,35 +211,38 @@ class QueryServiceTest {
     }
 
     @Test
-    void updateQuery_Success() {
+    void updateMongoQuery_Success() {
+        UpdateQueryRequestDTO request = UpdateQueryRequestDTO.builder()
+                .mongoQuery("{\"email\": \"test@example.com\", \"active\": true}")
+                .build();
+
         Query updatedQuery = Query.builder()
                 .name("getUserByEmail")
-                .query("{\"email\": \"test@example.com\", \"active\": true}")
+                .mongoQuery("{\"email\": \"test@example.com\", \"active\": true}")
                 .build();
 
         when(queryRepository.findById("getUserByEmail")).thenReturn(Optional.of(testQuery));
         when(queryRepository.save(any(Query.class))).thenReturn(updatedQuery);
 
-        Query result = queryService.updateQuery("getUserByEmail", updatedQuery);
+        Query result = queryService.updateMongoQuery("getUserByEmail", request);
 
         assertNotNull(result);
-        assertEquals("{\"email\": \"test@example.com\", \"active\": true}", result.getQuery());
+        assertEquals("{\"email\": \"test@example.com\", \"active\": true}", result.getMongoQuery());
         verify(queryRepository).findById("getUserByEmail");
         verify(queryRepository).save(any(Query.class));
     }
 
     @Test
-    void updateQuery_ThrowsWhenNotFound() {
-        Query updatedQuery = Query.builder()
-                .name("nonExistent")
-                .query("{\"test\": \"value\"}")
+    void updateMongoQuery_ThrowsWhenNotFound() {
+        UpdateQueryRequestDTO request = UpdateQueryRequestDTO.builder()
+                .mongoQuery("{\"test\": \"value\"}")
                 .build();
 
         when(queryRepository.findById("nonExistent")).thenReturn(Optional.empty());
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> queryService.updateQuery("nonExistent", updatedQuery));
+                () -> queryService.updateMongoQuery("nonExistent", request));
 
         assertEquals("Query not found with name: nonExistent", exception.getMessage());
         verify(queryRepository).findById("nonExistent");
@@ -235,26 +250,25 @@ class QueryServiceTest {
     }
 
     @Test
-    void updateQuery_ThrowsWhenUpdatedQueryIsNull() {
+    void updateMongoQuery_ThrowsWhenUpdatedQueryIsNull() {
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.updateQuery("getUserByEmail", null));
+                () -> queryService.updateMongoQuery("getUserByEmail", null));
 
-        assertEquals("Updated query cannot be null", exception.getMessage());
+        assertEquals("Updated query request cannot be null", exception.getMessage());
         verify(queryRepository, never()).findById(any());
         verify(queryRepository, never()).save(any());
     }
 
     @Test
-    void updateQuery_ThrowsWhenQueryStringIsEmpty() {
-        Query invalidQuery = Query.builder()
-                .name("getUserByEmail")
-                .query("   ")
+    void updateMongoQuery_ThrowsWhenQueryStringIsEmpty() {
+        UpdateQueryRequestDTO invalidRequest = UpdateQueryRequestDTO.builder()
+                .mongoQuery("   ")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.updateQuery("getUserByEmail", invalidQuery));
+                () -> queryService.updateMongoQuery("getUserByEmail", invalidRequest));
 
         assertTrue(exception.getMessage().contains("cannot be null or empty"));
         verify(queryRepository, never()).findById(any());
@@ -262,11 +276,11 @@ class QueryServiceTest {
     }
 
     @Test
-    void executeQuery_Success() {
+    void executeMongoQuery_Success() {
         // Given
         Query storedQuery = Query.builder()
                 .name("findActiveUsers")
-                .query("{\"active\": true}")
+                .mongoQuery("{\"active\": true}")
                 .build();
 
         QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
@@ -282,7 +296,7 @@ class QueryServiceTest {
         when(mongoTemplate.find(any(), eq(Document.class), eq("users"))).thenReturn(expectedResults);
 
         // When
-        List<Document> results = queryService.executeQuery("findActiveUsers", request);
+        List<Document> results = queryService.executeMongoQuery("findActiveUsers", request);
 
         // Then
         assertNotNull(results);
@@ -292,7 +306,7 @@ class QueryServiceTest {
     }
 
     @Test
-    void executeQuery_ThrowsWhenQueryNotFound() {
+    void executeMongoQuery_ThrowsWhenQueryNotFound() {
         // Given
         QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
                 .collection("users")
@@ -303,17 +317,17 @@ class QueryServiceTest {
         // When & Then
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> queryService.executeQuery("nonExistent", request));
+                () -> queryService.executeMongoQuery("nonExistent", request));
 
         assertEquals("Query not found with name: nonExistent", exception.getMessage());
     }
 
     @Test
-    void executeQuery_ThrowsWhenCollectionNotSpecified() {
+    void executeMongoQuery_ThrowsWhenCollectionNotSpecified() {
         // Given
         Query storedQuery = Query.builder()
                 .name("testQuery")
-                .query("{\"test\": \"value\"}")
+                .mongoQuery("{\"test\": \"value\"}")
                 .build();
 
         QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
@@ -324,29 +338,29 @@ class QueryServiceTest {
         // When & Then
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.executeQuery("testQuery", request));
+                () -> queryService.executeMongoQuery("testQuery", request));
 
         assertTrue(exception.getMessage().contains("Collection name must be specified"));
     }
 
     @Test
-    void deleteQuery_Success() {
+    void deleteMongoQuery_Success() {
         when(queryRepository.existsById("getUserByEmail")).thenReturn(true);
         doNothing().when(queryRepository).deleteById("getUserByEmail");
 
-        assertDoesNotThrow(() -> queryService.deleteQuery("getUserByEmail"));
+        assertDoesNotThrow(() -> queryService.deleteMongoQuery("getUserByEmail"));
 
         verify(queryRepository).existsById("getUserByEmail");
         verify(queryRepository).deleteById("getUserByEmail");
     }
 
     @Test
-    void deleteQuery_ThrowsWhenNotFound() {
+    void deleteMongoQuery_ThrowsWhenNotFound() {
         when(queryRepository.existsById("nonExistent")).thenReturn(false);
 
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> queryService.deleteQuery("nonExistent"));
+                () -> queryService.deleteMongoQuery("nonExistent"));
 
         assertEquals("Query not found with name: nonExistent", exception.getMessage());
         verify(queryRepository).existsById("nonExistent");

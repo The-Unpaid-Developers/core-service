@@ -8,6 +8,11 @@ import com.project.core_service.services.SolutionReviewLifecycleService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -158,100 +163,68 @@ class LifecycleControllerTest {
             verify(lifecycleService, never()).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when request body is missing required fields")
-        void shouldReturnBadRequestWhenRequestBodyIsMissingRequiredFields() throws Exception {
-            // Given - command with null documentId
-            String requestJson = """
-                    {
-                        "documentId": null,
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
+        @ParameterizedTest
+        @MethodSource("badRequestTestCases")
+        @DisplayName("Should return 400 Bad Request when request body has invalid or missing required fields")
+        void shouldReturnBadRequestWhenRequestBodyHasInvalidFields(String testCase, String requestJson,
+                String expectedErrorMessage) throws Exception {
             // When & Then
             mockMvc.perform(post("/api/v1/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Document ID is required"));
+                    .andExpect(jsonPath("$.message").value(expectedErrorMessage));
 
             verify(lifecycleService, never()).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when documentId is blank")
-        void shouldReturnBadRequestWhenDocumentIdIsBlank() throws Exception {
-            // Given - command with blank documentId
-            String requestJson = """
-                    {
-                        "documentId": "",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Document ID is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should return 400 Bad Request when operation is null")
-        void shouldReturnBadRequestWhenOperationIsNull() throws Exception {
-            // Given - command with null operation
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": null,
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Operation is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should return 400 Bad Request when modifiedBy is blank")
-        void shouldReturnBadRequestWhenModifiedByIsBlank() throws Exception {
-            // Given - command with blank modifiedBy
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Modified by user is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
+        static Stream<Arguments> badRequestTestCases() {
+            return Stream.of(
+                    Arguments.of(
+                            "null documentId",
+                            """
+                                    {
+                                        "documentId": null,
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Document ID is required"),
+                    Arguments.of(
+                            "blank documentId",
+                            """
+                                    {
+                                        "documentId": "",
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Document ID is required"),
+                    Arguments.of(
+                            "null operation",
+                            """
+                                    {
+                                        "documentId": "test-document-id",
+                                        "operation": null,
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Operation is required"),
+                    Arguments.of(
+                            "blank modifiedBy",
+                            """
+                                    {
+                                        "documentId": "test-document-id",
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Modified by user is required"));
         }
 
         @Test
@@ -273,7 +246,8 @@ class LifecycleControllerTest {
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").exists()); // Should contain multiple validation messages
+                    .andExpect(jsonPath("$.message").exists()); // Should contain multiple
+                                                                // validation messages
 
             verify(lifecycleService, never()).executeTransition(any());
         }
@@ -602,7 +576,8 @@ class LifecycleControllerTest {
 
         @Test
         @DisplayName("Should successfully handle ACTIVATE operation that transitions existing ACTIVE to OUTDATED")
-        void shouldSuccessfullyHandleActivateOperationThatTransitionsExistingActiveToOutdated() throws Exception {
+        void shouldSuccessfullyHandleActivateOperationThatTransitionsExistingActiveToOutdated()
+                throws Exception {
             // Given - This tests requirement #2: when activating a document, existing
             // ACTIVE should become OUTDATED
             // The service layer handles this automatically, so the API should succeed
@@ -715,7 +690,8 @@ class LifecycleControllerTest {
                         "comment": "Invalid transition attempt"
                     }
                     """;
-            String errorMessage = "Cannot execute operation 'submit document' on document 'test-document-id'. " +
+            String errorMessage = "Cannot execute operation 'submit document' on document 'test-document-id'. "
+                    +
                     "Document is in state 'SUBMITTED' but operation requires state 'DRAFT'";
             doThrow(new IllegalStateTransitionException(errorMessage))
                     .when(lifecycleService).executeTransition(any());

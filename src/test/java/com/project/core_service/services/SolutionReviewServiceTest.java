@@ -150,7 +150,7 @@ class SolutionReviewServiceTest {
 
     @Test
     void getSolutionReviewsBySystemCode() {
-        when(solutionReviewRepository.findAllBySystemCode(eq("SYS-123")))
+        when(solutionReviewRepository.findAllBySystemCode("SYS-123"))
                 .thenReturn(List.of(review));
 
         List<SolutionReview> result = service.getSolutionReviewsBySystemCode("SYS-123");
@@ -1135,8 +1135,8 @@ class SolutionReviewServiceTest {
         // Mock constraint validation passes for exclusive states (DRAFT, SUBMITTED,
         // APPROVED)
         // This should return empty because ACTIVE is not in exclusive states anymore
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.copyOf(DocumentState.getExclusiveStates()))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.copyOf(DocumentState.getExclusiveStates())))
                 .thenReturn(Collections.emptyList());
 
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
@@ -1156,13 +1156,13 @@ class SolutionReviewServiceTest {
 
         // Mock active review exists
         review.setDocumentState(DocumentState.ACTIVE);
-        when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.of(DocumentState.ACTIVE))))
+        when(solutionReviewRepository.findFirstBySystemCodeAndDocumentStateIn("SYS-123",
+                List.of(DocumentState.ACTIVE)))
                 .thenReturn(Optional.of(review));
 
         // Mock that no exclusive state documents exist (DRAFT, SUBMITTED, APPROVED)
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.copyOf(DocumentState.getExclusiveStates()))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.copyOf(DocumentState.getExclusiveStates())))
                 .thenReturn(Collections.emptyList());
 
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
@@ -1496,8 +1496,8 @@ class SolutionReviewServiceTest {
     @Test
     void validateActiveStateConstraint_ShouldPassWhenNoActiveDocumentExists() {
         // Arrange
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.of(DocumentState.ACTIVE))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.of(DocumentState.ACTIVE)))
                 .thenReturn(Collections.emptyList());
 
         // Act & Assert - Should not throw exception
@@ -1508,8 +1508,8 @@ class SolutionReviewServiceTest {
     void validateActiveStateConstraint_ShouldThrowWhenActiveDocumentExists() {
         // Arrange
         review.setDocumentState(DocumentState.ACTIVE);
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.of(DocumentState.ACTIVE))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.of(DocumentState.ACTIVE)))
                 .thenReturn(List.of(review));
 
         // Act & Assert
@@ -1524,8 +1524,8 @@ class SolutionReviewServiceTest {
         // Arrange
         review.setDocumentState(DocumentState.ACTIVE);
         review.setId("rev-1");
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.of(DocumentState.ACTIVE))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.of(DocumentState.ACTIVE)))
                 .thenReturn(List.of(review));
 
         // Act & Assert - Should not throw exception when excluding the same document
@@ -1537,8 +1537,8 @@ class SolutionReviewServiceTest {
         // Arrange
         review.setDocumentState(DocumentState.ACTIVE);
         review.setId("rev-1");
-        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"),
-                eq(List.of(DocumentState.ACTIVE))))
+        when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn("SYS-123",
+                List.of(DocumentState.ACTIVE)))
                 .thenReturn(List.of(review));
 
         // Act & Assert

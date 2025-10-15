@@ -1,6 +1,8 @@
 package com.project.core_service.controllers;
 
+import com.project.core_service.dto.CreateQueryRequestDTO;
 import com.project.core_service.dto.QueryExecutionRequestDTO;
+import com.project.core_service.dto.UpdateQueryRequestDTO;
 import com.project.core_service.models.query.Query;
 import com.project.core_service.services.QueryService;
 import org.bson.Document;
@@ -75,27 +77,27 @@ public class QueryController {
     /**
      * Creates a new {@link Query}.
      * 
-     * @param query the query to create
+     * @param request the DTO containing query creation data
      * @return a {@link ResponseEntity} containing the created query
      *         with status {@code 201 Created}
      */
     @PostMapping
-    public ResponseEntity<Query> createQuery(@RequestBody Query query) {
-        return new ResponseEntity<>(queryService.createQuery(query), HttpStatus.CREATED);
+    public ResponseEntity<Query> createMongoQuery(@RequestBody CreateQueryRequestDTO request) {
+        return new ResponseEntity<>(queryService.createMongoQuery(request), HttpStatus.CREATED);
     }
 
     /**
      * Updates an existing {@link Query}.
      * 
-     * @param name  the name of the query to update
-     * @param query the updated query data
+     * @param name    the name of the query to update
+     * @param request the DTO containing updated query data
      * @return a {@link ResponseEntity} containing the updated query
      */
     @PutMapping("/{name}")
-    public ResponseEntity<Query> updateQuery(
+    public ResponseEntity<Query> updateMongoQuery(
             @PathVariable String name,
-            @RequestBody Query query) {
-        return ResponseEntity.ok(queryService.updateQuery(name, query));
+            @RequestBody UpdateQueryRequestDTO request) {
+        return ResponseEntity.ok(queryService.updateMongoQuery(name, request));
     }
 
     /**
@@ -105,8 +107,8 @@ public class QueryController {
      * @return a {@link ResponseEntity} with status {@code 204 No Content}
      */
     @DeleteMapping("/{name}")
-    public ResponseEntity<Void> deleteQuery(@PathVariable String name) {
-        queryService.deleteQuery(name);
+    public ResponseEntity<Void> deleteMongoQuery(@PathVariable String name) {
+        queryService.deleteMongoQuery(name);
         return ResponseEntity.noContent().build();
     }
 
@@ -126,10 +128,10 @@ public class QueryController {
      *         the query
      */
     @PostMapping("/{name}/execute")
-    public ResponseEntity<List<Document>> executeQuery(
+    public ResponseEntity<List<Document>> executeMongoQuery(
             @PathVariable String name,
             @RequestBody QueryExecutionRequestDTO request) {
-        List<Document> results = queryService.executeQuery(name, request);
+        List<Document> results = queryService.executeMongoQuery(name, request);
         return ResponseEntity.ok(results);
     }
 }
