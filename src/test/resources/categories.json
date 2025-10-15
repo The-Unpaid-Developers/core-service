@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Critical Failures",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*Critical.*",
+    "traceRegex": ".*"
+  },
+  {
+    "name": "Database Errors",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*MongoException.*|.*DatabaseException.*",
+    "traceRegex": ".*"
+  },
+  {
+    "name": "Validation Errors",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*Validation.*|.*Invalid.*",
+    "traceRegex": ".*"
+  },
+  {
+    "name": "State Transition Errors",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*IllegalStateTransitionException.*",
+    "traceRegex": ".*"
+  },
+  {
+    "name": "Not Found Errors",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*NotFoundException.*|.*not found.*",
+    "traceRegex": ".*"
+  }
+]
