@@ -1,7 +1,6 @@
 package com.project.core_service.models.business_capabilities;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -12,16 +11,14 @@ public class BusinessCapabilityTest {
     private final List<Capability> capabilities = List.of(
             new Capability("Capability1", CapabilityType.L1),
             new Capability("Capability2", CapabilityType.L2),
-            new Capability("Capability3", CapabilityType.L3)
-    );
+            new Capability("Capability3", CapabilityType.L3));
 
     @Test
     void shouldCreateBusinessCapabilitySuccessfully() {
         BusinessCapability capability = new BusinessCapability(
                 "bc-001",
                 "Handles UNKNOWN operations",
-                capabilities
-        );
+                capabilities);
 
         assertThat(capability.getId()).isEqualTo("bc-001");
         assertThat(capability.getCapabilities()).isEqualTo(capabilities);
@@ -30,9 +27,6 @@ public class BusinessCapabilityTest {
 
     @Test
     void testBusinessCapabilityBuilder() {
-        L1Capability l1 = L1Capability.UNKNOWN;
-        L2Capability l2 = L2Capability.UNKNOWN;
-        L3Capability l3 = L3Capability.UNKNOWN;
         BusinessCapability bc = BusinessCapability.builder()
                 .id("cap-123")
                 .capabilities(capabilities)
@@ -43,20 +37,17 @@ public class BusinessCapabilityTest {
         assertEquals(capabilities, bc.getCapabilities());
     }
 
-
     @Test
     void shouldRespectEqualsAndHashCode() {
         BusinessCapability a = new BusinessCapability(
                 "bc-001",
                 "Handles UNKNOWN operations",
-                capabilities
-        );
+                capabilities);
 
         BusinessCapability b = new BusinessCapability(
                 "bc-001",
                 "Handles UNKNOWN operations",
-                capabilities
-        );
+                capabilities);
 
         assertThat(a).isEqualTo(b);
         assertThat(a.hashCode()).isEqualTo(b.hashCode());

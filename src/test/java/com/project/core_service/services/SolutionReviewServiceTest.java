@@ -89,7 +89,7 @@ class SolutionReviewServiceTest {
                 "impact",
                 "disposition",
                 ConcernStatus.UNKNOWN,
-                LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)); 
+                LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
         return List.of(dummyConcern);
     }
 
@@ -173,7 +173,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123", "SYS-456");
-        
+
         SolutionReview activeReview = SolutionReview.newDraftBuilder()
                 .id("rev-active")
                 .systemCode("SYS-123")
@@ -203,7 +203,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123");
-        
+
         SolutionReview latestReview = SolutionReview.newDraftBuilder()
                 .id("rev-latest")
                 .systemCode("SYS-123")
@@ -251,7 +251,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(1, 2); // Second page, 2 items per page
         List<String> systemCodes = List.of("SYS-001", "SYS-002", "SYS-003", "SYS-004", "SYS-005");
-        
+
         // Create 5 reviews for different systems
         for (int i = 1; i <= 5; i++) {
             SolutionReview reviews = SolutionReview.newDraftBuilder()
@@ -274,7 +274,7 @@ class SolutionReviewServiceTest {
         assertEquals(2, result.getContent().size()); // Current page size
         assertEquals(1, result.getNumber()); // Current page number (0-indexed)
         assertEquals(3, result.getTotalPages()); // Total pages (5 items, 2 per page = 3 pages)
-        
+
         // Verify we got the correct items for page 1 (items 3 and 4)
         assertEquals("SYS-003", result.getContent().get(0).getSystemCode());
         assertEquals("SYS-004", result.getContent().get(1).getSystemCode());
@@ -301,7 +301,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(10, 10); // Page 10 with 10 items per page
         List<String> systemCodes = List.of("SYS-123");
-        
+
         SolutionReview currentReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
@@ -327,7 +327,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123");
-        
+
         SolutionReview activeReview = SolutionReview.newDraftBuilder()
                 .id("rev-active")
                 .systemCode("SYS-123")
@@ -354,7 +354,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123");
-        
+
         SolutionReview olderReview = SolutionReview.newDraftBuilder()
                 .id("rev-older")
                 .systemCode("SYS-123")
@@ -390,7 +390,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         List<String> systemCodes = List.of("SYS-123", "SYS-456", "SYS-789");
-        
+
         // SYS-123 has ACTIVE review
         SolutionReview activeReview = SolutionReview.newDraftBuilder()
                 .id("rev-active")
@@ -426,7 +426,7 @@ class SolutionReviewServiceTest {
         // Assert
         assertEquals(2, result.getTotalElements()); // Only SYS-123 and SYS-456 have reviews
         assertEquals(2, result.getContent().size());
-        
+
         // Find reviews by system code
         SolutionReview sys123Result = result.getContent().stream()
                 .filter(r -> "SYS-123".equals(r.getSystemCode()))
@@ -434,10 +434,10 @@ class SolutionReviewServiceTest {
         SolutionReview sys456Result = result.getContent().stream()
                 .filter(r -> "SYS-456".equals(r.getSystemCode()))
                 .findFirst().orElse(null);
-        
+
         assertNotNull(sys123Result);
         assertEquals(DocumentState.ACTIVE, sys123Result.getDocumentState());
-        
+
         assertNotNull(sys456Result);
         assertEquals(DocumentState.DRAFT, sys456Result.getDocumentState());
     }
@@ -474,7 +474,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         String documentStateStr = "DRAFT";
-        
+
         SolutionReview draftReview1 = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
@@ -490,7 +490,8 @@ class SolutionReviewServiceTest {
                 .build();
 
         Page<SolutionReview> expectedPage = new PageImpl<>(List.of(draftReview1, draftReview2), pageable, 2);
-        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable)).thenReturn(expectedPage);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable))
+                .thenReturn(expectedPage);
 
         // Act
         Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
@@ -507,9 +508,10 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         String documentStateStr = "APPROVED";
-        
+
         Page<SolutionReview> emptyPage = new PageImpl<>(List.of(), pageable, 0);
-        when(solutionReviewRepository.findByDocumentState(DocumentState.APPROVED, pageable)).thenReturn(emptyPage);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.APPROVED, pageable))
+                .thenReturn(emptyPage);
 
         // Act
         Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
@@ -555,7 +557,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> service.getSolutionReviewsByDocumentState(invalidState, pageable));
-        
+
         assertTrue(exception.getMessage().contains("Invalid document state: INVALID_STATE"));
         assertTrue(exception.getMessage().contains("Valid values:"));
     }
@@ -565,7 +567,7 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(0, 10);
         String lowerCaseState = "draft";
-        
+
         SolutionReview draftReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
                 .systemCode("SYS-123")
@@ -574,7 +576,8 @@ class SolutionReviewServiceTest {
                 .build();
 
         Page<SolutionReview> expectedPage = new PageImpl<>(List.of(draftReview), pageable, 1);
-        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable)).thenReturn(expectedPage);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable))
+                .thenReturn(expectedPage);
 
         // Act
         Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(lowerCaseState, pageable);
@@ -590,14 +593,16 @@ class SolutionReviewServiceTest {
         // Arrange
         Pageable pageable = PageRequest.of(1, 5); // Second page, 5 items per page
         String documentStateStr = "DRAFT";
-        
+
         List<SolutionReview> pageContent = List.of(
-            SolutionReview.newDraftBuilder().id("rev-6").systemCode("SYS-006").solutionOverview(overview).documentState(DocumentState.DRAFT).build(),
-            SolutionReview.newDraftBuilder().id("rev-7").systemCode("SYS-007").solutionOverview(overview).documentState(DocumentState.DRAFT).build()
-        );
-        
+                SolutionReview.newDraftBuilder().id("rev-6").systemCode("SYS-006")
+                        .solutionOverview(overview).documentState(DocumentState.DRAFT).build(),
+                SolutionReview.newDraftBuilder().id("rev-7").systemCode("SYS-007")
+                        .solutionOverview(overview).documentState(DocumentState.DRAFT).build());
+
         Page<SolutionReview> expectedPage = new PageImpl<>(pageContent, pageable, 12); // 12 total items
-        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable)).thenReturn(expectedPage);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.DRAFT, pageable))
+                .thenReturn(expectedPage);
 
         // Act
         Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
@@ -633,12 +638,15 @@ class SolutionReviewServiceTest {
 
     @Test
     void getSolutionReviewsByDocumentState_ShouldPassThroughRepositoryResult() {
-        // Arrange - This test verifies that the service method delegates to repository after validation
+        // Arrange - This test verifies that the service method delegates to repository
+        // after validation
         Pageable pageable = PageRequest.of(2, 3);
         String documentStateStr = "SUBMITTED";
-        
+
+        @SuppressWarnings("unchecked")
         Page<SolutionReview> mockPage = mock(Page.class);
-        when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable)).thenReturn(mockPage);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable))
+                .thenReturn(mockPage);
 
         // Act
         Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
@@ -670,24 +678,25 @@ class SolutionReviewServiceTest {
                 .build();
 
         List<SolutionReview> activeSolutionReviews = List.of(activeReview1, activeReview2);
-        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(activeSolutionReviews);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(activeSolutionReviews);
 
         // Act
         List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
 
         // Assert
         assertEquals(2, result.size());
-        
+
         SystemDependencyDTO dto1 = result.get(0);
         assertEquals("SYS-123", dto1.getSystemCode());
         assertEquals(overview, dto1.getSolutionOverview());
         assertEquals(List.of(), dto1.getIntegrationFlows());
-        
+
         SystemDependencyDTO dto2 = result.get(1);
         assertEquals("SYS-456", dto2.getSystemCode());
         assertEquals(overview, dto2.getSolutionOverview());
         assertEquals(List.of(), dto2.getIntegrationFlows());
-        
+
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
 
@@ -708,17 +717,16 @@ class SolutionReviewServiceTest {
     void getSystemDependencySolutionReviews_ShouldIncludeIntegrationFlowsWhenPresent() {
         // Arrange
         List<IntegrationFlow> integrationFlows = List.of(
-            IntegrationFlow.builder()
-                .id("if-1")
-                .componentName("Component1")
-                .counterpartSystemCode("EXT-001")
-                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
-                .integrationMethod(IntegrationMethod.API)
-                .frequency(Frequency.DAILY)
-                .purpose("Data sync")
-                .middleware(Middleware.API_GATEWAY)
-                .build()
-        );
+                IntegrationFlow.builder()
+                        .id("if-1")
+                        .componentName("Component1")
+                        .counterpartSystemCode("EXT-001")
+                        .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                        .integrationMethod(IntegrationMethod.API)
+                        .frequency(Frequency.DAILY)
+                        .purpose("Data sync")
+                        .middleware(Middleware.API_GATEWAY)
+                        .build());
 
         SolutionReview activeReview = SolutionReview.newDraftBuilder()
                 .id("rev-1")
@@ -728,7 +736,8 @@ class SolutionReviewServiceTest {
                 .integrationFlows(integrationFlows)
                 .build();
 
-        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
 
         // Act
         List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
@@ -742,7 +751,7 @@ class SolutionReviewServiceTest {
         assertEquals(1, dto.getIntegrationFlows().size());
         assertEquals("if-1", dto.getIntegrationFlows().get(0).getId());
         assertEquals("Component1", dto.getIntegrationFlows().get(0).getComponentName());
-        
+
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
 
@@ -760,7 +769,8 @@ class SolutionReviewServiceTest {
         // We don't need to store these in variables as they're only for documentation
 
         // Only return the active review from repository
-        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
 
         // Act
         List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
@@ -768,7 +778,7 @@ class SolutionReviewServiceTest {
         // Assert
         assertEquals(1, result.size());
         assertEquals("SYS-123", result.get(0).getSystemCode());
-        
+
         // Verify only ACTIVE state was queried
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
         verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.DRAFT);
@@ -781,40 +791,38 @@ class SolutionReviewServiceTest {
     void getSystemDependencySolutionReviews_ShouldHandleMultipleActiveReviewsWithDifferentData() {
         // Arrange
         List<IntegrationFlow> integrationFlows1 = List.of(
-            IntegrationFlow.builder()
-                .id("if-1")
-                .componentName("Component1")
-                .counterpartSystemCode("EXT-001")
-                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
-                .integrationMethod(IntegrationMethod.API)
-                .frequency(Frequency.DAILY)
-                .purpose("Data sync")
-                .middleware(Middleware.API_GATEWAY)
-                .build()
-        );
+                IntegrationFlow.builder()
+                        .id("if-1")
+                        .componentName("Component1")
+                        .counterpartSystemCode("EXT-001")
+                        .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                        .integrationMethod(IntegrationMethod.API)
+                        .frequency(Frequency.DAILY)
+                        .purpose("Data sync")
+                        .middleware(Middleware.API_GATEWAY)
+                        .build());
 
         List<IntegrationFlow> integrationFlows2 = List.of(
-            IntegrationFlow.builder()
-                .id("if-2")
-                .componentName("Component2")
-                .counterpartSystemCode("EXT-002")
-                .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
-                .integrationMethod(IntegrationMethod.BATCH)
-                .frequency(Frequency.WEEKLY)
-                .purpose("Report generation")
-                .middleware(Middleware.OSB)
-                .build(),
-            IntegrationFlow.builder()
-                .id("if-3")
-                .componentName("Component3")
-                .counterpartSystemCode("EXT-003")
-                .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
-                .integrationMethod(IntegrationMethod.EVENT)
-                .frequency(Frequency.MONTHLY)
-                .purpose("Event processing")
-                .middleware(Middleware.NONE)
-                .build()
-        );
+                IntegrationFlow.builder()
+                        .id("if-2")
+                        .componentName("Component2")
+                        .counterpartSystemCode("EXT-002")
+                        .counterpartSystemRole(CounterpartSystemRole.PRODUCER)
+                        .integrationMethod(IntegrationMethod.BATCH)
+                        .frequency(Frequency.WEEKLY)
+                        .purpose("Report generation")
+                        .middleware(Middleware.OSB)
+                        .build(),
+                IntegrationFlow.builder()
+                        .id("if-3")
+                        .componentName("Component3")
+                        .counterpartSystemCode("EXT-003")
+                        .counterpartSystemRole(CounterpartSystemRole.CONSUMER)
+                        .integrationMethod(IntegrationMethod.EVENT)
+                        .frequency(Frequency.MONTHLY)
+                        .purpose("Event processing")
+                        .middleware(Middleware.NONE)
+                        .build());
 
         SolutionOverview overview2 = SolutionOverview.newDraftBuilder()
                 .id("id-002")
@@ -851,14 +859,14 @@ class SolutionReviewServiceTest {
 
         // Assert
         assertEquals(2, result.size());
-        
+
         // First review
         SystemDependencyDTO dto1 = result.get(0);
         assertEquals("SYS-123", dto1.getSystemCode());
         assertEquals(overview, dto1.getSolutionOverview());
         assertEquals(1, dto1.getIntegrationFlows().size());
         assertEquals("if-1", dto1.getIntegrationFlows().get(0).getId());
-        
+
         // Second review
         SystemDependencyDTO dto2 = result.get(1);
         assertEquals("SYS-456", dto2.getSystemCode());
@@ -866,7 +874,7 @@ class SolutionReviewServiceTest {
         assertEquals(2, dto2.getIntegrationFlows().size());
         assertEquals("if-2", dto2.getIntegrationFlows().get(0).getId());
         assertEquals("if-3", dto2.getIntegrationFlows().get(1).getId());
-        
+
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
 
@@ -906,7 +914,7 @@ class SolutionReviewServiceTest {
         assertEquals("SYS-ZZZ", result.get(0).getSystemCode());
         assertEquals("SYS-AAA", result.get(1).getSystemCode());
         assertEquals("SYS-MMM", result.get(2).getSystemCode());
-        
+
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
 
@@ -921,7 +929,8 @@ class SolutionReviewServiceTest {
                 .integrationFlows(List.of())
                 .build();
 
-        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of(activeReview));
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
 
         // Act
         List<SystemDependencyDTO> result = service.getSystemDependencySolutionReviews();
@@ -929,15 +938,14 @@ class SolutionReviewServiceTest {
         // Assert
         assertEquals(1, result.size());
         SystemDependencyDTO dto = result.get(0);
-        
+
         // Verify all three required fields are properly mapped
         assertEquals(activeReview.getSystemCode(), dto.getSystemCode());
         assertEquals(activeReview.getSolutionOverview(), dto.getSolutionOverview());
         assertEquals(activeReview.getIntegrationFlows(), dto.getIntegrationFlows());
-        
+
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
-
 
     @Test
     void createSolutionReview_ShouldThrowIfOverviewNull() {
@@ -1043,7 +1051,8 @@ class SolutionReviewServiceTest {
         // Arrange - existing OUTDATED review (should allow creation of new draft)
         review.setDocumentState(DocumentState.OUTDATED);
         when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
-                .thenReturn(Collections.emptyList()); // Empty because OUTDATED is not in exclusive states
+                .thenReturn(Collections.emptyList()); // Empty because OUTDATED is not in exclusive
+                                                      // states
         when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
 
@@ -1071,7 +1080,9 @@ class SolutionReviewServiceTest {
     @Test
     void createSolutionReview_ShouldThrowIfConcernInvalid() {
         List<Concern> invalidConcerns = List
-                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)));
+                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition",
+                        ConcernStatus.UNKNOWN,
+                        LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)));
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
                 overview.getBusinessDriver(),
@@ -1221,7 +1232,9 @@ class SolutionReviewServiceTest {
                 .documentState(DocumentState.SUBMITTED)
                 .build();
 
-        Concern newConcern = new Concern("concern-1", ConcernType.RISK, "New concern", "High impact", "Under review", ConcernStatus.UNKNOWN, LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
+        Concern newConcern = new Concern("concern-1", ConcernType.RISK, "New concern", "High impact",
+                "Under review", ConcernStatus.UNKNOWN,
+                LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000));
         SolutionOverview modifiedOverview = SolutionOverview.fromExisting(overview)
                 .concerns(List.of(newConcern))
                 .build();
@@ -1268,8 +1281,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> service.updateSolutionReviewConcerns(modifiedDTO)
-        );
+                () -> service.updateSolutionReviewConcerns(modifiedDTO));
 
         assertEquals("Only SUBMITTED reviews can have concerns updated", exception.getMessage());
         verify(solutionReviewRepository).findById(reviewId);
@@ -1291,8 +1303,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         NotFoundException exception = assertThrows(
                 NotFoundException.class,
-                () -> service.updateSolutionReviewConcerns(modifiedDTO)
-        );
+                () -> service.updateSolutionReviewConcerns(modifiedDTO));
 
         assertEquals(reviewId, exception.getMessage());
         verify(solutionReviewRepository).findById(reviewId);
@@ -1304,8 +1315,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.updateSolutionReviewConcerns(null)
-        );
+                () -> service.updateSolutionReviewConcerns(null));
 
         assertEquals("Modified SolutionReview cannot be null", exception.getMessage());
         verify(solutionReviewRepository, never()).findById(any());
@@ -1333,8 +1343,7 @@ class SolutionReviewServiceTest {
         // Act & Assert
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> service.updateSolutionReviewConcerns(modifiedDTO)
-        );
+                () -> service.updateSolutionReviewConcerns(modifiedDTO));
 
         assertEquals("Only SUBMITTED reviews can have concerns updated", exception.getMessage());
         verify(solutionReviewRepository).findById(reviewId);
