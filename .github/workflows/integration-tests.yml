@@ -42,10 +42,6 @@ jobs:
               if: success() || failure()
               run: mvn jacoco:report
 
-            - name: Generate Allure report
-              if: success() || failure()
-              run: mvn allure:report
-
             - name: Upload test results
               uses: actions/upload-artifact@v4
               if: always() # Always upload, even on failure
@@ -54,14 +50,6 @@ jobs:
                   path: |
                       target/surefire-reports/
                       target/site/jacoco/
-                      target/site/allure-maven-plugin/
-
-            - name: Upload Allure results
-              uses: actions/upload-artifact@v4
-              if: always()
-              with:
-                  name: allure-results
-                  path: target/allure-results/
 
             - name: Publish test report
               uses: dorny/test-reporter@v1
