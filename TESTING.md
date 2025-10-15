@@ -183,21 +183,24 @@ mvn test -X
 
 ## CI/CD
 
-### GitHub Actions Example
+### GitHub Actions
 
-```yaml
-- name: Run Integration Tests
-  run: mvn clean test
+The project includes a dedicated workflow for integration tests at `.github/workflows/integration-tests.yml`:
 
-- name: Generate Allure Report
-  run: mvn allure:report
+**Features:**
 
-- name: Upload Reports
-  uses: actions/upload-artifact@v3
-  with:
-    name: test-reports
-    path: target/site/
-```
+- ✅ Runs automatically on push/PR to main/develop
+- ✅ Java 21 with Maven caching
+- ✅ Generates Allure & JaCoCo reports
+- ✅ Comments test results on PRs
+- ✅ Enforces 80%+ coverage thresholds
+
+**Manual trigger:**
+
+1. Go to **Actions** → **Integration Tests**
+2. Click **Run workflow**
+
+All reports are available as artifacts after each run.
 
 ## Test Categories
 
