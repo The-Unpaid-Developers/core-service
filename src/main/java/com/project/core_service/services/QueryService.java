@@ -32,7 +32,7 @@ public class QueryService {
     private final QueryRepository queryRepository;
     private final MongoTemplate mongoTemplate;
 
-    private final static String collectionField = "collection";
+    private final static String COLLECTION_FIELD = "collection";
 
     @Autowired
     public QueryService(QueryRepository queryRepository, MongoTemplate mongoTemplate) {
@@ -178,9 +178,9 @@ public class QueryService {
             String collection = request.getCollection();
             if (collection == null || collection.trim().isEmpty()) {
                 // Try to extract from query if it contains a collection field
-                if (queryDoc.containsKey(collectionField)) {
-                    collection = queryDoc.getString(collectionField);
-                    queryDoc.remove(collectionField);
+                if (queryDoc.containsKey(COLLECTION_FIELD)) {
+                    collection = queryDoc.getString(COLLECTION_FIELD);
+                    queryDoc.remove(COLLECTION_FIELD);
                 } else {
                     throw new IllegalArgumentException(
                             "Collection name must be specified either in the request or in the stored query");
