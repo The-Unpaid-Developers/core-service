@@ -1,11 +1,13 @@
 package com.project.core_service.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.exceptions.CsvProcessingException;
+import com.project.core_service.exceptions.InvalidFileException;
+import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.lookup.Lookup;
 
 import org.apache.commons.csv.CSVFormat;
@@ -14,14 +16,11 @@ import org.apache.commons.csv.CSVRecord;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.Array;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -44,25 +43,25 @@ public class LookupService {
     public LookupDTO processCsvFile(MultipartFile file, String lookupName) {
         // Validate file
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("file parameter is required and cannot be empty");
+            throw new InvalidFileException("file parameter is required and cannot be empty");
         }
-        
+
         if (lookupName == null || lookupName.trim().isEmpty()) {
-            throw new IllegalArgumentException("lookupName parameter is required and cannot be empty");
+            throw new InvalidFileException("lookupName parameter is required and cannot be empty");
         }
 
         // Validate file type
         String contentType = file.getContentType();
         String fileName = file.getOriginalFilename();
-        if (!fileName.toLowerCase().endsWith(".csv") && 
+        if (!fileName.toLowerCase().endsWith(".csv") &&
             !"text/csv".equals(contentType)) {
-            throw new IllegalArgumentException("File must be a CSV file");
+            throw new InvalidFileException("File must be a CSV file");
         }
 
         try {
             // Parse CSV to List of Maps
             List<Map<String, String>> csvData = parseCsvToJson(file);
-            
+
             // Create the lookup object
             Lookup lookup = Lookup.builder()
                     .id(lookupName)
@@ -82,29 +81,32 @@ public class LookupService {
                     .recordsProcessed(csvData.size())
                     .message("CSV file processed and stored successfully")
                     .build();
+        } catch (InvalidFileException | CsvProcessingException e) {
+            // Re-throw dedicated exceptions
+            throw e;
         } catch (Exception e) {
-            // Convert generic exceptions to more specific ones
-            throw new RuntimeException("Failed to process CSV file: " + e.getMessage(), e);
+            // Wrap unexpected exceptions
+            throw new CsvProcessingException("Failed to process CSV file: " + e.getMessage(), e);
         }
     }
 
     private List<Map<String, String>> parseCsvToJson(MultipartFile file) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
             CSVParser csvParser = createCsvParser(reader)) {
-            
+
             Map<String, Integer> headerMap = csvParser.getHeaderMap();
             validateHeaders(headerMap);
-            
+
             Map<String, String> cleanHeaderMap = buildCleanHeaderMap(headerMap);
             List<Map<String, String>> records = parseRecords(csvParser, headerMap, cleanHeaderMap);
-            
+
             validateRecords(records);
             return records;
-            
-        } catch (IllegalArgumentException e) {
+
+        } catch (CsvProcessingException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException("Error parsing CSV file: " + e.getMessage(), e);
+            throw new CsvProcessingException("Error parsing CSV file: " + e.getMessage(), e);
         }
     }
 
@@ -119,7 +121,7 @@ public class LookupService {
 
     private void validateHeaders(Map<String, Integer> headerMap) {
         if (headerMap.isEmpty()) {
-            throw new IllegalArgumentException("CSV file must contain headers");
+            throw new CsvProcessingException("CSV file must contain headers");
         }
     }
 
@@ -178,7 +180,7 @@ public class LookupService {
 
     private void validateRecords(List<Map<String, String>> records) {
         if (records.isEmpty()) {
-            throw new IllegalArgumentException("CSV file contains no data rows");
+            throw new CsvProcessingException("CSV file contains no data rows");
         }
     }
 
@@ -223,15 +225,15 @@ public class LookupService {
 
     public LookupDTO getLookupByName(String lookupName) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        
+
         Document doc = collection.find(Filters.eq("_id", lookupName)).first();
-        
+
         if (doc == null) {
-            throw new NoSuchElementException("Lookup with name '" + lookupName + "' not found");
+            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
         }
-        
+
         Lookup lookup = documentToLookup(doc);
-        
+
         return LookupDTO.builder()
                 .lookups(new ArrayList<>(List.of(lookup)))
                 .build();
@@ -239,13 +241,13 @@ public class LookupService {
 
     public LookupDTO deleteLookup(String lookupName) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        
+
         long deletedCount = collection.deleteOne(Filters.eq("_id", lookupName)).getDeletedCount();
 
         if (deletedCount == 0) {
-            throw new NoSuchElementException("Lookup with name '" + lookupName + "' not found");
+            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
         }
-        
+
         return LookupDTO.builder()
                 .success(true)
                 .lookupName(lookupName)
@@ -260,11 +262,11 @@ public class LookupService {
             String lookupName = doc.getString("lookupName");
             Date uploadedAt = doc.getDate("uploadedAt");
             Integer recordCount = doc.getInteger("recordCount");
-            
+
             // Handle the data field (List of Maps)
             @SuppressWarnings("unchecked")
             List<Map<String, String>> data = (List<Map<String, String>>) doc.get("data");
-            
+
             return Lookup.builder()
                     .id(id)
                     .lookupName(lookupName)
@@ -272,12 +274,12 @@ public class LookupService {
                     .uploadedAt(uploadedAt)
                     .recordCount(recordCount != null ? recordCount : 0)
                     .build();
-                    
+
         } catch (Exception e) {
             // Log the actual error for debugging
             log.error("Error converting document to Lookup", e);
             log.error("Document JSON: {}", doc.toJson());
-            throw new RuntimeException("Failed to convert document to Lookup: " + e.getMessage(), e);
+            throw new CsvProcessingException("Failed to convert document to Lookup: " + e.getMessage(), e);
         }
     }
 }
