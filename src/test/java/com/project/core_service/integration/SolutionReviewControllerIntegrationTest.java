@@ -346,6 +346,24 @@ class SolutionReviewControllerIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
+        @DisplayName("Should retrieve business capabilities for diagram")
+        @Description("Fetches active solution reviews with business capability information")
+        @Severity(SeverityLevel.NORMAL)
+        void shouldRetrieveBusinessCapabilitiesForDiagram() throws Exception {
+            // Given - create ACTIVE reviews only
+            createAndSaveSolutionReview("SYS-A", DocumentState.ACTIVE);
+            createAndSaveSolutionReview("SYS-B", DocumentState.ACTIVE);
+            createAndSaveSolutionReview("SYS-C", DocumentState.DRAFT);
+
+            // When & Then - should only return ACTIVE reviews
+            mockMvc.perform(get("/api/v1/solution-review/business-capabilities")
+                    .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$", hasSize(2)))
+                    .andExpect(jsonPath("$[*].systemCode", containsInAnyOrder("SYS-A", "SYS-B")));
+        }
+
+        @Test
         @DisplayName("Should retrieve paginated system view")
         @Description("Fetches representative reviews for each system with pagination")
         @Severity(SeverityLevel.NORMAL)
