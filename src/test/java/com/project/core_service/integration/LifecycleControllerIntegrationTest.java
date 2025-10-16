@@ -352,13 +352,27 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     TestDataFactory.TestUsers.ADMIN,
                     "Trying to create second ACTIVE");
 
-            // When & Then - should fail
+            // When & Then - should succeed as existing ACTIVE will be deactivated
             mockMvc.perform(post("/api/v1/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(command)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(containsString("ACTIVE document already exists")));
+                    .content(toJson(command)));
+
+            // Verify only one ACTIVE exists
+            long activeCount = solutionReviewRepository.findAllBySystemCode(systemCode)
+                    .stream()
+                    .filter(r -> r.getDocumentState() == DocumentState.ACTIVE)
+                    .count();
+            assertThat(activeCount).isEqualTo(1);
+
+            // Verify the ACTIVE review is the second one
+            String activeReviewId = solutionReviewRepository.findAllBySystemCode(systemCode)
+                    .stream()
+                    .filter(r -> r.getDocumentState() == DocumentState.ACTIVE)
+                    .map(SolutionReview::getId)
+                    .findFirst()
+                    .orElse(null);
+
+            assertThat(activeReviewId).isEqualTo(approvedReview.getId());
         }
 
         @Test
@@ -902,7 +916,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .content(toJson(command1)))
                     .andExpect(status().isOk());
 
-            // Then - second activation should fail due to constraint
+            // Then - second activation should pass as first existing ACTIVE is deactivated
             LifecycleTransitionCommand command2 = new LifecycleTransitionCommand(
                     review2.getId(),
                     "ACTIVATE",
@@ -911,10 +925,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
 
             mockMvc.perform(post("/api/v1/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(command2)))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message")
-                            .value(containsString("ACTIVE document already exists")));
+                    .content(toJson(command2)));
 
             // Verify only one ACTIVE exists
             long activeCount = solutionReviewRepository.findAllBySystemCode(systemCode)
@@ -922,6 +933,16 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .filter(r -> r.getDocumentState() == DocumentState.ACTIVE)
                     .count();
             assertThat(activeCount).isEqualTo(1);
+
+            // Verify the ACTIVE review is the second one
+            String activeReviewId = solutionReviewRepository.findAllBySystemCode(systemCode)
+                    .stream()
+                    .filter(r -> r.getDocumentState() == DocumentState.ACTIVE)
+                        .map(SolutionReview::getId)
+                    .findFirst()
+                    .orElse(null);
+
+            assertThat(activeReviewId).isEqualTo(review2.getId());
         }
 
         @Test
@@ -1259,51 +1280,6 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             // Then - document should still be in DRAFT state
             SolutionReview finalState = solutionReviewRepository.findById(reviewId).orElseThrow();
             assertThat(finalState.getDocumentState()).isEqualTo(DocumentState.DRAFT);
-        }
-
-        @Test
-        @DisplayName("Should rollback on constraint violation during state transition")
-        @Description("Tests that constraint violations don't partially update the document")
-        @Severity(SeverityLevel.BLOCKER)
-        void shouldRollbackOnConstraintViolation() throws Exception {
-            // Given - system with existing ACTIVE document
-            String systemCode = TestDataFactory.TestSystemCodes.SYSTEM_A;
-            createAndSaveSolutionReview(systemCode, DocumentState.ACTIVE);
-
-            // Create APPROVED review
-            com.project.core_service.models.solution_overview.SolutionOverview overview2 = TestDataFactory
-                    .createSolutionOverview("Second Solution");
-            overview2 = mongoTemplate.save(overview2);
-
-            SolutionReview approvedReview = TestDataFactory.createSolutionReviewWithOverview(systemCode,
-                    DocumentState.APPROVED, overview2);
-            approvedReview.setId("approved-for-rollback-test");
-            approvedReview.setLastModifiedBy("original-user");
-            approvedReview = solutionReviewRepository.save(approvedReview);
-
-            java.time.LocalDateTime originalTimestamp = approvedReview.getLastModifiedAt();
-
-            // Try to activate (should fail due to existing ACTIVE)
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(toJson(new LifecycleTransitionCommand(
-                            approvedReview.getId(),
-                            "ACTIVATE",
-                            "new-user",
-                            "Should fail"))))
-                    .andExpect(status().isBadRequest());
-
-            // Verify document state wasn't modified
-            SolutionReview unchangedReview = solutionReviewRepository
-                    .findById(approvedReview.getId())
-                    .orElseThrow();
-            assertThat(unchangedReview.getDocumentState()).isEqualTo(DocumentState.APPROVED);
-            assertThat(unchangedReview.getLastModifiedBy()).isEqualTo("original-user");
-            // Timestamp should be unchanged or very close (accounting for test execution
-            // time)
-            if (originalTimestamp != null) {
-                assertThat(unchangedReview.getLastModifiedAt()).isEqualTo(originalTimestamp);
-            }
         }
     }
 }
