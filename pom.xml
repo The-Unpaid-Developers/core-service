@@ -96,6 +96,18 @@
 		<version>2.24.0</version>
 		<scope>test</scope>
 	</dependency>
+	<!-- Apache Commons CSV for CSV parsing -->
+	<dependency>
+		<groupId>org.apache.commons</groupId>
+		<artifactId>commons-csv</artifactId>
+		<version>1.10.0</version>
+	</dependency>
+
+	<!-- Jackson for JSON processing -->
+	<dependency>
+		<groupId>com.fasterxml.jackson.core</groupId>
+		<artifactId>jackson-databind</artifactId>
+	</dependency>
 	</dependencies>
 
 	<build>

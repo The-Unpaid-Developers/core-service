@@ -296,22 +296,14 @@ class BusinessCapabilityDiagramDTOTest {
         @DisplayName("Should not be equal when compared to null")
         void shouldNotBeEqualWhenComparedToNull() {
             // Act & Assert
-            assertNotEquals(dto, null);
+            assertNotEquals(null, dto);
         }
 
         @Test
         @DisplayName("Should not be equal when compared to different type")
         void shouldNotBeEqualWhenComparedToDifferentType() {
             // Act & Assert
-            assertNotEquals(dto, "not a DTO");
-        }
-
-        @Test
-        @DisplayName("Should be equal to itself")
-        void shouldBeEqualToItself() {
-            // Act & Assert
-            assertEquals(dto, dto);
-            assertEquals(dto.hashCode(), dto.hashCode());
+            assertNotEquals("not a DTO", dto);
         }
     }
 
