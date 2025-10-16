@@ -43,7 +43,7 @@ jobs:
       - name: Run unit tests (excluding integration tests)
         run: |
           mvn clean test \
-            -Dtest='!*IntegrationTest' \
+            -Dtest='!**/*IntegrationTest,!**/integration/**' \
             -Dspring.profiles.active=test
         # Excludes all *IntegrationTest files
 
