@@ -7,6 +7,9 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.exceptions.CsvProcessingException;
+import com.project.core_service.exceptions.InvalidFileException;
+import com.project.core_service.exceptions.NotFoundException;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,8 +89,8 @@ class LookupServiceTest {
         MockMultipartFile emptyFile = new MockMultipartFile("file", "test.csv", "text/csv", new byte[0]);
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
+        InvalidFileException exception = assertThrows(
+            InvalidFileException.class,
             () -> lookupService.processCsvFile(emptyFile, "test")
         );
         assertEquals("file parameter is required and cannot be empty", exception.getMessage());
@@ -97,15 +100,15 @@ class LookupServiceTest {
     void processCsvFile_InvalidFileType_ThrowsException() {
         // Arrange
         MockMultipartFile txtFile = new MockMultipartFile(
-            "file", 
-            "test.txt", 
-            "text/plain", 
+            "file",
+            "test.txt",
+            "text/plain",
             "some content".getBytes()
         );
 
         // Act & Assert
-        IllegalArgumentException exception = assertThrows(
-            IllegalArgumentException.class,
+        InvalidFileException exception = assertThrows(
+            InvalidFileException.class,
             () -> lookupService.processCsvFile(txtFile, "test")
         );
         assertEquals("File must be a CSV file", exception.getMessage());
@@ -146,11 +149,11 @@ class LookupServiceTest {
         when(file.getInputStream()).thenThrow(new IOException("IO Error"));
 
         // Act & Assert
-        Exception exception = assertThrows(
-            Exception.class,
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
             () -> lookupService.processCsvFile(file, "test")
         );
-        assertTrue(exception instanceof RuntimeException || exception.getCause() instanceof RuntimeException);
+        assertTrue(exception.getMessage().contains("Error parsing CSV file"));
     }
 
     @Test
@@ -208,8 +211,8 @@ class LookupServiceTest {
         when(findIterable.first()).thenReturn(null);
 
         // Act & Assert
-        NoSuchElementException exception = assertThrows(
-            NoSuchElementException.class,
+        NotFoundException exception = assertThrows(
+            NotFoundException.class,
             () -> lookupService.getLookupByName("non-existent")
         );
         assertTrue(exception.getMessage().contains("not found"));
@@ -238,14 +241,14 @@ class LookupServiceTest {
     void deleteLookup_NonExistentLookup_ThrowsException() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        
+
         DeleteResult deleteResult = mock(DeleteResult.class);
         when(deleteResult.getDeletedCount()).thenReturn(0L);
         when(mongoCollection.deleteOne(any(Bson.class))).thenReturn(deleteResult);
 
         // Act & Assert
-        NoSuchElementException exception = assertThrows(
-            NoSuchElementException.class,
+        NotFoundException exception = assertThrows(
+            NotFoundException.class,
             () -> lookupService.deleteLookup("non-existent")
         );
         assertTrue(exception.getMessage().contains("not found"));
