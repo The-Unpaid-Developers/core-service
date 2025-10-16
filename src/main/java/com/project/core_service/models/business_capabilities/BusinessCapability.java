@@ -17,7 +17,12 @@ public class BusinessCapability {
     @Id
     private String id;
 
-    private String remarks;
+    private L1Capability l1Capability;
 
-    private List<Capability> capabilities;
+    private L2Capability l2Capability;
+
+    private L3Capability l3Capability;
+
+    private String remarks;
+    
 }

@@ -9,6 +9,7 @@ import com.project.core_service.repositories.SolutionReviewRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,12 +36,15 @@ public class SolutionReviewLifecycleService {
 
     /**
      * Executes a lifecycle transition for a SolutionReview document.
+     * Uses transaction management to ensure atomicity - if any part fails,
+     * all changes are rolled back to maintain data consistency.
      * 
      * @param command the transition command containing document ID, operation, and
      *                user info
      * @throws IllegalStateTransitionException if the transition is not allowed
      * @throws NotFoundException               if the document is not found
      */
+    @Transactional
     public void executeTransition(LifecycleTransitionCommand command) {
         log.info("Executing lifecycle transition: operation={}, documentId={}, user={}",
                 command.getOperation(), command.getDocumentId(), command.getModifiedBy());
@@ -113,7 +117,12 @@ public class SolutionReviewLifecycleService {
 
         DocumentState targetState = operation.getTargetState();
 
-        // Validate constraints for transitions TO different states
+        // For ACTIVATE operation, deactivate existing active SRs first
+        if (operation == DocumentState.StateOperation.ACTIVATE) {
+            deactivateExistingActiveSR(solutionReview, modifiedBy);
+        }
+
+        // Validate constraints for transitions to states that require exclusivity
         if (targetState.requiresExclusiveConstraint()) {
             // Use excludeId to allow the current document to remain during the transition
             solutionReviewService.validateExclusiveStateConstraint(
@@ -147,6 +156,33 @@ public class SolutionReviewLifecycleService {
                 break;
             default:
                 throw new IllegalArgumentException("Unknown operation: " + operation);
+        }
+    }
+
+    /**
+     * Helper method to deactivate any existing active Solution Review with the same systemCode
+     * before activating a new one. This ensures only one SR per systemCode can be active at a time.
+     * 
+     * @param currentSolutionReview the solution review that is about to be activated
+     * @param modifiedBy the user performing the operation
+     */
+    private void deactivateExistingActiveSR(SolutionReview currentSolutionReview, String modifiedBy) {
+        String systemCode = currentSolutionReview.getSystemCode();
+        
+        // Find any existing active SR with the same systemCode
+        SolutionReview existingActiveSR = solutionReviewRepository
+            .findBySystemCodeAndDocumentState(systemCode, DocumentState.ACTIVE)
+            .orElse(null);
+        
+        if (existingActiveSR != null && !existingActiveSR.getId().equals(currentSolutionReview.getId())) {
+            log.info("Found existing active Solution Review with ID: {} for systemCode: {}. Marking as outdated.", 
+                existingActiveSR.getId(), systemCode);
+            
+            // Transition the existing active SR to outdated
+            existingActiveSR.markAsOutdated(modifiedBy);
+            solutionReviewRepository.save(existingActiveSR);
+            
+            log.info("Successfully marked Solution Review {} as outdated", existingActiveSR.getId());
         }
     }
 
