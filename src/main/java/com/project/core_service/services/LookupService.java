@@ -22,13 +22,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Array;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class LookupService {
 
     private final MongoDatabase mongoDatabase;
-    private final ObjectMapper objectMapper;
 
     @Value("${mongodb.collection.lookups.name}")
     private String collectionName;
@@ -36,7 +39,6 @@ public class LookupService {
     @Autowired
     public LookupService(MongoDatabase mongoDatabase) {
         this.mongoDatabase = mongoDatabase;
-        this.objectMapper = new ObjectMapper();
     }
 
     public LookupDTO processCsvFile(MultipartFile file, String lookupName) {
@@ -87,58 +89,97 @@ public class LookupService {
     }
 
     private List<Map<String, String>> parseCsvToJson(MultipartFile file) {
-        List<Map<String, String>> records = new ArrayList<>();
-        
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), "UTF-8"));
-            CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT
-                    .builder()
-                    .setHeader()
-                    .setSkipHeaderRecord(true)
-                    .setTrim(true)
-                    .build())) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8));
+            CSVParser csvParser = createCsvParser(reader)) {
             
             Map<String, Integer> headerMap = csvParser.getHeaderMap();
+            validateHeaders(headerMap);
             
-            if (headerMap.isEmpty()) {
-                throw new IllegalArgumentException("CSV file must contain headers");
-            }
+            Map<String, String> cleanHeaderMap = buildCleanHeaderMap(headerMap);
+            List<Map<String, String>> records = parseRecords(csvParser, headerMap, cleanHeaderMap);
             
-            // Clean headers to remove BOM and other invisible characters
-            Map<String, String> cleanHeaderMap = new HashMap<>();
-            for (String header : headerMap.keySet()) {
-                String cleanHeader = header.replaceAll("^\uFEFF", "") 
-                                        .replaceAll("[\u200B-\u200D\uFEFF]", "")
-                                        .trim();
-                cleanHeaderMap.put(header, cleanHeader);
-            }
+            validateRecords(records);
+            return records;
             
-            for (CSVRecord csvRecord : csvParser) {
-                Map<String, String> record = new HashMap<>();
-                for (Map.Entry<String, Integer> headerEntry : headerMap.entrySet()) {
-                    String originalHeader = headerEntry.getKey();
-                    String cleanHeader = cleanHeaderMap.get(originalHeader);
-                    int index = headerEntry.getValue();
-                    
-                    if (index < csvRecord.size()) {
-                        String value = csvRecord.get(index);
-                        record.put(cleanHeader, value != null ? value.trim() : "");
-                    }
-                }
-                records.add(record);
-            }
-            
-            if (records.isEmpty()) {
-                throw new IllegalArgumentException("CSV file contains no data rows");
-            }
-            
+        } catch (IllegalArgumentException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof IllegalArgumentException) {
-                throw (IllegalArgumentException) e;
-            }
             throw new RuntimeException("Error parsing CSV file: " + e.getMessage(), e);
+        }
+    }
+
+    private CSVParser createCsvParser(BufferedReader reader) throws Exception {
+        return new CSVParser(reader, CSVFormat.DEFAULT
+                .builder()
+                .setHeader()
+                .setSkipHeaderRecord(true)
+                .setTrim(true)
+                .build());
+    }
+
+    private void validateHeaders(Map<String, Integer> headerMap) {
+        if (headerMap.isEmpty()) {
+            throw new IllegalArgumentException("CSV file must contain headers");
+        }
+    }
+
+    private Map<String, String> buildCleanHeaderMap(Map<String, Integer> headerMap) {
+        Map<String, String> cleanHeaderMap = new HashMap<>();
+        for (String header : headerMap.keySet()) {
+            String cleanHeader = cleanHeader(header);
+            cleanHeaderMap.put(header, cleanHeader);
+        }
+        return cleanHeaderMap;
+    }
+
+    private String cleanHeader(String header) {
+        return header.replaceAll("^\uFEFF", "") 
+                    .replaceAll("[\u200B-\u200D\uFEFF]", "")
+                    .trim();
+    }
+
+    private List<Map<String, String>> parseRecords(CSVParser csvParser, 
+                                                    Map<String, Integer> headerMap, 
+                                                    Map<String, String> cleanHeaderMap) {
+        List<Map<String, String>> records = new ArrayList<>();
+        
+        for (CSVRecord csvRecord : csvParser) {
+            Map<String, String> parsedRecord = parseRecord(csvRecord, headerMap, cleanHeaderMap);
+            records.add(parsedRecord);
         }
         
         return records;
+    }
+
+    private Map<String, String> parseRecord(CSVRecord csvRecord, 
+                                        Map<String, Integer> headerMap, 
+                                        Map<String, String> cleanHeaderMap) {
+        Map<String, String> headerRecord = new HashMap<>();
+        
+        for (Map.Entry<String, Integer> headerEntry : headerMap.entrySet()) {
+            String originalHeader = headerEntry.getKey();
+            String cleanHeader = cleanHeaderMap.get(originalHeader);
+            int index = headerEntry.getValue();
+            
+            String value = extractValue(csvRecord, index);
+            headerRecord.put(cleanHeader, value);
+        }
+        
+        return headerRecord;
+    }
+
+    private String extractValue(CSVRecord csvRecord, int index) {
+        if (index < csvRecord.size()) {
+            String value = csvRecord.get(index);
+            return value != null ? value.trim() : "";
+        }
+        return "";
+    }
+
+    private void validateRecords(List<Map<String, String>> records) {
+        if (records.isEmpty()) {
+            throw new IllegalArgumentException("CSV file contains no data rows");
+        }
     }
 
     private void saveToMongoDB(Lookup lookup) {
@@ -234,8 +275,8 @@ public class LookupService {
                     
         } catch (Exception e) {
             // Log the actual error for debugging
-            System.err.println("Error converting document: " + e.getMessage());
-            System.err.println("Document: " + doc.toJson());
+            log.error("Error converting document to Lookup", e);
+            log.error("Document JSON: {}", doc.toJson());
             throw new RuntimeException("Failed to convert document to Lookup: " + e.getMessage(), e);
         }
     }

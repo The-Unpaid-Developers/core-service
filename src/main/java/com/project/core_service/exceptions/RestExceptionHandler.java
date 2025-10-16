@@ -2,7 +2,6 @@ package com.project.core_service.exceptions;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -18,8 +17,6 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.MaxUploadSizeExceededException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,20 +41,6 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     private static final String MESSAGE = "message";
     private static final String PATH = "path";
     private static final String STATUS = "status";
-
-    /**
-     * Handles cases where an uploaded file exceeds the maximum allowed size.
-     *
-     * @param exc the exception
-     * @return a {@link ResponseEntity} with error details
-     */
-    // @ExceptionHandler(MaxUploadSizeExceededException.class)
-    // public ResponseEntity<?> handleMaxSizeException(MaxUploadSizeExceededException exc) {
-    //     Map<String, Object> error = new HashMap<>();
-    //     error.put("error", "File too large");
-    //     error.put("message", "File size exceeds maximum limit");
-    //     return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(error);
-    // }
 
     /**
      * Handles uncaught {@link IllegalArgumentException}s.

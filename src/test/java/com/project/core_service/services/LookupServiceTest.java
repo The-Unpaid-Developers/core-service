@@ -7,7 +7,6 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.project.core_service.dto.LookupDTO;
-import com.project.core_service.models.lookup.Lookup;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +23,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +52,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_ValidCsv_Success() throws Exception {
+    void processCsvFile_ValidCsv_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
         
