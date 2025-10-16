@@ -113,12 +113,13 @@ public abstract class BaseIntegrationTest {
     /**
      * Configures the MongoDB connection string dynamically based on the
      * TestContainer.
-     * 
+     *
      * @param registry the dynamic property registry
      */
     @DynamicPropertySource
     static void setProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
+        registry.add("mongodb.connection.lookups.string", mongoDBContainer::getReplicaSetUrl);
     }
 
     /**
