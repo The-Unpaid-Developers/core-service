@@ -9,8 +9,13 @@ import static org.mockito.Mockito.*;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
+import com.project.core_service.dto.BusinessCapabilityDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
+import com.project.core_service.models.business_capabilities.BusinessCapability;
+import com.project.core_service.models.business_capabilities.L1Capability;
+import com.project.core_service.models.business_capabilities.L2Capability;
+import com.project.core_service.models.business_capabilities.L3Capability;
 import com.project.core_service.models.integration_flow.CounterpartSystemRole;
 import com.project.core_service.models.integration_flow.IntegrationFlow;
 import com.project.core_service.models.integration_flow.IntegrationMethod;
@@ -943,6 +948,291 @@ class SolutionReviewServiceTest {
         assertEquals(activeReview.getSystemCode(), dto.getSystemCode());
         assertEquals(activeReview.getSolutionOverview(), dto.getSolutionOverview());
         assertEquals(activeReview.getIntegrationFlows(), dto.getIntegrationFlows());
+
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    // Tests for getBusinessCapabilitySolutionReviews method
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldReturnActiveSolutionReviews() {
+        // Arrange
+        SolutionReview activeReview1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(List.of())
+                .build();
+
+        SolutionReview activeReview2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(List.of())
+                .build();
+
+        List<SolutionReview> activeSolutionReviews = List.of(activeReview1, activeReview2);
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(activeSolutionReviews);
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(2, result.size());
+
+        BusinessCapabilityDTO dto1 = result.get(0);
+        assertEquals("SYS-123", dto1.getSystemCode());
+        assertEquals(overview, dto1.getSolutionOverview());
+        assertEquals(List.of(), dto1.getBusinessCapabilities());
+
+        BusinessCapabilityDTO dto2 = result.get(1);
+        assertEquals("SYS-456", dto2.getSystemCode());
+        assertEquals(overview, dto2.getSolutionOverview());
+        assertEquals(List.of(), dto2.getBusinessCapabilities());
+
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldReturnEmptyListWhenNoActiveReviews() {
+        // Arrange
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of());
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertTrue(result.isEmpty());
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldIncludeBusinessCapabilitiesWhenPresent() {
+        // Arrange
+        List<BusinessCapability> businessCapabilities = List.of(
+                BusinessCapability.builder()
+                        .id("bc-1")
+                        .l1Capability(L1Capability.UNKNOWN)
+                        .l2Capability(L2Capability.UNKNOWN)
+                        .l3Capability(L3Capability.UNKNOWN)
+                        .remarks("Customer management capabilities")
+                        .build(),
+                BusinessCapability.builder()
+                        .id("bc-2")
+                        .l1Capability(L1Capability.UNKNOWN)
+                        .l2Capability(L2Capability.UNKNOWN)
+                        .l3Capability(L3Capability.UNKNOWN)
+                        .remarks("Order processing capabilities")
+                        .build());
+
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-789")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(businessCapabilities)
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        BusinessCapabilityDTO dto = result.get(0);
+        assertEquals("SYS-789", dto.getSystemCode());
+        assertEquals(overview, dto.getSolutionOverview());
+        assertEquals(businessCapabilities, dto.getBusinessCapabilities());
+        assertEquals(2, dto.getBusinessCapabilities().size());
+        assertEquals("bc-1", dto.getBusinessCapabilities().get(0).getId());
+        assertEquals("Customer management capabilities", dto.getBusinessCapabilities().get(0).getRemarks());
+
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldOnlyReturnActiveDocumentState() {
+        // Arrange
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-active")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        // Create reviews with other document states (these should not be returned)
+        // We don't need to store these in variables as they're only for documentation
+
+        // Only return the active review from repository
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        assertEquals("SYS-123", result.get(0).getSystemCode());
+
+        // Verify only ACTIVE state was queried
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.DRAFT);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.APPROVED);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.SUBMITTED);
+        verify(solutionReviewRepository, never()).findByDocumentState(DocumentState.OUTDATED);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldHandleMultipleActiveReviewsWithDifferentData() {
+        // Arrange
+        List<BusinessCapability> businessCapabilities1 = List.of(
+                BusinessCapability.builder()
+                        .id("bc-1")
+                        .l1Capability(L1Capability.UNKNOWN)
+                        .l2Capability(L2Capability.UNKNOWN)
+                        .l3Capability(L3Capability.UNKNOWN)
+                        .remarks("Customer management capabilities")
+                        .build());
+
+        List<BusinessCapability> businessCapabilities2 = List.of(
+                BusinessCapability.builder()
+                        .id("bc-2")
+                        .l1Capability(L1Capability.UNKNOWN)
+                        .l2Capability(L2Capability.UNKNOWN)
+                        .l3Capability(L3Capability.UNKNOWN)
+                        .remarks("Order processing capabilities")
+                        .build(),
+                BusinessCapability.builder()
+                        .id("bc-3")
+                        .l1Capability(L1Capability.UNKNOWN)
+                        .l2Capability(L2Capability.UNKNOWN)
+                        .l3Capability(L3Capability.UNKNOWN)
+                        .remarks("Inventory management capabilities")
+                        .build());
+
+        SolutionOverview overview2 = SolutionOverview.newDraftBuilder()
+                .id("id-002")
+                .solutionDetails(dummySolutionDetails())
+                .reviewedBy("ReviewerName2")
+                .businessUnit(BusinessUnit.UNKNOWN)
+                .businessDriver(BusinessDriver.REGULATORY)
+                .valueOutcome("Different outcome")
+                .applicationUsers(dummyApplicationUsers())
+                .concerns(dummyConcerns())
+                .build();
+
+        SolutionReview activeReview1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(businessCapabilities1)
+                .build();
+
+        SolutionReview activeReview2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview2)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(businessCapabilities2)
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview1, activeReview2));
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(2, result.size());
+
+        // First review
+        BusinessCapabilityDTO dto1 = result.get(0);
+        assertEquals("SYS-123", dto1.getSystemCode());
+        assertEquals(overview, dto1.getSolutionOverview());
+        assertEquals(1, dto1.getBusinessCapabilities().size());
+        assertEquals("bc-1", dto1.getBusinessCapabilities().get(0).getId());
+
+        // Second review
+        BusinessCapabilityDTO dto2 = result.get(1);
+        assertEquals("SYS-456", dto2.getSystemCode());
+        assertEquals(overview2, dto2.getSolutionOverview());
+        assertEquals(2, dto2.getBusinessCapabilities().size());
+        assertEquals("bc-2", dto2.getBusinessCapabilities().get(0).getId());
+        assertEquals("bc-3", dto2.getBusinessCapabilities().get(1).getId());
+
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldPreserveOrderFromRepository() {
+        // Arrange
+        SolutionReview review1 = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-AAA")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        SolutionReview review2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-ZZZ")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        SolutionReview review3 = SolutionReview.newDraftBuilder()
+                .id("rev-3")
+                .systemCode("SYS-MMM")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        // Repository returns in specific order
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(review2, review1, review3)); // ZZZ, AAA, MMM
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(3, result.size());
+        assertEquals("SYS-ZZZ", result.get(0).getSystemCode());
+        assertEquals("SYS-AAA", result.get(1).getSystemCode());
+        assertEquals("SYS-MMM", result.get(2).getSystemCode());
+
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
+    }
+
+    @Test
+    void getBusinessCapabilitySolutionReviews_ShouldUseCorrectFactoryMethod() {
+        // Arrange
+        SolutionReview activeReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .businessCapabilities(List.of())
+                .build();
+
+        when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE))
+                .thenReturn(List.of(activeReview));
+
+        // Act
+        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+
+        // Assert
+        assertEquals(1, result.size());
+        BusinessCapabilityDTO dto = result.get(0);
+
+        // Verify all three required fields are properly mapped
+        assertEquals(activeReview.getSystemCode(), dto.getSystemCode());
+        assertEquals(activeReview.getSolutionOverview(), dto.getSolutionOverview());
+        assertEquals(activeReview.getBusinessCapabilities(), dto.getBusinessCapabilities());
 
         verify(solutionReviewRepository).findByDocumentState(DocumentState.ACTIVE);
     }
