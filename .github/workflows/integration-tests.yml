@@ -28,6 +28,14 @@ jobs:
                   java-version: "21"
                   distribution: "temurin"
 
+            # Add Docker Buildx setup for Testcontainers
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            # Ensure Docker daemon is accessible
+            - name: Verify Docker
+              run: docker info
+
             - name: Cache Maven packages
               uses: actions/cache@v4
               with:
@@ -35,8 +43,20 @@ jobs:
                   key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
                   restore-keys: ${{ runner.os }}-m2
 
+            # Pre-pull MongoDB image to speed up tests
+            - name: Pull MongoDB image
+              run: docker pull mongo:7.0
+
             - name: Run integration tests
-              run: mvn clean test -Dtest="*IntegrationTest" -Dspring.profiles.active=test
+              env:
+                  # Testcontainers environment variables
+                  TESTCONTAINERS_RYUK_DISABLED: false
+                  TESTCONTAINERS_CHECKS_DISABLE: false
+              run: |
+                  mvn clean test \
+                    -Dtest="*IntegrationTest" \
+                    -Dspring.profiles.active=test \
+                    -Dtestcontainers.reuse.enable=false
 
             - name: Generate JaCoCo coverage report
               if: success() || failure()
@@ -84,3 +104,8 @@ jobs:
                   echo "✅ Integration tests completed!"
                   echo "📊 Coverage reports generated"
                   echo "📈 Target: 80%+ overall coverage"
+
+            # Cleanup Docker resources
+            - name: Cleanup Docker
+              if: always()
+              run: docker system prune -af --volumes
