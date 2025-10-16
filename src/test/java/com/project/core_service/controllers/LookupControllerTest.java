@@ -55,7 +55,7 @@ class LookupControllerTest {
             .thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/lookups/upload")
+        mockMvc.perform(multipart("/api/v1/lookups/upload")
                 .file(file)
                 .param("lookupName", "employees"))
             .andExpect(status().isOk())
@@ -66,7 +66,7 @@ class LookupControllerTest {
 
     @Test
     void uploadCsvFile_MissingFile_BadRequest() throws Exception {
-        mockMvc.perform(multipart("/api/lookups/upload")
+        mockMvc.perform(multipart("/api/v1/lookups/upload")
                 .param("lookupName", "test"))
             .andExpect(status().isBadRequest());
     }
@@ -85,7 +85,7 @@ class LookupControllerTest {
         when(lookupService.getAllLookups()).thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(get("/api/lookups"))
+        mockMvc.perform(get("/api/v1/lookups"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.totalLookups").value(2))
             .andExpect(jsonPath("$.lookups").isArray())
@@ -103,7 +103,7 @@ class LookupControllerTest {
         when(lookupService.getLookupByName(lookupName)).thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(get("/api/lookups/{lookupName}", lookupName))
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}", lookupName))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.lookups[0].id").value(lookupName))
             .andExpect(jsonPath("$.lookups[0].lookupName").value("Employee Data"));
@@ -122,7 +122,7 @@ class LookupControllerTest {
         when(lookupService.deleteLookup(lookupName)).thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(delete("/api/lookups/{lookupName}", lookupName))
+        mockMvc.perform(delete("/api/v1/lookups/{lookupName}", lookupName))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.lookupName").value(lookupName));
