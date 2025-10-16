@@ -334,31 +334,52 @@ public class SolutionReview {
                 .systemCode(original.systemCode)
                 .businessCapabilities(new ArrayList<>(original.businessCapabilities
                         .stream()
-                        .peek(businessCapability -> businessCapability.setId(null))
+                        .map(businessCapability -> {
+                            businessCapability.setId(null);
+                            return businessCapability;
+                        })
                         .toList()))
                 .systemComponents(new ArrayList<>(original.systemComponents
                         .stream()
-                        .peek(systemComponent -> systemComponent.setId(null))
+                        .map(systemComponent -> {
+                            systemComponent.setId(null);
+                            return systemComponent;
+                        })
                         .toList()))
                 .integrationFlows(new ArrayList<>(original.integrationFlows
                         .stream()
-                        .peek(integrationFlow -> integrationFlow.setId(null))
+                        .map(integrationFlow -> {
+                            integrationFlow.setId(null);
+                            return integrationFlow;
+                        })
                         .toList()))
                 .dataAssets(new ArrayList<>(original.dataAssets
                         .stream()
-                        .peek(dataAsset -> dataAsset.setId(null))
+                        .map(dataAsset -> {
+                            dataAsset.setId(null);
+                            return dataAsset;
+                        })
                         .toList()))
                 .technologyComponents(new ArrayList<>(original.technologyComponents
                         .stream()
-                        .peek(technologyComponent -> technologyComponent.setId(null))
+                        .map(technologyComponent -> {
+                            technologyComponent.setId(null);
+                            return technologyComponent;
+                        })
                         .toList()))
                 .enterpriseTools(new ArrayList<>(original.enterpriseTools
                         .stream()
-                        .peek(enterpriseTool -> enterpriseTool.setId(null))
+                        .map(enterpriseTool -> {
+                            enterpriseTool.setId(null);
+                            return enterpriseTool;
+                        })
                         .toList()))
                 .processCompliances(new ArrayList<>(original.processCompliances
                         .stream()
-                        .peek(processCompliant -> processCompliant.setId(null))
+                        .map(processCompliant -> {
+                            processCompliant.setId(null);
+                            return processCompliant;
+                        })
                         .toList()))
                 .createdAt(LocalDateTime.now())
                 .lastModifiedAt(LocalDateTime.now())

@@ -1,7 +1,6 @@
 package com.project.core_service.models.business_capabilities;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
@@ -28,9 +27,6 @@ public class BusinessCapabilityTest {
 
     @Test
     void testBusinessCapabilityBuilder() {
-        L1Capability l1 = L1Capability.UNKNOWN;
-        L2Capability l2 = L2Capability.UNKNOWN;
-        L3Capability l3 = L3Capability.UNKNOWN;
         BusinessCapability bc = BusinessCapability.builder()
                 .id("cap-123")
                 .l1Capability(l1)
@@ -44,7 +40,6 @@ public class BusinessCapabilityTest {
         assertEquals(l2, bc.getL2Capability());
         assertEquals(l3, bc.getL3Capability());
     }
-
 
     @Test
     void shouldRespectEqualsAndHashCode() {
@@ -64,8 +59,9 @@ public class BusinessCapabilityTest {
                 "Handles UNKNOWN operations"
                 );
 
-        assertThat(a).isEqualTo(b);
-        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a)
+                .isEqualTo(b)
+                .hasSameHashCodeAs(b);
     }
 
 }

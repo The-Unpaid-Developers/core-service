@@ -130,11 +130,13 @@ public class SolutionReviewService {
         return solutionReviewRepository.findAllBySystemCode(systemCode);
     }
 
-     /**
+    /**
      * Retrieves a paginated view of solution reviews grouped by system.
      *
-     * <p>For each system, if an approved solution review exists, it is returned.
-     * Otherwise, the latest solution review for the system is returned.</p>
+     * <p>
+     * For each system, if an approved solution review exists, it is returned.
+     * Otherwise, the latest solution review for the system is returned.
+     * </p>
      *
      * @param pageable the pagination information
      * @return a {@link Page} of solution reviews, one per system
@@ -144,10 +146,10 @@ public class SolutionReviewService {
 
         // Get ALL representative reviews first
         List<SolutionReview> allRepresentativeReviews = allSystemCodes.stream()
-            .map(this::getRepresentativeReviewForSystem)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
+                .map(this::getRepresentativeReviewForSystem)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
 
         // Apply pagination AFTER filtering
         int total = allRepresentativeReviews.size();
@@ -164,20 +166,20 @@ public class SolutionReviewService {
 
     private Optional<SolutionReview> getRepresentativeReviewForSystem(String systemCode) {
         Optional<SolutionReview> activeReview = solutionReviewRepository.findActiveBySystemCode(systemCode);
-        
+
         if (activeReview.isPresent()) {
             return activeReview;
         }
-        
+
         List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(
-            systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt")
-        );
-        
+                systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+
         return reviews.isEmpty() ? Optional.empty() : Optional.of(reviews.get(0));
     }
 
     /**
-     * Retrieves all {@link SolutionReview} entries with a specific document state, with pagination.
+     * Retrieves all {@link SolutionReview} entries with a specific document state,
+     * with pagination.
      *
      * @param documentState the document state used for filtering
      * @param pageable      the pagination information
@@ -185,23 +187,24 @@ public class SolutionReviewService {
      */
     public Page<SolutionReview> getSolutionReviewsByDocumentState(String documentStateStr, Pageable pageable) {
         if (documentStateStr == null || documentStateStr.trim().isEmpty()) {
-            throw new IllegalArgumentException("Invalid document state: " + documentStateStr + 
-                ". Valid values: " + Arrays.toString(DocumentState.values()));
+            throw new IllegalArgumentException("Invalid document state: " + documentStateStr +
+                    ". Valid values: " + Arrays.toString(DocumentState.values()));
         }
         DocumentState documentState;
         try {
             documentState = DocumentState.valueOf(documentStateStr.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid document state: " + documentStateStr + 
-                ". Valid values: " + Arrays.toString(DocumentState.values()));
+            throw new IllegalArgumentException("Invalid document state: " + documentStateStr +
+                    ". Valid values: " + Arrays.toString(DocumentState.values()));
         }
-        
+
         return solutionReviewRepository.findByDocumentState(documentState, pageable);
     }
 
     /**
      * Retrieves all {@link SolutionReview} entries with ACTIVE document state.
-     * Returns only the essential fields: systemCode, solutionOverview, and integrationFlows.
+     * Returns only the essential fields: systemCode, solutionOverview, and
+     * integrationFlows.
      *
      * @return a {@link List} of active solution reviews with limited fields
      */
@@ -209,7 +212,7 @@ public class SolutionReviewService {
         List<SolutionReview> activeSolutionReviews = solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE);
         return activeSolutionReviews.stream()
                 .map(SystemDependencyDTO::fromSolutionReview)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -281,19 +284,6 @@ public class SolutionReviewService {
         return solutionReviewRepository.insert(solutionReview);
     }
 
-    private static String getNewId(String systemCode, List<SolutionReview> solutionReviews) {
-        if (solutionReviews.isEmpty()) {
-            throw new NotFoundException("System " + systemCode + " does not exist");
-        }
-
-        if (solutionReviews.getFirst().getDocumentState().ordinal() < DocumentState.ACTIVE.ordinal()) {
-            throw new IllegalOperationException("A SUBMITTED or DRAFT review already exists for system " + systemCode);
-        }
-
-        SolutionReview lastReview = solutionReviews.getFirst();
-        return lastReview.getId().replaceAll("-\\d+$", "") + "-" + (Integer.parseInt(lastReview.getId().replaceAll("^.*-(\\d+)$", "$1")) + 1);
-    }
-
     /**
      * Updates an existing {@link SolutionReview} with partial update logic.
      *
@@ -346,14 +336,17 @@ public class SolutionReviewService {
     }
 
     /**
-     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED state.
+     * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED
+     * state.
      *
-     * The solution review must be in SUBMITTED state for this operation to be allowed.
+     * The solution review must be in SUBMITTED state for this operation to be
+     * allowed.
      *
      * @param modifiedSolutionReview the DTO containing the updated concerns
      * @return the updated solution review
-     * @throws NotFoundException if no solution review exists with the given ID
-     * @throws IllegalStateException if the solution review is not in SUBMITTED state
+     * @throws NotFoundException     if no solution review exists with the given ID
+     * @throws IllegalStateException if the solution review is not in SUBMITTED
+     *                               state
      */
     public SolutionReview updateSolutionReviewConcerns(SolutionReviewDTO modifiedSolutionReview) {
         if (modifiedSolutionReview == null) {
@@ -402,7 +395,7 @@ public class SolutionReviewService {
         dataAssetRepository.deleteAll(solutionReview.getDataAssets());
         technologyComponentRepository.deleteAll(solutionReview.getTechnologyComponents());
         toolRepository.deleteAll(
-                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).collect(Collectors.toList()));
+                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).toList());
         enterpriseToolRepository.deleteAll(solutionReview.getEnterpriseTools());
         processCompliantRepository.deleteAll(solutionReview.getProcessCompliances());
         if (solutionReview.getSolutionOverview().getConcerns() != null) {
@@ -463,7 +456,7 @@ public class SolutionReviewService {
         if (excludeId != null) {
             existingDocs = existingDocs.stream()
                     .filter(doc -> !doc.getId().equals(excludeId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (!existingDocs.isEmpty()) {
@@ -505,7 +498,7 @@ public class SolutionReviewService {
         if (excludeId != null) {
             activeDocs = activeDocs.stream()
                     .filter(doc -> !doc.getId().equals(excludeId))
-                    .collect(Collectors.toList());
+                    .toList();
         }
 
         if (!activeDocs.isEmpty()) {

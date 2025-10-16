@@ -4,15 +4,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class ToolTest {
+class ToolTest {
 
     @Test
     void shouldCreateToolSuccessfully() {
         Tool tool = new Tool(
                 "tool-001",
                 "Jira",
-                ToolType.DEVOPS
-        );
+                ToolType.DEVOPS);
 
         assertThat(tool.getId()).isEqualTo("tool-001");
         assertThat(tool.getName()).isEqualTo("Jira");
@@ -24,8 +23,7 @@ public class ToolTest {
         assertThatThrownBy(() -> new Tool(
                 "tool-001",
                 null, // name
-                ToolType.DEVOPS
-        )).isInstanceOf(NullPointerException.class);
+                ToolType.DEVOPS)).isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new Tool(
                 "tool-001",
@@ -39,17 +37,16 @@ public class ToolTest {
         Tool a = new Tool(
                 "tool-002",
                 "Jira",
-                ToolType.DEVOPS
-        );
+                ToolType.DEVOPS);
 
         Tool b = new Tool(
                 "tool-002",
                 "Jira",
-                ToolType.DEVOPS
-        );
+                ToolType.DEVOPS);
 
-        assertThat(a).isEqualTo(b);
-        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a)
+                .isEqualTo(b)
+                .hasSameHashCodeAs(b);
     }
 
     @Test
@@ -57,14 +54,12 @@ public class ToolTest {
         Tool tool = new Tool(
                 "tool-003",
                 "Confluence",
-                ToolType.DEVOPS
-        );
+                ToolType.DEVOPS);
 
         String output = tool.toString();
         assertThat(output).contains(
                 "tool-003",
                 "Confluence",
-                "DEVOPS"
-        );
+                "DEVOPS");
     }
 }

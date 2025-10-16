@@ -3,8 +3,7 @@ package com.project.core_service.models.solution_overview;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-
-public class SolutionDetailsTest {
+class SolutionDetailsTest {
 
     @Test
     void testConstructorAndGetters() {
@@ -14,8 +13,7 @@ public class SolutionDetailsTest {
                 "AWG123",
                 "Alice Architect",
                 "Bob PM",
-                "Partner1"
-        );
+                "Partner1");
 
         assertEquals("Awesome Solution", details.getSolutionName());
         assertEquals("Project Phoenix", details.getProjectName());
@@ -27,61 +25,36 @@ public class SolutionDetailsTest {
 
     @Test
     void shouldThrowExceptionWhenNullForNonNullFields() {
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullSolutionName);
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullProjectName);
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullSolutionReviewCode);
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullSolutionArchitectName);
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullDeliveryProjectManagerName);
+        assertThrows(NullPointerException.class, this::createSolutionDetailsWithNullItBusinessPartner);
+    }
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                null,
-                "Project Phoenix",
-                "AWG123",
-                "Alice Architect",
-                "Bob PM",
-                "Partner1"
-        ));
+    private void createSolutionDetailsWithNullSolutionName() {
+        new SolutionDetails(null, "Project Phoenix", "AWG123", "Alice Architect", "Bob PM", "Partner1");
+    }
 
+    private void createSolutionDetailsWithNullProjectName() {
+        new SolutionDetails("Solution", null, "AWG123", "Alice Architect", "Bob PM", "Partner1");
+    }
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                null,
-                "AWG123",
-                "Alice Architect",
-                "Bob PM",
-                "Partner1"
-        ));
+    private void createSolutionDetailsWithNullSolutionReviewCode() {
+        new SolutionDetails("Solution", "Project Phoenix", null, "Alice Architect", "Bob PM", "Partner1");
+    }
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                "Project Phoenix",
-                null,
-                "Alice Architect",
-                "Bob PM",
-                "Partner1"
-        ));
+    private void createSolutionDetailsWithNullSolutionArchitectName() {
+        new SolutionDetails("Solution", "Project Phoenix", "AWG123", null, "Bob PM", "Partner1");
+    }
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                "Project Phoenix",
-                "AWG123",
-                null,
-                "Bob PM",
-                "Partner1"
-        ));
+    private void createSolutionDetailsWithNullDeliveryProjectManagerName() {
+        new SolutionDetails("Solution", "Project Phoenix", "AWG123", "Alice Architect", null, "Partner1");
+    }
 
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                "Project Phoenix",
-                "AWG123",
-                "Alice Architect",
-                null,
-                "Partner1"
-        ));
-
-        assertThrows(NullPointerException.class, () -> new SolutionDetails(
-                "Solution",
-                "Project Phoenix",
-                "AWG123",
-                "Alice Architect",
-                "Bob PM",
-                null
-        ));
+    private void createSolutionDetailsWithNullItBusinessPartner() {
+        new SolutionDetails("Solution", "Project Phoenix", "AWG123", "Alice Architect", "Bob PM", null);
     }
 
     @Test
@@ -92,8 +65,7 @@ public class SolutionDetailsTest {
                 "AWG456",
                 "Eve Architect",
                 "Carol PM",
-                "PartnerA"
-        );
+                "PartnerA");
 
         SolutionDetails sd2 = new SolutionDetails(
                 "SolutionX",
@@ -101,8 +73,7 @@ public class SolutionDetailsTest {
                 "AWG456",
                 "Eve Architect",
                 "Carol PM",
-                "PartnerA"
-        );
+                "PartnerA");
 
         assertEquals(sd1, sd2);
         assertEquals(sd1.hashCode(), sd2.hashCode());
@@ -116,8 +87,7 @@ public class SolutionDetailsTest {
                 "AWG789",
                 "Dave Architect",
                 "Frank PM",
-                "PartnerX"
-        );
+                "PartnerX");
 
         String toString = details.toString();
         assertTrue(toString.contains("SolutionY"));

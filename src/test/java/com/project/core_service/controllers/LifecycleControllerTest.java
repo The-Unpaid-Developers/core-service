@@ -8,6 +8,11 @@ import com.project.core_service.services.SolutionReviewLifecycleService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -158,100 +163,68 @@ class LifecycleControllerTest {
             verify(lifecycleService, never()).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when request body is missing required fields")
-        void shouldReturnBadRequestWhenRequestBodyIsMissingRequiredFields() throws Exception {
-            // Given - command with null documentId
-            String requestJson = """
-                    {
-                        "documentId": null,
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
+        @ParameterizedTest
+        @MethodSource("badRequestTestCases")
+        @DisplayName("Should return 400 Bad Request when request body has invalid or missing required fields")
+        void shouldReturnBadRequestWhenRequestBodyHasInvalidFields(String testCase, String requestJson,
+                String expectedErrorMessage) throws Exception {
             // When & Then
             mockMvc.perform(post("/api/v1/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Document ID is required"));
+                    .andExpect(jsonPath("$.message").value(expectedErrorMessage));
 
             verify(lifecycleService, never()).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when documentId is blank")
-        void shouldReturnBadRequestWhenDocumentIdIsBlank() throws Exception {
-            // Given - command with blank documentId
-            String requestJson = """
-                    {
-                        "documentId": "",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Document ID is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should return 400 Bad Request when operation is null")
-        void shouldReturnBadRequestWhenOperationIsNull() throws Exception {
-            // Given - command with null operation
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": null,
-                        "modifiedBy": "test-user",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Operation is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should return 400 Bad Request when modifiedBy is blank")
-        void shouldReturnBadRequestWhenModifiedByIsBlank() throws Exception {
-            // Given - command with blank modifiedBy
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "",
-                        "comment": "Test comment"
-                    }
-                    """;
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").value("Modified by user is required"));
-
-            verify(lifecycleService, never()).executeTransition(any());
+        static Stream<Arguments> badRequestTestCases() {
+            return Stream.of(
+                    Arguments.of(
+                            "null documentId",
+                            """
+                                    {
+                                        "documentId": null,
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Document ID is required"),
+                    Arguments.of(
+                            "blank documentId",
+                            """
+                                    {
+                                        "documentId": "",
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Document ID is required"),
+                    Arguments.of(
+                            "null operation",
+                            """
+                                    {
+                                        "documentId": "test-document-id",
+                                        "operation": null,
+                                        "modifiedBy": "test-user",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Operation is required"),
+                    Arguments.of(
+                            "blank modifiedBy",
+                            """
+                                    {
+                                        "documentId": "test-document-id",
+                                        "operation": "SUBMIT",
+                                        "modifiedBy": "",
+                                        "comment": "Test comment"
+                                    }
+                                    """,
+                            "Modified by user is required"));
         }
 
         @Test
@@ -273,7 +246,8 @@ class LifecycleControllerTest {
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.status").value(400))
-                    .andExpect(jsonPath("$.message").exists()); // Should contain multiple validation messages
+                    .andExpect(jsonPath("$.message").exists()); // Should contain multiple
+                                                                // validation messages
 
             verify(lifecycleService, never()).executeTransition(any());
         }
@@ -412,20 +386,22 @@ class LifecycleControllerTest {
     @DisplayName("Business Logic Constraint Tests")
     class BusinessLogicConstraintTests {
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when trying to create DRAFT with existing DRAFT/SUBMITTED/APPROVED")
-        void shouldReturnBadRequestWhenTryingToCreateDraftWithExistingExclusiveStates() throws Exception {
-            // Given - attempt to transition to DRAFT when another exclusive state exists
-            String requestJson = """
+        @ParameterizedTest
+        @MethodSource("exclusiveStateConstraintTestCases")
+        @DisplayName("Should return 400 Bad Request when trying to create/update document with existing exclusive states")
+        void shouldReturnBadRequestWhenTryingToCreateOrUpdateDocumentWithExistingExclusiveStates(
+                String operation, String comment, String exclusiveStates) throws Exception {
+            // Given
+            String requestJson = String.format("""
                     {
                         "documentId": "test-document-id",
-                        "operation": "SUBMIT",
+                        "operation": "%s",
                         "modifiedBy": "test-user",
-                        "comment": "Creating a new draft"
+                        "comment": "%s"
                     }
-                    """;
+                    """, operation, comment);
             String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: DRAFT. " +
+                    "Documents already exist in exclusive states: " + exclusiveStates + ". " +
                     "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
             doThrow(new IllegalOperationException(errorMessage))
                     .when(lifecycleService).executeTransition(any());
@@ -441,33 +417,11 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should return 400 Bad Request when trying to APPROVE with existing APPROVED document")
-        void shouldReturnBadRequestWhenTryingToApproveWithExistingApprovedDocument() throws Exception {
-            // Given
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "APPROVE",
-                        "modifiedBy": "test-user",
-                        "comment": "Trying to approve when another approved document exists"
-                    }
-                    """;
-            String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: APPROVED. " +
-                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
-            doThrow(new IllegalOperationException(errorMessage))
-                    .when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
-                    .andExpect(jsonPath("$.message").value(errorMessage));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
+        static Stream<Arguments> exclusiveStateConstraintTestCases() {
+            return Stream.of(
+                    Arguments.of("SUBMIT", "Creating a new draft", "DRAFT"),
+                    Arguments.of("APPROVE", "Trying to approve when another approved document exists", "APPROVED"),
+                    Arguments.of("SUBMIT", "Trying to submit with multiple constraint violations", "DRAFT, SUBMITTED"));
         }
 
         @Test
@@ -498,18 +452,20 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should successfully ACTIVATE when constraint validation passes")
-        void shouldSuccessfullyActivateWhenConstraintValidationPasses() throws Exception {
-            // Given - ACTIVATE operation should succeed when constraints are satisfied
-            String requestJson = """
+        @ParameterizedTest
+        @MethodSource("successfulTransitionTestCases")
+        @DisplayName("Should successfully handle transitions when constraints are satisfied")
+        void shouldSuccessfullyHandleTransitionsWhenConstraintsAreSatisfied(
+                String documentId, String operation, String comment) throws Exception {
+            // Given
+            String requestJson = String.format("""
                     {
-                        "documentId": "test-document-id",
-                        "operation": "ACTIVATE",
+                        "documentId": "%s",
+                        "operation": "%s",
                         "modifiedBy": "test-user",
-                        "comment": "Activating an approved document"
+                        "comment": "%s"
                     }
-                    """;
+                    """, documentId, operation, comment);
             doNothing().when(lifecycleService).executeTransition(any());
 
             // When & Then
@@ -522,110 +478,13 @@ class LifecycleControllerTest {
             verify(lifecycleService, times(1)).executeTransition(any());
         }
 
-        @Test
-        @DisplayName("Should handle multiple constraint violations with appropriate error messages")
-        void shouldHandleMultipleConstraintViolationsWithAppropriateErrorMessages() throws Exception {
-            // Given - multiple documents in exclusive states
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Trying to submit with multiple constraint violations"
-                    }
-                    """;
-            String errorMessage = "Cannot create/update document for system SYS-001. " +
-                    "Documents already exist in exclusive states: DRAFT, SUBMITTED. " +
-                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.";
-            doThrow(new IllegalOperationException(errorMessage))
-                    .when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.status").value("BAD_REQUEST"))
-                    .andExpect(jsonPath("$.message").value(errorMessage));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should allow DRAFT creation when only ACTIVE document exists")
-        void shouldAllowDraftCreationWhenOnlyActiveDocumentExists() throws Exception {
-            // Given - DRAFT creation should be allowed when only ACTIVE exists (separate
-            // constraints)
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "SUBMIT",
-                        "modifiedBy": "test-user",
-                        "comment": "Creating draft while active document exists"
-                    }
-                    """;
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should allow OUTDATED documents without constraint violations")
-        void shouldAllowOutdatedDocumentsWithoutConstraintViolations() throws Exception {
-            // Given - MARK_OUTDATED should not be subject to exclusive state constraints
-            String requestJson = """
-                    {
-                        "documentId": "test-document-id",
-                        "operation": "MARK_OUTDATED",
-                        "modifiedBy": "test-user",
-                        "comment": "Marking document as outdated"
-                    }
-                    """;
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
-        }
-
-        @Test
-        @DisplayName("Should successfully handle ACTIVATE operation that transitions existing ACTIVE to OUTDATED")
-        void shouldSuccessfullyHandleActivateOperationThatTransitionsExistingActiveToOutdated() throws Exception {
-            // Given - This tests requirement #2: when activating a document, existing
-            // ACTIVE should become OUTDATED
-            // The service layer handles this automatically, so the API should succeed
-            String requestJson = """
-                    {
-                        "documentId": "test-approved-document",
-                        "operation": "ACTIVATE",
-                        "modifiedBy": "test-user",
-                        "comment": "Activating approved document, existing active should become outdated"
-                    }
-                    """;
-            // The service layer will handle the logic of transitioning existing ACTIVE →
-            // OUTDATED
-            doNothing().when(lifecycleService).executeTransition(any());
-
-            // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(requestJson))
-                    .andExpect(status().isOk())
-                    .andExpect(content().string("Transition successful"));
-
-            verify(lifecycleService, times(1)).executeTransition(any());
+        static Stream<Arguments> successfulTransitionTestCases() {
+            return Stream.of(
+                    Arguments.of("test-document-id", "ACTIVATE", "Activating an approved document"),
+                    Arguments.of("test-document-id", "SUBMIT", "Creating draft while active document exists"),
+                    Arguments.of("test-document-id", "MARK_OUTDATED", "Marking document as outdated"),
+                    Arguments.of("test-approved-document", "ACTIVATE",
+                            "Activating approved document, existing active should become outdated"));
         }
     }
 
@@ -715,7 +574,8 @@ class LifecycleControllerTest {
                         "comment": "Invalid transition attempt"
                     }
                     """;
-            String errorMessage = "Cannot execute operation 'submit document' on document 'test-document-id'. " +
+            String errorMessage = "Cannot execute operation 'submit document' on document 'test-document-id'. "
+                    +
                     "Document is in state 'SUBMITTED' but operation requires state 'DRAFT'";
             doThrow(new IllegalStateTransitionException(errorMessage))
                     .when(lifecycleService).executeTransition(any());

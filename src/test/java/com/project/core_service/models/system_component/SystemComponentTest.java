@@ -1,4 +1,5 @@
 package com.project.core_service.models.system_component;
+
 import com.project.core_service.models.shared.Frequency;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -32,8 +33,7 @@ public class SystemComponentTest {
                 "Cert123",
                 "KeyStore1",
                 Frequency.MONTHLY,
-                Frequency.ANNUALLY
-        );
+                Frequency.ANNUALLY);
     }
 
     @Nested
@@ -145,8 +145,7 @@ public class SystemComponentTest {
                     5000,
                     ScalabilityMethod.HORIZONTAL_AUTO,
                     BackupSite.CLOUD_MULTI_AZ,
-                    dummySecurityDetails()
-            );
+                    dummySecurityDetails());
 
             assertEquals("sc-001", sc.getId());
             assertEquals("User Service", sc.getName());
@@ -176,10 +175,17 @@ public class SystemComponentTest {
     class NullValidationTests {
         @Test
         void shouldThrowExceptionWhenNullForNonNullFields() {
-            LanguageFramework languageFramework = dummyLanguageFramework();
-            SecurityDetails securityDetails = dummySecurityDetails();
+            assertThrows(NullPointerException.class, this::createSystemComponentWithNullName);
+            assertThrows(NullPointerException.class, this::createSystemComponentWithNullStatus);
+            // etc. for all @NonNulls (role, hostedOn, hostingRegion, solutionType,
+            // languageFramework,
+            // customizationLevel, upgradeStrategy, upgradeFrequency,
+            // availabilityRequirement,
+            // scalabilityMethod, backupSite, securityDetails)
+        }
 
-            assertThrows(NullPointerException.class, () -> new SystemComponent(
+        private void createSystemComponentWithNullName() {
+            new SystemComponent(
                     "sc-002",
                     null, // name
                     ComponentStatus.NEW,
@@ -187,7 +193,7 @@ public class SystemComponentTest {
                     Location.ON_PREM,
                     HostingRegion.APAC,
                     SolutionType.COTS,
-                    languageFramework,
+                    dummyLanguageFramework(),
                     true,
                     false,
                     CustomizationLevel.NONE,
@@ -200,10 +206,11 @@ public class SystemComponentTest {
                     2000,
                     ScalabilityMethod.MANUAL,
                     BackupSite.NONE,
-                    securityDetails
-            ));
+                    dummySecurityDetails());
+        }
 
-            assertThrows(NullPointerException.class, () -> new SystemComponent(
+        private void createSystemComponentWithNullStatus() {
+            new SystemComponent(
                     "sc-003",
                     "ComponentName",
                     null, // status
@@ -211,7 +218,7 @@ public class SystemComponentTest {
                     Location.ON_PREM,
                     HostingRegion.APAC,
                     SolutionType.COTS,
-                    languageFramework,
+                    dummyLanguageFramework(),
                     true,
                     false,
                     CustomizationLevel.NONE,
@@ -224,11 +231,7 @@ public class SystemComponentTest {
                     2000,
                     ScalabilityMethod.MANUAL,
                     BackupSite.NONE,
-                    securityDetails
-            ));
-            // etc. for all @NonNulls (role, hostedOn, hostingRegion, solutionType, languageFramework,
-            // customizationLevel, upgradeStrategy, upgradeFrequency, availabilityRequirement,
-            // scalabilityMethod, backupSite, securityDetails)
+                    dummySecurityDetails());
         }
     }
 
@@ -257,8 +260,7 @@ public class SystemComponentTest {
                     5000,
                     ScalabilityMethod.HORIZONTAL_AUTO,
                     BackupSite.CLOUD_MULTI_AZ,
-                    dummySecurityDetails()
-            );
+                    dummySecurityDetails());
 
             SystemComponent sc2 = new SystemComponent(
                     "sc-006",
@@ -281,8 +283,7 @@ public class SystemComponentTest {
                     5000,
                     ScalabilityMethod.HORIZONTAL_AUTO,
                     BackupSite.CLOUD_MULTI_AZ,
-                    dummySecurityDetails()
-            );
+                    dummySecurityDetails());
 
             assertEquals(sc1, sc2);
             assertEquals(sc1.hashCode(), sc2.hashCode());
@@ -314,8 +315,7 @@ public class SystemComponentTest {
                     10000,
                     ScalabilityMethod.HYBRID,
                     BackupSite.ALTERNATE_DATA_CENTRE,
-                    dummySecurityDetails()
-            );
+                    dummySecurityDetails());
 
             String toString = sc.toString();
             assertTrue(toString.contains("sc-007"));
