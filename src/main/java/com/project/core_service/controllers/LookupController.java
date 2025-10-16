@@ -29,7 +29,6 @@ public class LookupController {
 
     @GetMapping
     public ResponseEntity<LookupDTO> getAllLookups() {
-        System.out.println("HELLO IM INSIDE");
         return ResponseEntity.ok(lookupService.getAllLookups());
     }
 
