@@ -1,15 +1,13 @@
 package com.project.core_service.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.services.LookupService;
 
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/lookups")
@@ -23,24 +21,25 @@ public class LookupController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadCsvFile(
+    public ResponseEntity<LookupDTO> uploadCsvFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam("lookupName") String lookupName) {
         return ResponseEntity.ok(lookupService.processCsvFile(file, lookupName));
     }
 
     @GetMapping
-    public ResponseEntity<?> getAllLookups() {
+    public ResponseEntity<LookupDTO> getAllLookups() {
+        System.out.println("HELLO IM INSIDE");
         return ResponseEntity.ok(lookupService.getAllLookups());
     }
 
     @GetMapping("/{lookupName}")
-    public ResponseEntity<?> getLookupByName(@PathVariable String lookupName) {
+    public ResponseEntity<LookupDTO> getLookupByName(@PathVariable String lookupName) {
         return ResponseEntity.ok(lookupService.getLookupByName(lookupName));
     }
 
     @DeleteMapping("/{lookupName}")
-    public ResponseEntity<?> deleteLookup(@PathVariable String lookupName) {
+    public ResponseEntity<LookupDTO> deleteLookup(@PathVariable String lookupName) {
         return ResponseEntity.ok(lookupService.deleteLookup(lookupName));
     }
 }

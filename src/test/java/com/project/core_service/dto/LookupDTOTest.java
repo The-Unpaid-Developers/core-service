@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 
 class LookupDTOTest {
 
@@ -180,7 +181,7 @@ class LookupDTOTest {
         LookupDTO dto = LookupDTO.builder().success(true).build();
 
         // Act & Assert
-        assertNotEquals(dto, null);
+        assertNotEquals(null, dto);
     }
 
     @Test
@@ -190,7 +191,7 @@ class LookupDTOTest {
         String other = "not a dto";
 
         // Act & Assert
-        assertNotEquals(dto, other);
+        assertNotEquals(other, dto);
     }
 
     private Lookup createMockLookup(String id, String name) {
