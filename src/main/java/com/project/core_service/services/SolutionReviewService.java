@@ -1,7 +1,7 @@
 package com.project.core_service.services;
 
 import com.project.core_service.dto.SystemDependencyDTO;
-import com.project.core_service.dto.BusinessCapabilityDTO;
+import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
@@ -223,10 +223,10 @@ public class SolutionReviewService {
      *
      * @return a {@link List} of active solution reviews with limited fields
      */
-    public List<BusinessCapabilityDTO> getBusinessCapabilitySolutionReviews() {
+    public List<BusinessCapabilityDiagramDTO> getBusinessCapabilitySolutionReviews() {
         List<SolutionReview> activeSolutionReviews = solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE);
         return activeSolutionReviews.stream()
-                .map(BusinessCapabilityDTO::fromSolutionReview)
+                .map(BusinessCapabilityDiagramDTO::fromSolutionReview)
                 .toList();
     }
 

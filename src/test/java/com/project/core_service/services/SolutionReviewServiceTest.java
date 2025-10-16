@@ -9,7 +9,7 @@ import static org.mockito.Mockito.*;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
-import com.project.core_service.dto.BusinessCapabilityDTO;
+import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.business_capabilities.BusinessCapability;
@@ -977,17 +977,17 @@ class SolutionReviewServiceTest {
                 .thenReturn(activeSolutionReviews);
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(2, result.size());
 
-        BusinessCapabilityDTO dto1 = result.get(0);
+        BusinessCapabilityDiagramDTO dto1 = result.get(0);
         assertEquals("SYS-123", dto1.getSystemCode());
         assertEquals(overview, dto1.getSolutionOverview());
         assertEquals(List.of(), dto1.getBusinessCapabilities());
 
-        BusinessCapabilityDTO dto2 = result.get(1);
+        BusinessCapabilityDiagramDTO dto2 = result.get(1);
         assertEquals("SYS-456", dto2.getSystemCode());
         assertEquals(overview, dto2.getSolutionOverview());
         assertEquals(List.of(), dto2.getBusinessCapabilities());
@@ -1001,7 +1001,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findByDocumentState(DocumentState.ACTIVE)).thenReturn(List.of());
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertTrue(result.isEmpty());
@@ -1039,11 +1039,11 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(activeReview));
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(1, result.size());
-        BusinessCapabilityDTO dto = result.get(0);
+        BusinessCapabilityDiagramDTO dto = result.get(0);
         assertEquals("SYS-789", dto.getSystemCode());
         assertEquals(overview, dto.getSolutionOverview());
         assertEquals(businessCapabilities, dto.getBusinessCapabilities());
@@ -1072,7 +1072,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(activeReview));
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(1, result.size());
@@ -1145,20 +1145,20 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(activeReview1, activeReview2));
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(2, result.size());
 
         // First review
-        BusinessCapabilityDTO dto1 = result.get(0);
+        BusinessCapabilityDiagramDTO dto1 = result.get(0);
         assertEquals("SYS-123", dto1.getSystemCode());
         assertEquals(overview, dto1.getSolutionOverview());
         assertEquals(1, dto1.getBusinessCapabilities().size());
         assertEquals("bc-1", dto1.getBusinessCapabilities().get(0).getId());
 
         // Second review
-        BusinessCapabilityDTO dto2 = result.get(1);
+        BusinessCapabilityDiagramDTO dto2 = result.get(1);
         assertEquals("SYS-456", dto2.getSystemCode());
         assertEquals(overview2, dto2.getSolutionOverview());
         assertEquals(2, dto2.getBusinessCapabilities().size());
@@ -1197,7 +1197,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(review2, review1, review3)); // ZZZ, AAA, MMM
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(3, result.size());
@@ -1223,11 +1223,11 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(activeReview));
 
         // Act
-        List<BusinessCapabilityDTO> result = service.getBusinessCapabilitySolutionReviews();
+        List<BusinessCapabilityDiagramDTO> result = service.getBusinessCapabilitySolutionReviews();
 
         // Assert
         assertEquals(1, result.size());
-        BusinessCapabilityDTO dto = result.get(0);
+        BusinessCapabilityDiagramDTO dto = result.get(0);
 
         // Verify all three required fields are properly mapped
         assertEquals(activeReview.getSystemCode(), dto.getSystemCode());

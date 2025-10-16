@@ -10,25 +10,30 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * Data Transfer Object for active Solution Reviews.
+ * Data Transfer Object for active Solution Reviews used in business capability diagrams.
  * Contains only the essential fields: systemCode, solutionOverview, and businessCapabilities.
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class BusinessCapabilityDTO {
+public class BusinessCapabilityDiagramDTO {
     private String systemCode;
     private SolutionOverview solutionOverview;
     private List<BusinessCapability> businessCapabilities;
 
     /**
-     * Factory method to create a BusinessCapabilityDTO from a SolutionReview entity.
+     * Factory method to create a BusinessCapabilityDiagramDTO from a SolutionReview entity.
      *
      * @param solutionReview the solution review entity
-     * @return a new BusinessCapabilityDTO instance
+     * @return a new BusinessCapabilityDiagramDTO instance
+     * @throws IllegalArgumentException if solutionReview is null
      */
-    public static BusinessCapabilityDTO fromSolutionReview(SolutionReview solutionReview) {
-        return new BusinessCapabilityDTO(
+    public static BusinessCapabilityDiagramDTO fromSolutionReview(SolutionReview solutionReview) {
+        if (solutionReview == null) {
+            throw new IllegalArgumentException("SolutionReview cannot be null");
+        }
+
+        return new BusinessCapabilityDiagramDTO(
                 solutionReview.getSystemCode(),
                 solutionReview.getSolutionOverview(),
                 solutionReview.getBusinessCapabilities()

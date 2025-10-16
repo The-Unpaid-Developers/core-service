@@ -3,7 +3,7 @@ package com.project.core_service.controllers;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
-import com.project.core_service.dto.BusinessCapabilityDTO;
+import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.services.SolutionReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -133,7 +133,7 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a list of active solution reviews with limited fields
      */
     @GetMapping("/business-capabilities")
-    public ResponseEntity<List<BusinessCapabilityDTO>> getBusinessCapabilitySolutionReviews() {
+    public ResponseEntity<List<BusinessCapabilityDiagramDTO>> getBusinessCapabilitySolutionReviews() {
         return ResponseEntity.ok(solutionReviewService.getBusinessCapabilitySolutionReviews());
     }
 
