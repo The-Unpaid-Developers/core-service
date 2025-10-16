@@ -24,7 +24,5 @@ public class BusinessCapability {
     private L3Capability l3Capability;
 
     private String remarks;
-
-    // private List<Capability> capabilities;
     
 }

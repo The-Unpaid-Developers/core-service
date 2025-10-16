@@ -27,6 +27,9 @@ public class BusinessCapabilityTest {
 
     @Test
     void testBusinessCapabilityBuilder() {
+        L1Capability l1 = L1Capability.UNKNOWN;
+        L2Capability l2 = L2Capability.UNKNOWN;
+        L3Capability l3 = L3Capability.UNKNOWN;
         BusinessCapability bc = BusinessCapability.builder()
                 .id("cap-123")
                 .l1Capability(l1)
