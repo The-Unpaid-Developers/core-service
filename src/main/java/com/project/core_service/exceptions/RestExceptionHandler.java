@@ -201,6 +201,40 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
+     * Handles {@link InvalidFileException}s thrown when file validation fails.
+     *
+     * @param ex the invalid file exception
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ InvalidFileException.class })
+    public ResponseEntity<Object> handleInvalidFileException(InvalidFileException ex) {
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Invalid file");
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
+     * Handles {@link CsvProcessingException}s thrown during CSV processing.
+     *
+     * @param ex the CSV processing exception
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ CsvProcessingException.class })
+    public ResponseEntity<Object> handleCsvProcessingException(CsvProcessingException ex) {
+        HttpStatus status = HttpStatus.UNPROCESSABLE_ENTITY;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "CSV processing failed");
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
+    /**
      * Handles uncaught {@link RuntimeException}s that don't have specific handlers.
      *
      * @param ex the runtime exception
