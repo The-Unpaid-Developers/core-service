@@ -9,6 +9,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.rest.core.annotation.RestResource;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -141,6 +142,7 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      * @param pageable      the pagination information
      * @return a {@link Page} of solution reviews with the specified document state
      */
+    @RestResource(path = "byStatePaged")
     Page<SolutionReview> findByDocumentState(DocumentState documentState, Pageable pageable);
 
     /**
@@ -149,6 +151,8 @@ public interface SolutionReviewRepository extends MongoRepository<SolutionReview
      * @param documentState the document state used for filtering
      * @return a {@link List} of solution reviews with the specified document state
      */
+
+    @RestResource(path = "byStateList")
     List<SolutionReview> findByDocumentState(DocumentState documentState);
 
     Optional<SolutionReview> findBySystemCodeAndDocumentState(String systemCode, DocumentState documentState);
