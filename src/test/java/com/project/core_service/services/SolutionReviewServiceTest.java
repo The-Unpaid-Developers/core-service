@@ -105,8 +105,6 @@ class SolutionReviewServiceTest {
                 dummySolutionDetails(),
                 "ReviewerName",
                 ReviewType.NEW_BUILD,
-                ApprovalStatus.PENDING,
-                ReviewStatus.DRAFT,
                 "No conditions",
                 BusinessUnit.UNKNOWN,
                 BusinessDriver.OPERATIONAL_EFFICIENCY,

@@ -29,11 +29,6 @@ public class SolutionOverview {
     @NonNull
     private ReviewType reviewType;
 
-    @NonNull
-    private ApprovalStatus approvalStatus;
-
-    @NonNull
-    private ReviewStatus reviewStatus;
 
     private String conditions;
 
@@ -54,9 +49,7 @@ public class SolutionOverview {
 
     public static SolutionOverviewBuilder newDraftBuilder() {
         return new SolutionOverviewBuilder()
-                .reviewType(ReviewType.NEW_BUILD)
-                .approvalStatus(ApprovalStatus.PENDING)
-                .reviewStatus(ReviewStatus.DRAFT);
+                .reviewType(ReviewType.NEW_BUILD);
     }
     public static SolutionOverviewBuilder fromExisting(SolutionOverview existing) {
         return new SolutionOverviewBuilder()
@@ -64,8 +57,6 @@ public class SolutionOverview {
                 .solutionDetails(existing.getSolutionDetails())
                 .reviewedBy(existing.getReviewedBy())
                 .reviewType(existing.getReviewType())
-                .approvalStatus(existing.getApprovalStatus())
-                .reviewStatus(existing.getReviewStatus())
                 .conditions(existing.getConditions())
                 .businessUnit(existing.getBusinessUnit())
                 .businessDriver(existing.getBusinessDriver())
@@ -76,16 +67,12 @@ public class SolutionOverview {
 
     public static SolutionOverviewBuilder newEnhancementBuilder(SolutionOverview existing) {
         return fromExisting(existing)
-                .reviewType(ReviewType.ENHANCEMENT)
-                .approvalStatus(ApprovalStatus.PENDING)
-                .reviewStatus(ReviewStatus.DRAFT);
+                .reviewType(ReviewType.ENHANCEMENT);
     }
 
     public static SolutionOverviewBuilder newApprovedBuilder() {
         return new SolutionOverviewBuilder()
-                .reviewType(ReviewType.NEW_BUILD)
-                .approvalStatus(ApprovalStatus.APPROVED)
-                .reviewStatus(ReviewStatus.COMPLETED);
+                .reviewType(ReviewType.NEW_BUILD);
     }
 }
 

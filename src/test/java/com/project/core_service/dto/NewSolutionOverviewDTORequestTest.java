@@ -44,8 +44,6 @@ public class NewSolutionOverviewDTORequestTest {
         assertEquals(dto.getValueOutcome(), overview.getValueOutcome());
 
         assertEquals(ReviewType.NEW_BUILD, overview.getReviewType());
-        assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
-        assertEquals(ReviewStatus.DRAFT, overview.getReviewStatus());
         assertNotNull(overview.getApplicationUsers());
     }
 
@@ -81,8 +79,6 @@ public class NewSolutionOverviewDTORequestTest {
             assertEquals(BusinessDriver.RISK_MANAGEMENT, overview.getBusinessDriver());
             assertEquals("Outcome", overview.getValueOutcome());
             assertEquals(ReviewType.NEW_BUILD, overview.getReviewType());
-            assertEquals(ApprovalStatus.PENDING, overview.getApprovalStatus());
-            assertEquals(ReviewStatus.DRAFT, overview.getReviewStatus());
 
             // New concern checks
             assertNotNull(overview.getConcerns());

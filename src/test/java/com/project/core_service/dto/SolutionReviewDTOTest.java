@@ -76,8 +76,6 @@ class SolutionReviewDTOTest {
                 solutionDetails,
                 "john.reviewer",
                 ReviewType.NEW_BUILD,
-                ApprovalStatus.PENDING,
-                ReviewStatus.DRAFT,
                 "No conditions",
                 BusinessUnit.UNKNOWN,
                 BusinessDriver.BUSINESS_OR_CUSTOMER_GROWTH,
