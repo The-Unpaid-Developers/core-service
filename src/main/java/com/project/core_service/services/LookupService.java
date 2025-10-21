@@ -208,16 +208,17 @@ public class LookupService {
 
     public LookupDTO getAllLookups() {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        
+
         List<Lookup> lookups = new ArrayList<>();
-        
+
         // Fetch all documents and convert to Lookup objects
         for (Document doc : collection.find()) {
             Lookup lookup = documentToLookup(doc);
             lookups.add(lookup);
         }
-        
+
         return LookupDTO.builder()
+                .success(true)
                 .totalLookups(lookups.size())
                 .lookups(lookups)
                 .build();
@@ -235,6 +236,7 @@ public class LookupService {
         Lookup lookup = documentToLookup(doc);
 
         return LookupDTO.builder()
+                .success(true)
                 .lookups(new ArrayList<>(List.of(lookup)))
                 .build();
     }
