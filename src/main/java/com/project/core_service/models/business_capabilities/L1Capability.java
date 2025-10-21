@@ -1,7 +1,15 @@
 package com.project.core_service.models.business_capabilities;
 
 public enum L1Capability {
-    // TODO: Add L1 Capabilities
-
-    UNKNOWN, // Placeholder Value
+    POLICY_MANAGEMENT,
+    CLAIMS_MANAGEMENT,
+    CUSTOMER_MANAGEMENT,
+    UNDERWRITING,
+    PRODUCT_DEVELOPMENT,
+    DISTRIBUTION_AND_SALES,
+    FINANCE_AND_ACCOUNTING,
+    RISK_MANAGEMENT,
+    COMPLIANCE_AND_REGULATORY,
+    IT_AND_OPERATIONS,
+    UNKNOWN
 }
