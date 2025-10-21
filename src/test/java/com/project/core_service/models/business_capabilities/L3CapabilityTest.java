@@ -12,7 +12,7 @@ class L3CapabilityTest {
     @Test
     void shouldHaveExpectedNumberOfEnumValues() {
         L3Capability[] values = L3Capability.values();
-        assertThat(values).hasSize(81);
+        assertThat(values).hasSize(78);
     }
 
     @Test
@@ -235,7 +235,7 @@ class L3CapabilityTest {
     @Test
     void shouldHaveCorrectOrdinalForFirstAndLastValues() {
         assertThat(L3Capability.POLICY_ISSUANCE.ordinal()).isEqualTo(0);
-        assertThat(L3Capability.UNKNOWN.ordinal()).isEqualTo(80);
+        assertThat(L3Capability.UNKNOWN.ordinal()).isEqualTo(77);
     }
 
     @Test

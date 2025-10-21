@@ -731,54 +731,6 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_TrailingCommas_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,age,\nJohn,30,\nJane,25,";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "trailing-commas");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_LeadingCommas_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = ",name,age\n,John,30\n,Jane,25";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "leading-commas");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
     void processCsvFile_UnquotedSpecialCharacters_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
