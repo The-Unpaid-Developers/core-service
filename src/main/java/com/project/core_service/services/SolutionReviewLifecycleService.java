@@ -196,10 +196,8 @@ public class SolutionReviewLifecycleService {
     private DocumentState getRequiredStateForOperation(DocumentState.StateOperation operation) {
         return switch (operation) {
             case SUBMIT -> DocumentState.DRAFT;
-            case REMOVE_SUBMISSION -> DocumentState.SUBMITTED;
-            case APPROVE -> DocumentState.SUBMITTED;
-            case ACTIVATE -> DocumentState.APPROVED;
-            case UNAPPROVE -> DocumentState.APPROVED;
+            case REMOVE_SUBMISSION, APPROVE -> DocumentState.SUBMITTED;
+            case ACTIVATE, UNAPPROVE -> DocumentState.APPROVED;
             case MARK_OUTDATED -> DocumentState.ACTIVE;
         };
     }

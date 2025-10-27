@@ -40,41 +40,33 @@ public class SolutionReview {
     private DocumentState documentState;
 
     @NonNull
-    @DBRef
     private SolutionOverview solutionOverview;
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<BusinessCapability> businessCapabilities = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<SystemComponent> systemComponents = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<IntegrationFlow> integrationFlows = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<DataAsset> dataAssets = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<TechnologyComponent> technologyComponents = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<EnterpriseTool> enterpriseTools = new ArrayList<>();
 
     @NonNull
-    @DBRef
     @Builder.Default
     private List<ProcessCompliant> processCompliances = new ArrayList<>();
 

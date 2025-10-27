@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MongoConfig {
 
-    @Value("${mongodb.connection.lookups.string}")
+    @Value("${spring.data.mongodb.uri}")
     private String connectionString;
 
     @Bean
@@ -30,7 +30,7 @@ public class MongoConfig {
         ConnectionString connString = new ConnectionString(connectionString);
         String databaseName = connString.getDatabase();
         if (databaseName == null || databaseName.isEmpty()) {
-            databaseName = "lookups"; // default database name
+            databaseName = "solutions"; // default database name
         }
         return mongoClient.getDatabase(databaseName);
     }

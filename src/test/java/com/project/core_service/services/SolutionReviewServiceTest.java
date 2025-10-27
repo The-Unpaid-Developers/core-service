@@ -45,27 +45,6 @@ class SolutionReviewServiceTest {
 
     @Mock
     private SolutionReviewRepository solutionReviewRepository;
-    @Mock
-    private SolutionOverviewRepository solutionOverviewRepository;
-    @Mock
-    private ConcernRepository concernRepository;
-    @Mock
-    private ToolRepository toolRepository;
-    @Mock
-    private BusinessCapabilityRepository businessCapabilityRepository;
-    @Mock
-    private SystemComponentRepository systemComponentRepository;
-    @Mock
-    private IntegrationFlowRepository integrationFlowRepository;
-    @Mock
-    private DataAssetRepository dataAssetRepository;
-    @Mock
-    private TechnologyComponentRepository technologyComponentRepository;
-    @Mock
-    private EnterpriseToolRepository enterpriseToolRepository;
-    @Mock
-    private ProcessCompliantRepository processCompliantRepository;
-
     @InjectMocks
     private SolutionReviewService service;
 
@@ -1249,7 +1228,7 @@ class SolutionReviewServiceTest {
                 overview.getApplicationUsers(),
                 overview.getConcerns());
         assertThrows(NullPointerException.class, () -> service.createSolutionReview(null, dto));
-        assertThrows(NullPointerException.class, () -> service.createSolutionReview("", dto));
+        assertThrows(IllegalArgumentException.class, () -> service.createSolutionReview("", dto));
     }
 
     @Test
@@ -1296,7 +1275,6 @@ class SolutionReviewServiceTest {
         review.setDocumentState(DocumentState.ACTIVE);
         when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(Collections.emptyList()); // Empty because ACTIVE is not in exclusive states
-        when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
 
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
@@ -1341,7 +1319,6 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(Collections.emptyList()); // Empty because OUTDATED is not in exclusive
                                                       // states
-        when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
 
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
@@ -1366,25 +1343,9 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void createSolutionReview_ShouldThrowIfConcernInvalid() {
-        List<Concern> invalidConcerns = List
-                .of(new Concern(null, ConcernType.RISK, "desc", "impact", "disposition",
-                        ConcernStatus.UNKNOWN,
-                        LocalDateTime.of(2025, 10, 25, 14, 15, 46, 372370000)));
-        NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
-                overview.getBusinessUnit(),
-                overview.getBusinessDriver(),
-                overview.getValueOutcome(),
-                overview.getApplicationUsers(),
-                invalidConcerns);
-        assertThrows(NullPointerException.class, () -> service.createSolutionReview("SYS-123", dto));
-    }
-
-    @Test
     void createSolutionReview_ShouldSaveAndInsert() {
         when(solutionReviewRepository.findAllBySystemCodeAndDocumentStateIn(eq("SYS-123"), anyList()))
                 .thenReturn(Collections.emptyList()); // No existing exclusive state documents
-        when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class))).thenReturn(review);
         NewSolutionOverviewRequestDTO dto = new NewSolutionOverviewRequestDTO(overview.getSolutionDetails(),
                 overview.getBusinessUnit(),
@@ -1427,7 +1388,6 @@ class SolutionReviewServiceTest {
                 List.copyOf(DocumentState.getExclusiveStates())))
                 .thenReturn(Collections.emptyList());
 
-        when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class)))
                 .thenReturn(review);
 
@@ -1453,7 +1413,6 @@ class SolutionReviewServiceTest {
                 List.copyOf(DocumentState.getExclusiveStates())))
                 .thenReturn(Collections.emptyList());
 
-        when(solutionOverviewRepository.save(any())).thenReturn(overview);
         when(solutionReviewRepository.insert(any(SolutionReview.class)))
                 .thenReturn(review);
 
@@ -1534,7 +1493,6 @@ class SolutionReviewServiceTest {
                 .build();
 
         when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
-        when(solutionOverviewRepository.save(any(SolutionOverview.class))).thenReturn(modifiedOverview);
         when(solutionReviewRepository.save(any(SolutionReview.class))).thenReturn(existingReview);
 
         // Act
@@ -1543,7 +1501,6 @@ class SolutionReviewServiceTest {
         // Assert
         assertNotNull(result);
         verify(solutionReviewRepository).findById(reviewId);
-        verify(solutionOverviewRepository).save(any(SolutionOverview.class));
         verify(solutionReviewRepository).save(any(SolutionReview.class));
     }
 
@@ -1666,7 +1623,6 @@ class SolutionReviewServiceTest {
         verify(solutionReviewRepository).findById(reviewId);
         verify(solutionReviewRepository).save(any(SolutionReview.class));
         // Should not call solutionOverviewRepository.save when overview is null
-        verify(solutionOverviewRepository, never()).save(any());
     }
 
     @Test
@@ -1689,7 +1645,6 @@ class SolutionReviewServiceTest {
                 .build();
 
         when(solutionReviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
-        when(solutionOverviewRepository.save(any(SolutionOverview.class))).thenReturn(overview);
         when(solutionReviewRepository.save(any(SolutionReview.class))).thenAnswer(invocation -> {
             SolutionReview savedReview = invocation.getArgument(0);
             // Verify that lastModifiedAt was updated
@@ -1712,7 +1667,6 @@ class SolutionReviewServiceTest {
         service.deleteSolutionReview("rev-1");
 
         verify(solutionReviewRepository).deleteById("rev-1");
-        verify(solutionOverviewRepository).deleteById("id-001");
     }
 
     @Test

@@ -40,50 +40,10 @@ import java.util.stream.Collectors;
 public class SolutionReviewService {
     private final SolutionReviewRepository solutionReviewRepository;
 
-    private final SolutionOverviewRepository solutionOverviewRepository;
-
-    private final ConcernRepository concernRepository;
-
-    private final ToolRepository toolRepository;
-
-    private final BusinessCapabilityRepository businessCapabilityRepository;
-
-    private final SystemComponentRepository systemComponentRepository;
-
-    private final IntegrationFlowRepository integrationFlowRepository;
-
-    private final DataAssetRepository dataAssetRepository;
-
-    private final TechnologyComponentRepository technologyComponentRepository;
-
-    private final EnterpriseToolRepository enterpriseToolRepository;
-
-    private final ProcessCompliantRepository processCompliantRepository;
 
     @Autowired
-    public SolutionReviewService(
-            SolutionReviewRepository solutionReviewRepository,
-            SolutionOverviewRepository solutionOverviewRepository,
-            ConcernRepository concernRepository,
-            ToolRepository toolRepository,
-            BusinessCapabilityRepository businessCapabilityRepository,
-            SystemComponentRepository systemComponentRepository,
-            IntegrationFlowRepository integrationFlowRepository,
-            DataAssetRepository dataAssetRepository,
-            TechnologyComponentRepository technologyComponentRepository,
-            EnterpriseToolRepository enterpriseToolRepository,
-            ProcessCompliantRepository processCompliantRepository) {
+    public SolutionReviewService(SolutionReviewRepository solutionReviewRepository) {
         this.solutionReviewRepository = solutionReviewRepository;
-        this.solutionOverviewRepository = solutionOverviewRepository;
-        this.concernRepository = concernRepository;
-        this.toolRepository = toolRepository;
-        this.businessCapabilityRepository = businessCapabilityRepository;
-        this.systemComponentRepository = systemComponentRepository;
-        this.integrationFlowRepository = integrationFlowRepository;
-        this.dataAssetRepository = dataAssetRepository;
-        this.technologyComponentRepository = technologyComponentRepository;
-        this.enterpriseToolRepository = enterpriseToolRepository;
-        this.processCompliantRepository = processCompliantRepository;
     }
 
     /**
@@ -175,14 +135,14 @@ public class SolutionReviewService {
         List<SolutionReview> reviews = solutionReviewRepository.findBySystemCode(
                 systemCode, Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
 
-        return reviews.isEmpty() ? Optional.empty() : Optional.of(reviews.get(0));
+        return reviews.isEmpty() ? Optional.empty() : Optional.of(reviews.getFirst());
     }
 
     /**
      * Retrieves all {@link SolutionReview} entries with a specific document state,
      * with pagination.
      *
-     * @param documentState the document state used for filtering
+     * @param documentStateStr the document state used for filtering
      * @param pageable      the pagination information
      * @return a {@link Page} of solution reviews with the specified document state
      */
@@ -244,12 +204,15 @@ public class SolutionReviewService {
             throw new IllegalArgumentException("SolutionOverview cannot be null");
         }
 
+        if (systemCode.isBlank()) {
+            throw new IllegalArgumentException("System code cannot be blank");
+        }
+
         SolutionOverview overview = solutionOverview.toNewDraftEntity();
-        SolutionOverview savedOverview = saveSolutionOverview(overview);
         SolutionReview solutionReview = SolutionReview.newDraftBuilder()
                 .id(solutionOverview.getSolutionDetails().getSolutionName().replace(" ", "-") + "-1")
                 .systemCode(systemCode)
-                .solutionOverview(savedOverview)
+                .solutionOverview(overview)
                 .build();
         return solutionReviewRepository.insert(solutionReview);
     }
@@ -277,25 +240,12 @@ public class SolutionReviewService {
         validateExclusiveStateConstraint(systemCode);
 
         // step 2: copy from existing ACTIVE solution review
-        SolutionOverview savedOverview = saveSolutionOverview(
-                SolutionOverview
-                        .fromExisting(activeSolutionReview.getSolutionOverview())
-                        .build());
+        SolutionOverview overview = SolutionOverview
+                .fromExisting(activeSolutionReview.getSolutionOverview())
+                .build();
         SolutionReview solutionReview = SolutionReview.fromExisting(activeSolutionReview, null)
-                .solutionOverview(savedOverview).build();
+                .solutionOverview(overview).build();
 
-        saveIfNotEmpty(solutionReview.getBusinessCapabilities(), businessCapabilityRepository,
-                solutionReview::setBusinessCapabilities);
-        saveIfNotEmpty(solutionReview.getSystemComponents(), systemComponentRepository,
-                solutionReview::setSystemComponents);
-        saveIfNotEmpty(solutionReview.getIntegrationFlows(), integrationFlowRepository,
-                solutionReview::setIntegrationFlows);
-        saveIfNotEmpty(solutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
-        saveIfNotEmpty(solutionReview.getTechnologyComponents(), technologyComponentRepository,
-                solutionReview::setTechnologyComponents);
-        saveEnterpriseTools(solutionReview, solutionReview.getEnterpriseTools());
-        saveIfNotEmpty(solutionReview.getProcessCompliances(), processCompliantRepository,
-                solutionReview::setProcessCompliances);
         return solutionReviewRepository.insert(solutionReview);
     }
 
@@ -324,26 +274,19 @@ public class SolutionReviewService {
             throw new IllegalStateException("Only DRAFT reviews can be modified");
         }
 
-        // Update non-null / non-empty fields only (partial)
-        solutionReview.setDocumentState(modifiedSolutionReview.getDocumentState());
-
         if (modifiedSolutionReview.getSolutionOverview() != null) {
-            SolutionOverview overview = saveSolutionOverview(modifiedSolutionReview.getSolutionOverview());
+            SolutionOverview overview = modifiedSolutionReview.getSolutionOverview();
+            updateIfNotEmpty(overview.getConcerns(), overview::setConcerns);
             solutionReview.setSolutionOverview(overview);
         }
 
-        saveIfNotEmpty(modifiedSolutionReview.getBusinessCapabilities(), businessCapabilityRepository,
-                solutionReview::setBusinessCapabilities);
-        saveIfNotEmpty(modifiedSolutionReview.getSystemComponents(), systemComponentRepository,
-                solutionReview::setSystemComponents);
-        saveIfNotEmpty(modifiedSolutionReview.getIntegrationFlows(), integrationFlowRepository,
-                solutionReview::setIntegrationFlows);
-        saveIfNotEmpty(modifiedSolutionReview.getDataAssets(), dataAssetRepository, solutionReview::setDataAssets);
-        saveIfNotEmpty(modifiedSolutionReview.getTechnologyComponents(), technologyComponentRepository,
-                solutionReview::setTechnologyComponents);
-        saveEnterpriseTools(solutionReview, modifiedSolutionReview.getEnterpriseTools());
-        saveIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), processCompliantRepository,
-                solutionReview::setProcessCompliances);
+        updateIfNotEmpty(modifiedSolutionReview.getBusinessCapabilities(), solutionReview::setBusinessCapabilities);
+        updateIfNotEmpty(modifiedSolutionReview.getSystemComponents(), solutionReview::setSystemComponents);
+        updateIfNotEmpty(modifiedSolutionReview.getIntegrationFlows(), solutionReview::setIntegrationFlows);
+        updateIfNotEmpty(modifiedSolutionReview.getDataAssets(), solutionReview::setDataAssets);
+        updateIfNotEmpty(modifiedSolutionReview.getTechnologyComponents(), solutionReview::setTechnologyComponents);
+        updateIfNotEmpty(modifiedSolutionReview.getEnterpriseTools(), solutionReview::setEnterpriseTools);
+        updateIfNotEmpty(modifiedSolutionReview.getProcessCompliances(), solutionReview::setProcessCompliances);
 
         solutionReview.setLastModifiedAt(LocalDateTime.now());
 
@@ -379,7 +322,7 @@ public class SolutionReviewService {
 
         // Update solution overview (including concerns)
         if (modifiedSolutionReview.getSolutionOverview() != null) {
-            SolutionOverview overview = saveSolutionOverview(modifiedSolutionReview.getSolutionOverview());
+            SolutionOverview overview = modifiedSolutionReview.getSolutionOverview();
             solutionReview.setSolutionOverview(overview);
         }
 
@@ -403,51 +346,12 @@ public class SolutionReviewService {
             throw new IllegalStateException("Only DRAFT reviews can be deleted");
         }
 
-        // Cascade delete related entities
-        businessCapabilityRepository.deleteAll(solutionReview.getBusinessCapabilities());
-        systemComponentRepository.deleteAll(solutionReview.getSystemComponents());
-        integrationFlowRepository.deleteAll(solutionReview.getIntegrationFlows());
-        dataAssetRepository.deleteAll(solutionReview.getDataAssets());
-        technologyComponentRepository.deleteAll(solutionReview.getTechnologyComponents());
-        toolRepository.deleteAll(
-                solutionReview.getEnterpriseTools().stream().map(EnterpriseTool::getTool).toList());
-        enterpriseToolRepository.deleteAll(solutionReview.getEnterpriseTools());
-        processCompliantRepository.deleteAll(solutionReview.getProcessCompliances());
-        if (solutionReview.getSolutionOverview().getConcerns() != null) {
-            concernRepository.deleteAll(solutionReview.getSolutionOverview().getConcerns());
-        }
-        solutionOverviewRepository.deleteById(solutionReview.getSolutionOverview().getId());
         solutionReviewRepository.deleteById(id);
     }
 
-    private SolutionOverview saveSolutionOverview(SolutionOverview solutionOverview) {
-        if (solutionOverview.getConcerns() != null) {
-            saveIfNotEmpty(
-                    solutionOverview.getConcerns(),
-                    concernRepository,
-                    solutionOverview::setConcerns);
-        }
-        return solutionOverviewRepository.save(solutionOverview);
-    }
-
-    private void saveEnterpriseTools(SolutionReview solutionReview, List<EnterpriseTool> enterpriseTools) {
-        if (enterpriseTools != null && !enterpriseTools.isEmpty()) {
-            enterpriseTools.stream()
-                    .forEach(enterpriseTool -> {
-                        Tool tool = toolRepository.save(enterpriseTool.getTool());
-                        enterpriseTool.setTool(tool);
-                    });
-            List<EnterpriseTool> savedEnterpriseTools = enterpriseToolRepository.saveAll(enterpriseTools);
-
-            solutionReview.setEnterpriseTools(savedEnterpriseTools);
-
-        }
-    }
-
-    private <T> void saveIfNotEmpty(List<T> entities, MongoRepository<T, String> repository, Consumer<List<T>> setter) {
+    private <T> void updateIfNotEmpty(List<T> entities,  Consumer<List<T>> setter) {
         if (entities != null && !entities.isEmpty()) {
-            List<T> saved = repository.saveAll(entities);
-            setter.accept(saved);
+            setter.accept(entities);
         }
     }
 

@@ -19,7 +19,6 @@ public class EnterpriseTool {
     private String id;
 
     @NonNull
-    @DBRef
     private Tool tool;
 
     @NonNull
