@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -34,7 +35,7 @@ public class QueryService {
     private final QueryRepository queryRepository;
     private final MongoTemplate mongoTemplate;
 
-    private static final String COLLECTION_FIELD = "collection";
+    private static final String COLLECTION_FIELD = "solutionReviews";
 
     @Autowired
     public QueryService(QueryRepository queryRepository, MongoTemplate mongoTemplate) {
@@ -92,6 +93,10 @@ public class QueryService {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
+        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Query description cannot be null or empty");
+        }
+
         // Validate that the query is a read-only MongoDB query
         validateReadOnlyQuery(request.getMongoQuery());
 
@@ -104,6 +109,7 @@ public class QueryService {
         Query query = Query.builder()
                 .name(request.getName())
                 .mongoQuery(request.getMongoQuery())
+                .description(request.getDescription())
                 .build();
 
         return queryRepository.save(query);
@@ -141,6 +147,10 @@ public class QueryService {
         // Update the query string
         existingQuery.setMongoQuery(request.getMongoQuery());
 
+        if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+            existingQuery.setDescription(request.getDescription());
+        }
+        
         return queryRepository.save(existingQuery);
     }
 
@@ -187,6 +197,7 @@ public class QueryService {
             @SuppressWarnings("unchecked")
             List<Document> pipelineStages = Document.parse("{\"stages\": " + queryString + "}")
                     .getList("stages", Document.class);
+            System.out.println(pipelineStages);
 
             if (pipelineStages == null || pipelineStages.isEmpty()) {
                 throw new IllegalArgumentException("Aggregation pipeline cannot be empty");
@@ -195,22 +206,22 @@ public class QueryService {
             // Extract collection name
             String collection = request.getCollection();
             if (collection == null || collection.trim().isEmpty()) {
-                throw new IllegalArgumentException("Collection name must be specified in the request");
+                collection = COLLECTION_FIELD;
             }
-
-            // Add $limit stage if specified (default to 100)
-            int limit = request.getLimit() != null ? request.getLimit() : 100;
 
             // Add $skip stage if specified
             List<Document> modifiedPipeline = new ArrayList<>(pipelineStages);
-            if (request.getSkip() != null && request.getSkip() > 0) {
-                modifiedPipeline.add(new Document("$skip", request.getSkip()));
-            }
+
+            // Add $limit stage if specified (default to 100)
+            int limit = request.getLimit() != null ? request.getLimit() : 100;
             modifiedPipeline.add(new Document("$limit", limit));
 
+            if (request.getSkip() != null && request.getSkip() > 0) {
+                modifiedPipeline.add(new Document("$skip", request.getSkip()));
+            }            
+
             // Build and execute the aggregation
-            List<org.springframework.data.mongodb.core.aggregation.AggregationOperation> operations =
-                    new ArrayList<>();
+            List<AggregationOperation> operations = new ArrayList<>();
 
             for (Document stage : modifiedPipeline) {
                 operations.add(context -> stage);
@@ -246,17 +257,17 @@ public class QueryService {
 
         String trimmedQuery = queryString.trim();
 
-        // Validate that it's valid JSON (either array or object)
+        // Validate that it's pipeline format (array of documents)
         try {
             if (trimmedQuery.startsWith("[")) {
                 // Parse as array
                 Document.parse("{\"pipeline\": " + trimmedQuery + "}");
             } else {
-                // Parse as document
-                Document.parse(trimmedQuery);
+                throw new IllegalArgumentException(
+                        "MongoDB aggregation pipeline must be a JSON array starting with '['");
             }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Query must be valid JSON format: " + e.getMessage(), e);
+            throw new IllegalArgumentException("Query must be a valid format: " + e.getMessage(), e);
         }
 
         String lowerQuery = queryString.toLowerCase();
@@ -264,16 +275,17 @@ public class QueryService {
         // List of forbidden MongoDB operators and operations
         // These are write operations that should not be allowed
         String[] forbiddenOperators = {
-                "\"$out\"", "'$out'", // Aggregation output stage (writes to collection)
-                "\"$merge\"", "'$merge'", // Aggregation merge stage (writes to collection)
-                "insertone", "insertmany", "insert(", // Insert operations
-                "deleteone", "deletemany", "delete(", "remove(", // Delete operations
-                "updateone", "updatemany", "update(", "findandmodify", // Update operations
-                "replaceone", "replace(", // Replace operations
-                "drop(", "dropdatabase", "dropcollection", // Drop operations
-                "create(", "createcollection", "createindex", // Create operations
-                "$eval", "function(", "function ", // Code execution
-                "mapreduce", "map-reduce", // MapReduce operations
+            // Write operations (CRITICAL)
+            "\"$out\"", "'$out'",
+            "\"$merge\"", "'$merge'",
+            
+            // JavaScript execution (CRITICAL - allows arbitrary code)
+            "\"$function\"", "'$function'",
+            "\"$accumulator\"", "'$accumulator'",
+            "\"$where\"", "'$where'",  // Not in aggregation but could be injected
+            
+            // Generic code execution patterns
+            "$eval", "function(", "function ", "=>", // Arrow functions
         };
 
         for (String forbidden : forbiddenOperators) {

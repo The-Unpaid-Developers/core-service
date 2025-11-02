@@ -36,4 +36,10 @@ public class Query {
      */
     @NonNull
     private String mongoQuery;
+
+    /**
+     * A brief description of the query's purpose.
+     */
+    @NonNull
+    private String description;
 }
