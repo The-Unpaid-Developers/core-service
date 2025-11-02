@@ -209,16 +209,17 @@ public class QueryService {
                 collection = COLLECTION_FIELD;
             }
 
-            // Add $skip stage if specified
+            // Add pagination stages ($skip must come before $limit)
             List<Document> modifiedPipeline = new ArrayList<>(pipelineStages);
+
+            // Add $skip stage if specified (must come before $limit)
+            if (request.getSkip() != null && request.getSkip() > 0) {
+                modifiedPipeline.add(new Document("$skip", request.getSkip()));
+            }
 
             // Add $limit stage if specified (default to 100)
             int limit = request.getLimit() != null ? request.getLimit() : 100;
             modifiedPipeline.add(new Document("$limit", limit));
-
-            if (request.getSkip() != null && request.getSkip() > 0) {
-                modifiedPipeline.add(new Document("$skip", request.getSkip()));
-            }            
 
             // Build and execute the aggregation
             List<AggregationOperation> operations = new ArrayList<>();
