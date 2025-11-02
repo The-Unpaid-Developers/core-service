@@ -51,13 +51,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("Should create a new query with valid data")
-        @Description("Creates a new query with name and query string")
+        @Description("Creates a new query with name and aggregation pipeline")
         @Severity(SeverityLevel.CRITICAL)
         void shouldCreateNewQuery() throws Exception {
             // Given
             CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
                     .name("getUserByEmail")
-                    .mongoQuery("{\"email\": \"test@example.com\"}")
+                    .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\"}}]")
+                    .description("Retrieve user by email")
                     .build();
 
             // When & Then
@@ -66,12 +67,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .content(toJson(request)))
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.name").value("getUserByEmail"))
-                    .andExpect(jsonPath("$.mongoQuery").value("{\"email\": \"test@example.com\"}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("[{\"$match\": {\"email\": \"test@example.com\"}}]"))
+                    .andExpect(jsonPath("$.description").value("Retrieve user by email"));
 
             // Verify in database
             Optional<Query> saved = queryRepository.findById("getUserByEmail");
             assertThat(saved).isPresent();
-            assertThat(saved.get().getMongoQuery()).isEqualTo("{\"email\": \"test@example.com\"}");
+            assertThat(saved.get().getMongoQuery()).isEqualTo("[{\"$match\": {\"email\": \"test@example.com\"}}]");
+            assertThat(saved.get().getDescription()).isEqualTo("Retrieve user by email");
         }
 
         @Test
@@ -82,14 +85,16 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given - create first query
             Query firstQuery = Query.builder()
                     .name("getActiveOrders")
-                    .mongoQuery("{\"status\": \"ACTIVE\"}")
+                    .mongoQuery("[{\"$match\": {\"status\": \"ACTIVE\"}}]")
+                    .description("Get active orders")
                     .build();
             queryRepository.save(firstQuery);
 
             // When & Then - try to create duplicate
             CreateQueryRequestDTO duplicateRequest = CreateQueryRequestDTO.builder()
                     .name("getActiveOrders")
-                    .mongoQuery("{\"status\": \"PENDING\"}")
+                    .mongoQuery("[{\"$match\": {\"status\": \"PENDING\"}}]")
+                    .description("Get pending orders")
                     .build();
 
             mockMvc.perform(post("/api/v1/queries")
@@ -122,7 +127,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                     .name("")
-                    .mongoQuery("{\"test\": \"value\"}")
+                    .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                    .description("Test query")
                     .build();
 
             // When & Then
@@ -141,7 +147,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                     .name("dangerousQuery")
-                    .mongoQuery("{\"$out\": \"newCollection\"}")
+                    .mongoQuery("[{\"$out\": \"newCollection\"}]")
+                    .description("Dangerous query with write operation")
                     .build();
 
             // When & Then
@@ -168,7 +175,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query query = Query.builder()
                     .name("getCustomers")
-                    .mongoQuery("SELECT * FROM customers")
+                    .mongoQuery("[{\"$match\": {\"type\": \"customer\"}}]")
+                    .description("Get all customers")
                     .build();
             queryRepository.save(query);
 
@@ -177,7 +185,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .contentType(MediaType.APPLICATION_JSON))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("getCustomers"))
-                    .andExpect(jsonPath("$.mongoQuery").value("SELECT * FROM customers"));
+                    .andExpect(jsonPath("$.mongoQuery").value("[{\"$match\": {\"type\": \"customer\"}}]"))
+                    .andExpect(jsonPath("$.description").value("Get all customers"));
         }
 
         @Test
@@ -199,15 +208,18 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given - create multiple queries
             queryRepository.save(Query.builder()
                     .name("query1")
-                    .mongoQuery("{\"field1\": \"value1\"}")
+                    .mongoQuery("[{\"$match\": {\"field1\": \"value1\"}}]")
+                    .description("Query 1 description")
                     .build());
             queryRepository.save(Query.builder()
                     .name("query2")
-                    .mongoQuery("{\"field2\": \"value2\"}")
+                    .mongoQuery("[{\"$match\": {\"field2\": \"value2\"}}]")
+                    .description("Query 2 description")
                     .build());
             queryRepository.save(Query.builder()
                     .name("query3")
-                    .mongoQuery("{\"field3\": \"value3\"}")
+                    .mongoQuery("[{\"$match\": {\"field3\": \"value3\"}}]")
+                    .description("Query 3 description")
                     .build());
 
             // When & Then
@@ -227,7 +239,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             for (int i = 1; i <= 5; i++) {
                 queryRepository.save(Query.builder()
                         .name("query" + i)
-                        .mongoQuery("{\"field" + i + "\": \"value" + i + "\"}")
+                        .mongoQuery("[{\"$match\": {\"field" + i + "\": \"value" + i + "\"}}]")
+                        .description("Query " + i + " description")
                         .build());
             }
 
@@ -265,19 +278,21 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("Should update an existing query")
-        @Description("Updates an existing query with new query string")
+        @Description("Updates an existing query with new aggregation pipeline")
         @Severity(SeverityLevel.CRITICAL)
         void shouldUpdateQuery() throws Exception {
             // Given
             Query existingQuery = Query.builder()
                     .name("updateTest")
-                    .mongoQuery("{\"active\": false}")
+                    .mongoQuery("[{\"$match\": {\"active\": false}}]")
+                    .description("Get inactive items")
                     .build();
             queryRepository.save(existingQuery);
 
             // Modify the query
             UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
-                    .mongoQuery("{\"active\": true}")
+                    .mongoQuery("[{\"$match\": {\"active\": true}}]")
+                    .description("Get active items")
                     .build();
 
             // When & Then
@@ -286,11 +301,13 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .content(toJson(updateRequest)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.name").value("updateTest"))
-                    .andExpect(jsonPath("$.mongoQuery").value("{\"active\": true}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("[{\"$match\": {\"active\": true}}]"))
+                    .andExpect(jsonPath("$.description").value("Get active items"));
 
             // Verify in database
             Query updated = queryRepository.findById("updateTest").orElseThrow();
-            assertThat(updated.getMongoQuery()).isEqualTo("{\"active\": true}");
+            assertThat(updated.getMongoQuery()).isEqualTo("[{\"$match\": {\"active\": true}}]");
+            assertThat(updated.getDescription()).isEqualTo("Get active items");
         }
 
         @Test
@@ -300,7 +317,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         void shouldFailToUpdateNonExistentQuery() throws Exception {
             // Given
             UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
-                    .mongoQuery("{\"test\": \"value\"}")
+                    .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                    .description("Test description")
                     .build();
 
             // When & Then
@@ -319,12 +337,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query existingQuery = Query.builder()
                     .name("testQuery")
-                    .mongoQuery("{\"test\": \"value\"}")
+                    .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                    .description("Test query")
                     .build();
             queryRepository.save(existingQuery);
 
             UpdateQueryRequestDTO invalidUpdate = UpdateQueryRequestDTO.builder()
                     .mongoQuery("   ")
+                    .description("Updated description")
                     .build();
 
             // When & Then
@@ -351,7 +371,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query query = Query.builder()
                     .name("deleteTest")
-                    .mongoQuery("{\"temp\": true}")
+                    .mongoQuery("[{\"$match\": {\"temp\": true}}]")
+                    .description("Temporary query for deletion")
                     .build();
             queryRepository.save(query);
 
@@ -395,7 +416,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Create
             CreateQueryRequestDTO createRequest = CreateQueryRequestDTO.builder()
                     .name(queryName)
-                    .mongoQuery("{\"active\": true}")
+                    .mongoQuery("[{\"$match\": {\"active\": true}}]")
+                    .description("Lifecycle test query")
                     .build();
 
             mockMvc.perform(post("/api/v1/queries")
@@ -411,14 +433,15 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
 
             // Update
             UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
-                    .mongoQuery("{\"active\": true, \"verified\": true}")
+                    .mongoQuery("[{\"$match\": {\"active\": true, \"verified\": true}}]")
+                    .description("Updated lifecycle test query")
                     .build();
 
             mockMvc.perform(put("/api/v1/queries/{name}", queryName)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(updateRequest)))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.mongoQuery").value("{\"active\": true, \"verified\": true}"));
+                    .andExpect(jsonPath("$.mongoQuery").value("[{\"$match\": {\"active\": true, \"verified\": true}}]"));
 
             // Delete
             mockMvc.perform(delete("/api/v1/queries/{name}", queryName)
@@ -436,11 +459,12 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         @Description("Tests system behavior with multiple queries")
         @Severity(SeverityLevel.NORMAL)
         void shouldHandleMultipleQueries() throws Exception {
-            // Create multiple queries with properly formatted JSON
+            // Create multiple queries with properly formatted aggregation pipelines
             for (int i = 1; i <= 10; i++) {
                 Query query = Query.builder()
                         .name("query" + i)
-                        .mongoQuery(String.format("{\"field%d\": \"value%d\"}", i, i))
+                        .mongoQuery(String.format("[{\"$match\": {\"field%d\": \"value%d\"}}]", i, i))
+                        .description("Query " + i + " description")
                         .build();
                 queryRepository.save(query);
             }
@@ -451,9 +475,10 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(10)));
 
-            // Update one - make sure it's valid JSON
+            // Update one - make sure it's valid aggregation pipeline
             UpdateQueryRequestDTO updateRequest = UpdateQueryRequestDTO.builder()
-                    .mongoQuery("{\"updated\": true}")
+                    .mongoQuery("[{\"$match\": {\"updated\": true}}]")
+                    .description("Updated query description")
                     .build();
 
             mockMvc.perform(put("/api/v1/queries/{name}", "query5")
@@ -483,13 +508,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("Should execute a stored query successfully")
-        @Description("Executes a stored query against a MongoDB collection")
+        @Description("Executes a stored aggregation pipeline against a MongoDB collection")
         @Severity(SeverityLevel.CRITICAL)
         void shouldExecuteQuerySuccessfully() throws Exception {
-            // Given - save a query
+            // Given - save an aggregation pipeline query
             Query storedQuery = Query.builder()
                     .name("findActiveUsers")
-                    .mongoQuery("{\"active\": true}")
+                    .mongoQuery("[{\"$match\": {\"active\": true}}]")
+                    .description("Find all active users")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -511,13 +537,14 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
 
         @Test
         @DisplayName("Should execute query with specific MongoDB conditions")
-        @Description("Executes a query with pre-defined MongoDB conditions in the stored query")
+        @Description("Executes an aggregation pipeline with pre-defined MongoDB conditions")
         @Severity(SeverityLevel.NORMAL)
         void shouldExecuteQueryWithSpecificConditions() throws Exception {
             // Given
             Query storedQuery = Query.builder()
                     .name("findAdultUsers")
-                    .mongoQuery("{\"age\": {\"$gte\": 18}}")
+                    .mongoQuery("[{\"$match\": {\"age\": {\"$gte\": 18}}}]")
+                    .description("Find users 18 or older")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -544,7 +571,8 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
             // Given
             Query storedQuery = Query.builder()
                     .name("getAllUsers")
-                    .mongoQuery("{}")
+                    .mongoQuery("[{\"$match\": {}}]")
+                    .description("Get all users")
                     .build();
             queryRepository.save(storedQuery);
 
@@ -579,36 +607,37 @@ public class QueryControllerIntegrationTest extends BaseIntegrationTest {
         }
 
         @Test
-        @DisplayName("Should fail when collection not specified")
-        @Description("Returns 400 when collection name is missing")
+        @DisplayName("Should use default collection when collection not specified")
+        @Description("Uses default collection 'solutionReviews' when collection is not provided")
         @Severity(SeverityLevel.NORMAL)
-        void shouldFailWhenCollectionNotSpecified() throws Exception {
+        void shouldUseDefaultCollectionWhenNotSpecified() throws Exception {
             // Given
             Query storedQuery = Query.builder()
                     .name("testQuery")
-                    .mongoQuery("{\"test\": true}")
+                    .mongoQuery("[{\"$match\": {\"test\": true}}]")
+                    .description("Test query for default collection")
                     .build();
             queryRepository.save(storedQuery);
 
-            // When & Then
+            // When & Then - Should succeed using default collection
             String requestBody = "{}";
 
             mockMvc.perform(post("/api/v1/queries/{name}/execute", "testQuery")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestBody))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.message").value(containsString("Collection name must be specified")));
+                    .andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("Should return empty list when no documents match")
-        @Description("Executes query that matches no documents")
+        @Description("Executes aggregation pipeline that matches no documents")
         @Severity(SeverityLevel.NORMAL)
         void shouldReturnEmptyListWhenNoMatches() throws Exception {
             // Given
             Query storedQuery = Query.builder()
                     .name("findNonExistent")
-                    .mongoQuery("{\"nonExistentField\": \"value\"}")
+                    .mongoQuery("[{\"$match\": {\"nonExistentField\": \"value\"}}]")
+                    .description("Find non-existent documents")
                     .build();
             queryRepository.save(storedQuery);
 
