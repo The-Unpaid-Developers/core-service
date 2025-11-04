@@ -7,6 +7,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.services.LookupService;
 
 import java.util.List;
@@ -38,6 +39,11 @@ public class LookupController {
     @GetMapping("/business-capabilities")
     public ResponseEntity<List<BusinessCapabilityLookupDTO>> getBusinessCapabilities() {
         return ResponseEntity.ok(lookupService.getBusinessCapabilities());
+    }
+
+    @GetMapping("/tech-components")
+    public ResponseEntity<List<TechComponentLookupDTO>> getTechComponents() {
+        return ResponseEntity.ok(lookupService.getTechComponents());
     }
 
     @GetMapping("/{lookupName}")

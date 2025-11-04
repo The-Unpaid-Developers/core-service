@@ -3,6 +3,7 @@ package com.project.core_service.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.lookup.Lookup;
 import com.project.core_service.services.LookupService;
@@ -211,5 +212,77 @@ class LookupControllerTest {
             .andExpect(jsonPath("$[1].l1").doesNotExist())
             .andExpect(jsonPath("$[1].l2").value("Claims Processing"))
             .andExpect(jsonPath("$[1].l3").doesNotExist());
+    }
+
+    // ===== Tech Components Tests =====
+
+    @Test
+    void getTechComponents_Success() throws Exception {
+        // Arrange
+        List<TechComponentLookupDTO> expectedComponents = Arrays.asList(
+            new TechComponentLookupDTO("Spring Boot", "3.2"),
+            new TechComponentLookupDTO("Node.js", "20.x"),
+            new TechComponentLookupDTO(".NET Core", "8")
+        );
+
+        when(lookupService.getTechComponents()).thenReturn(expectedComponents);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].productName").value("Spring Boot"))
+            .andExpect(jsonPath("$[0].productVersion").value("3.2"))
+            .andExpect(jsonPath("$[1].productName").value("Node.js"))
+            .andExpect(jsonPath("$[1].productVersion").value("20.x"))
+            .andExpect(jsonPath("$[2].productName").value(".NET Core"))
+            .andExpect(jsonPath("$[2].productVersion").value("8"));
+    }
+
+    @Test
+    void getTechComponents_EmptyList_Success() throws Exception {
+        // Arrange
+        when(lookupService.getTechComponents()).thenReturn(Arrays.asList());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getTechComponents_NotFound_ThrowsException() throws Exception {
+        // Arrange
+        when(lookupService.getTechComponents()).thenThrow(new NotFoundException("Tech components lookup not found"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/tech-components"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getTechComponents_WithNullValues_Success() throws Exception {
+        // Arrange
+        List<TechComponentLookupDTO> componentsWithNulls = Arrays.asList(
+            new TechComponentLookupDTO("Spring Boot", null),
+            new TechComponentLookupDTO(null, "20.x"),
+            new TechComponentLookupDTO(".NET Core", "8")
+        );
+
+        when(lookupService.getTechComponents()).thenReturn(componentsWithNulls);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].productName").value("Spring Boot"))
+            .andExpect(jsonPath("$[0].productVersion").doesNotExist())
+            .andExpect(jsonPath("$[1].productName").doesNotExist())
+            .andExpect(jsonPath("$[1].productVersion").value("20.x"))
+            .andExpect(jsonPath("$[2].productName").value(".NET Core"))
+            .andExpect(jsonPath("$[2].productVersion").value("8"));
     }
 }

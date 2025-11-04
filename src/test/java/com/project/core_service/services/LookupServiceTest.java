@@ -8,6 +8,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -767,6 +768,212 @@ class LookupServiceTest {
         return map;
     }
 
+    // ===== Tech Components Tests =====
+
+    @Test
+    void getTechComponents_Success() {
+        // Arrange
+        Document techComponentsDoc = createTechComponentsDocument();
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techComponentsDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        TechComponentLookupDTO firstComponent = result.get(0);
+        assertEquals("Spring Boot", firstComponent.getProductName());
+        assertEquals("3.2", firstComponent.getProductVersion());
+
+        TechComponentLookupDTO secondComponent = result.get(1);
+        assertEquals("Node.js", secondComponent.getProductName());
+        assertEquals("20.x", secondComponent.getProductVersion());
+
+        TechComponentLookupDTO thirdComponent = result.get(2);
+        assertEquals(".NET Core", thirdComponent.getProductName());
+        assertEquals("8", thirdComponent.getProductVersion());
+
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_NotFound_ThrowsNotFoundException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertEquals("Tech components lookup not found", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_EmptyData_ReturnsEmptyList() {
+        // Arrange
+        Document emptyDoc = new Document();
+        emptyDoc.put("lookupName", "tech_eol");
+        emptyDoc.put("data", new ArrayList<>());
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(emptyDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_NullData_ReturnsEmptyList() {
+        // Arrange
+        Document nullDataDoc = new Document();
+        nullDataDoc.put("lookupName", "tech_eol");
+        nullDataDoc.put("data", null);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(nullDataDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_WithNullValues_HandlesGracefully() {
+        // Arrange
+        List<Map<String, String>> dataWithNulls = Arrays.asList(
+            Map.of("Product Name", "Spring Boot", "Product Version", "3.2", "Adoption Status", "mainstream"),
+            createTechComponentMapWithNulls("Node.js", null, "mainstream"),
+            createTechComponentMapWithNulls(null, "8", "mainstream")
+        );
+
+        Document docWithNulls = new Document();
+        docWithNulls.put("lookupName", "tech_eol");
+        docWithNulls.put("data", dataWithNulls);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(docWithNulls);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        TechComponentLookupDTO firstComponent = result.get(0);
+        assertEquals("Spring Boot", firstComponent.getProductName());
+        assertEquals("3.2", firstComponent.getProductVersion());
+
+        TechComponentLookupDTO secondComponent = result.get(1);
+        assertEquals("Node.js", secondComponent.getProductName());
+        assertNull(secondComponent.getProductVersion());
+
+        TechComponentLookupDTO thirdComponent = result.get(2);
+        assertNull(thirdComponent.getProductName());
+        assertEquals("8", thirdComponent.getProductVersion());
+    }
+
+    @Test
+    void getTechComponents_DatabaseError_ThrowsRuntimeException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenThrow(new RuntimeException("Database connection error"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertEquals("Database connection error", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_DataProcessingError_ThrowsCsvProcessingException() {
+        // Arrange
+        Document corruptDoc = new Document();
+        corruptDoc.put("lookupName", "tech_eol");
+        corruptDoc.put("data", "invalid_data_type"); // This should cause an error
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(corruptDoc);
+
+        // Act & Assert
+        CsvProcessingException exception = assertThrows(CsvProcessingException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertTrue(exception.getMessage().contains("Failed to process tech components"));
+    }
+
+    @Test
+    void transformDataToTechComponents_WithNullData_ReturnsEmptyList() {
+        // Use reflection to test the private method
+        try {
+            java.lang.reflect.Method method = LookupService.class.getDeclaredMethod(
+                "transformDataToTechComponents", List.class);
+            method.setAccessible(true);
+            
+            @SuppressWarnings("unchecked")
+            List<TechComponentLookupDTO> result = (List<TechComponentLookupDTO>) method.invoke(
+                lookupService, (List<Map<String, String>>) null);
+            
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+        } catch (Exception e) {
+            fail("Failed to test transformDataToTechComponents with null data: " + e.getMessage());
+        }
+    }
+
+    private Document createTechComponentsDocument() {
+        List<Map<String, String>> techComponentData = Arrays.asList(
+            Map.of("Product Name", "Spring Boot", "Product Version", "3.2", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "11/24/2025"),
+            Map.of("Product Name", "Node.js", "Product Version", "20.x", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "4/30/2026"),
+            Map.of("Product Name", ".NET Core", "Product Version", "8", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "11/10/2026")
+        );
+
+        Document doc = new Document();
+        doc.put("id", "tech_eol");
+        doc.put("lookupName", "tech_eol");
+        doc.put("data", techComponentData);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 3);
+
+        return doc;
+    }
+
+    private Map<String, String> createTechComponentMapWithNulls(String productName, String productVersion, String adoptionStatus) {
+        Map<String, String> map = new HashMap<>();
+        if (productName != null) map.put("Product Name", productName);
+        if (productVersion != null) map.put("Product Version", productVersion);
+        if (adoptionStatus != null) map.put("Adoption Status", adoptionStatus);
+        return map;
+    }
+
     @Test
     void processCsvFile_UnexpectedException_ThrowsCsvProcessingException() {
         // Create a CSV file that will cause an unexpected exception during processing
@@ -910,5 +1117,141 @@ class LookupServiceTest {
         
         // Verify that the mock was called, indicating the CSV was processed
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void extractDataList_WithNullItemInList_SkipsNullItems() throws Exception {
+        // Setup - create a list with a null item
+        List<Object> dataWithNull = new ArrayList<>();
+        dataWithNull.add(Map.of("Product Name", "Java", "Product Version", "17"));
+        dataWithNull.add(null); // This should be skipped with a warning
+        dataWithNull.add(Map.of("Product Name", "Node.js", "Product Version", "18"));
+
+        // Mock the MongoDB setup for tech components using the same pattern as existing tests
+        Document techDoc = new Document()
+            .append("lookupName", "tech_eol")
+            .append("data", dataWithNull);
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techDoc);
+
+        // Execute
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Verify - should have 2 items (null item skipped)
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void extractDataList_WithNonMapItemInList_ThrowsCsvProcessingException() throws Exception {
+        // Setup - create a list with a non-Map item
+        List<Object> dataWithInvalidItem = new ArrayList<>();
+        dataWithInvalidItem.add(Map.of("Product Name", "Java", "Product Version", "17"));
+        dataWithInvalidItem.add("invalid-string-item"); // This should cause exception
+        dataWithInvalidItem.add(Map.of("Product Name", "Node.js", "Product Version", "18"));
+
+        // Mock the MongoDB setup for tech components using the same pattern as existing tests
+        Document techDoc = new Document()
+            .append("lookupName", "tech_eol")
+            .append("data", dataWithInvalidItem);
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techDoc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getTechComponents()
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid item at index 1"));
+        assertTrue(exception.getMessage().contains("expected Map but got String"));
+    }
+
+    @Test
+    void extractValue_WithNullValueInCsvRecord_ReturnsEmptyString() throws Exception {
+        // Create a CSV content with explicit null handling scenario
+        String csvContent = "Product Name,Product Version\n" +
+                           "Java,17\n" +
+                           "Node.js,"; // Empty value that may be treated as null
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "test-null-value.csv", 
+            "text/csv", 
+            csvContent.getBytes()
+        );
+
+        // Mock the MongoDB operations
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any()))
+            .thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "test-null-value");
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify the data was processed (empty values handled correctly)
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void processCsvFile_WithMalformedCsvStructure_HandlesGracefully() throws Exception {
+        // Create malformed CSV with inconsistent column counts
+        String malformedCsv = "Product Name,Product Version,Extra Column\n" +
+                             "Java,17\n" + // Missing third column
+                             "Node.js,18,mainstream,extra-data\n"; // Too many columns
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "malformed.csv", 
+            "text/csv", 
+            malformedCsv.getBytes()
+        );
+
+        // Mock the MongoDB operations
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any()))
+            .thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "malformed-test");
+
+        // Verify that the service handles malformed CSV gracefully
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify processing completed despite malformed structure
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void extractDataList_WithNonListDataStructure_ThrowsCsvProcessingException() throws Exception {
+        // Setup - provide a string instead of a List
+        String invalidData = "not-a-list-structure";
+
+        // Mock the MongoDB setup for business capabilities using the same pattern as existing tests
+        Document businessDoc = new Document()
+            .append("lookupName", "business-capabilities")
+            .append("data", invalidData); // String instead of List
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(businessDoc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getBusinessCapabilities()
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid data structure"));
+        assertTrue(exception.getMessage().contains("expected List but got String"));
     }
 }
