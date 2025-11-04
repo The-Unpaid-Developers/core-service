@@ -402,10 +402,11 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
     @Description("Tests the retrieval of business capabilities from lookup data stored in MongoDB")
     void getBusinessCapabilities_WithStoredData_Success() throws Exception {
         // Arrange - Upload business capabilities CSV first
-        String businessCapCsvContent = "L1,L2,L3,Description\n" +
-            "Policy Management,Policy Administration,Policy Issuance,Create and issue new insurance policies to customers\n" +
-            "Claims Management,Claims Processing,First Notice of Loss,Capture initial claim information from customers\n" +
-            "Customer Management,Customer Onboarding,Customer Registration,Register new customers in the system";
+        String businessCapCsvContent = """
+            L1,L2,L3,Description
+            Policy Management,Policy Administration,Policy Issuance,Create and issue new insurance policies to customers
+            Claims Management,Claims Processing,First Notice of Loss,Capture initial claim information from customers
+            Customer Management,Customer Onboarding,Customer Registration,Register new customers in the system""";
 
         MockMultipartFile file = new MockMultipartFile(
             "file",
@@ -476,10 +477,11 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
     @Description("Tests handling of business capabilities data with null or missing L1, L2, L3 fields")
     void getBusinessCapabilities_WithMissingFields_HandlesGracefully() throws Exception {
         // Arrange - Upload business capabilities CSV with some missing fields
-        String csvWithMissingFields = "L1,L2,L3,Description\n" +
-            "Policy Management,Policy Administration,Policy Issuance,Complete policy process\n" +
-            "Claims Management,,First Notice of Loss,Partial claims process\n" +
-            ",Customer Onboarding,,Partial customer process";
+        String csvWithMissingFields = """
+            L1,L2,L3,Description
+            Policy Management,Policy Administration,Policy Issuance,Complete policy process
+            Claims Management,,First Notice of Loss,Partial claims process
+            ,Customer Onboarding,,Partial customer process""";
 
         MockMultipartFile file = new MockMultipartFile(
             "file",
@@ -512,8 +514,9 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
 
         // Additional verification that response is valid JSON array
         String responseContent = result.getResponse().getContentAsString();
-        assertThat(responseContent).startsWith("[");
-        assertThat(responseContent).endsWith("]");
+        assertThat(responseContent)
+            .startsWith("[")
+            .endsWith("]");
     }
 
     @Test
@@ -523,7 +526,7 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         // Arrange - Create a large business capabilities CSV
         StringBuilder csvBuilder = new StringBuilder("L1,L2,L3,Description\n");
         for (int i = 1; i <= 100; i++) {
-            csvBuilder.append(String.format("Level1_%d,Level2_%d,Level3_%d,Description for capability %d\n", i, i, i, i));
+            csvBuilder.append(String.format("Level1_%d,Level2_%d,Level3_%d,Description for capability %d%n", i, i, i, i));
         }
 
         MockMultipartFile file = new MockMultipartFile(
@@ -552,6 +555,166 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
             .andExpect(jsonPath("$[99].l1").value("Level1_100"))
             .andExpect(jsonPath("$[99].l2").value("Level2_100"))
             .andExpect(jsonPath("$[99].l3").value("Level3_100"));
+
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        
+        // Assert that the operation completes within reasonable time (less than 5 seconds)
+        assertThat(executionTime).isLessThan(5000);
+    }
+
+    // ===== Tech Components Integration Tests =====
+
+    @Test
+    @DisplayName("Should retrieve tech components successfully")
+    @Description("Tests the retrieval of tech components from lookup data stored in MongoDB")
+    void getTechComponents_WithStoredData_Success() throws Exception {
+        // Arrange - Upload tech components CSV first
+        String techComponentsCsvContent = """
+            Product Name,Product Version,Adoption Status,Product Category,End-of-Life Date
+            Spring Boot,3.2,mainstream,Backend Frameworks,11/24/2025
+            Node.js,20.x,mainstream,Backend Frameworks,4/30/2026
+            .NET Core,8,mainstream,Backend Frameworks,11/10/2026""";
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "tech_eol.csv",
+            "text/csv",
+            techComponentsCsvContent.getBytes()
+        );
+
+        // Upload the tech components data first
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "tech_eol"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve tech components
+        mockMvc.perform(get(BASE_URL + "/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].productName").value("Spring Boot"))
+            .andExpect(jsonPath("$[0].productVersion").value("3.2"))
+            .andExpect(jsonPath("$[1].productName").value("Node.js"))
+            .andExpect(jsonPath("$[1].productVersion").value("20.x"))
+            .andExpect(jsonPath("$[2].productName").value(".NET Core"))
+            .andExpect(jsonPath("$[2].productVersion").value("8"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when tech components lookup not found")
+    @Description("Tests error handling when tech components lookup does not exist in the database")
+    void getTechComponents_NotFound_Returns404() throws Exception {
+        // Ensure no tech_eol lookup exists by cleaning database
+        mongoTemplate.remove(query(where("lookupName").is("tech_eol")), "lookups");
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/tech-components"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Tech components lookup not found"));
+    }
+
+    @Test
+    @DisplayName("Should return empty array when tech components has no data")
+    @Description("Tests handling of empty tech components lookup")
+    void getTechComponents_EmptyData_ReturnsEmptyArray() throws Exception {
+        // Arrange - Create a tech components lookup with empty data
+        Lookup emptyLookup = Lookup.builder()
+            .id("tech_eol")
+            .lookupName("tech_eol")
+            .data(List.of())
+            .recordCount(0)
+            .uploadedAt(new java.util.Date())
+            .build();
+
+        mongoTemplate.save(emptyLookup, "lookups");
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Should handle tech components with missing fields gracefully")
+    @Description("Tests handling of tech components data with null or missing Product Name and Product Version fields")
+    void getTechComponents_WithMissingFields_HandlesGracefully() throws Exception {
+        // Arrange - Upload tech components CSV with some missing fields
+        String csvWithMissingFields = """
+            Product Name,Product Version,Adoption Status,Product Category,End-of-Life Date
+            Spring Boot,3.2,mainstream,Backend Frameworks,11/24/2025
+            Node.js,,mainstream,Backend Frameworks,4/30/2026
+            ,8,mainstream,Backend Frameworks,11/10/2026""";
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "tech-components-partial.csv",
+            "text/csv",
+            csvWithMissingFields.getBytes()
+        );
+
+        // Upload the data first
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "tech_eol"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve and verify handling of missing fields
+        MvcResult result = mockMvc.perform(get(BASE_URL + "/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].productName").value("Spring Boot"))
+            .andExpect(jsonPath("$[0].productVersion").value("3.2"))
+            .andExpect(jsonPath("$[1].productName").value("Node.js"))
+            .andExpect(jsonPath("$[1].productVersion").value(""))
+            .andExpect(jsonPath("$[2].productName").value(""))
+            .andExpect(jsonPath("$[2].productVersion").value("8"))
+            .andReturn();
+
+        // Additional verification that response is valid JSON array
+        String responseContent = result.getResponse().getContentAsString();
+        assertThat(responseContent)
+            .startsWith("[")
+            .endsWith("]");
+    }
+
+    @Test
+    @DisplayName("Should handle large tech components dataset efficiently")
+    @Description("Tests performance and handling of large tech components dataset")
+    void getTechComponents_LargeDataset_HandlesEfficiently() throws Exception {
+        // Arrange - Create a large tech components CSV
+        StringBuilder csvBuilder = new StringBuilder("Product Name,Product Version,Adoption Status,Product Category,End-of-Life Date\n");
+        for (int i = 1; i <= 100; i++) {
+            csvBuilder.append(String.format("Product_%d,Version_%d,mainstream,Backend Frameworks,12/31/2025%n", i, i));
+        }
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "large-tech-components.csv",
+            "text/csv",
+            csvBuilder.toString().getBytes()
+        );
+
+        // Upload the large dataset
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "tech_eol"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve large dataset efficiently
+        long startTime = System.currentTimeMillis();
+        
+        mockMvc.perform(get(BASE_URL + "/tech-components"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(100))
+            .andExpect(jsonPath("$[0].productName").value("Product_1"))
+            .andExpect(jsonPath("$[0].productVersion").value("Version_1"))
+            .andExpect(jsonPath("$[99].productName").value("Product_100"))
+            .andExpect(jsonPath("$[99].productVersion").value("Version_100"));
 
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;

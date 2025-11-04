@@ -8,6 +8,7 @@ import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -764,6 +765,212 @@ class LookupServiceTest {
         if (l1 != null) map.put("L1", l1);
         if (l2 != null) map.put("L2", l2);
         if (l3 != null) map.put("L3", l3);
+        return map;
+    }
+
+    // ===== Tech Components Tests =====
+
+    @Test
+    void getTechComponents_Success() {
+        // Arrange
+        Document techComponentsDoc = createTechComponentsDocument();
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techComponentsDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        TechComponentLookupDTO firstComponent = result.get(0);
+        assertEquals("Spring Boot", firstComponent.getProductName());
+        assertEquals("3.2", firstComponent.getProductVersion());
+
+        TechComponentLookupDTO secondComponent = result.get(1);
+        assertEquals("Node.js", secondComponent.getProductName());
+        assertEquals("20.x", secondComponent.getProductVersion());
+
+        TechComponentLookupDTO thirdComponent = result.get(2);
+        assertEquals(".NET Core", thirdComponent.getProductName());
+        assertEquals("8", thirdComponent.getProductVersion());
+
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_NotFound_ThrowsNotFoundException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertEquals("Tech components lookup not found", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_EmptyData_ReturnsEmptyList() {
+        // Arrange
+        Document emptyDoc = new Document();
+        emptyDoc.put("lookupName", "tech_eol");
+        emptyDoc.put("data", new ArrayList<>());
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(emptyDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_NullData_ReturnsEmptyList() {
+        // Arrange
+        Document nullDataDoc = new Document();
+        nullDataDoc.put("lookupName", "tech_eol");
+        nullDataDoc.put("data", null);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(nullDataDoc);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_WithNullValues_HandlesGracefully() {
+        // Arrange
+        List<Map<String, String>> dataWithNulls = Arrays.asList(
+            Map.of("Product Name", "Spring Boot", "Product Version", "3.2", "Adoption Status", "mainstream"),
+            createTechComponentMapWithNulls("Node.js", null, "mainstream"),
+            createTechComponentMapWithNulls(null, "8", "mainstream")
+        );
+
+        Document docWithNulls = new Document();
+        docWithNulls.put("lookupName", "tech_eol");
+        docWithNulls.put("data", dataWithNulls);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(docWithNulls);
+
+        // Act
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        TechComponentLookupDTO firstComponent = result.get(0);
+        assertEquals("Spring Boot", firstComponent.getProductName());
+        assertEquals("3.2", firstComponent.getProductVersion());
+
+        TechComponentLookupDTO secondComponent = result.get(1);
+        assertEquals("Node.js", secondComponent.getProductName());
+        assertNull(secondComponent.getProductVersion());
+
+        TechComponentLookupDTO thirdComponent = result.get(2);
+        assertNull(thirdComponent.getProductName());
+        assertEquals("8", thirdComponent.getProductVersion());
+    }
+
+    @Test
+    void getTechComponents_DatabaseError_ThrowsRuntimeException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenThrow(new RuntimeException("Database connection error"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertEquals("Database connection error", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getTechComponents_DataProcessingError_ThrowsCsvProcessingException() {
+        // Arrange
+        Document corruptDoc = new Document();
+        corruptDoc.put("lookupName", "tech_eol");
+        corruptDoc.put("data", "invalid_data_type"); // This should cause an error
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(corruptDoc);
+
+        // Act & Assert
+        CsvProcessingException exception = assertThrows(CsvProcessingException.class, 
+            () -> lookupService.getTechComponents());
+        
+        assertTrue(exception.getMessage().contains("Failed to process tech components"));
+    }
+
+    @Test
+    void transformDataToTechComponents_WithNullData_ReturnsEmptyList() {
+        // Use reflection to test the private method
+        try {
+            java.lang.reflect.Method method = LookupService.class.getDeclaredMethod(
+                "transformDataToTechComponents", List.class);
+            method.setAccessible(true);
+            
+            @SuppressWarnings("unchecked")
+            List<TechComponentLookupDTO> result = (List<TechComponentLookupDTO>) method.invoke(
+                lookupService, (List<Map<String, String>>) null);
+            
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+        } catch (Exception e) {
+            fail("Failed to test transformDataToTechComponents with null data: " + e.getMessage());
+        }
+    }
+
+    private Document createTechComponentsDocument() {
+        List<Map<String, String>> techComponentData = Arrays.asList(
+            Map.of("Product Name", "Spring Boot", "Product Version", "3.2", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "11/24/2025"),
+            Map.of("Product Name", "Node.js", "Product Version", "20.x", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "4/30/2026"),
+            Map.of("Product Name", ".NET Core", "Product Version", "8", "Adoption Status", "mainstream", "Product Category", "Backend Frameworks", "End-of-Life Date", "11/10/2026")
+        );
+
+        Document doc = new Document();
+        doc.put("id", "tech_eol");
+        doc.put("lookupName", "tech_eol");
+        doc.put("data", techComponentData);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 3);
+
+        return doc;
+    }
+
+    private Map<String, String> createTechComponentMapWithNulls(String productName, String productVersion, String adoptionStatus) {
+        Map<String, String> map = new HashMap<>();
+        if (productName != null) map.put("Product Name", productName);
+        if (productVersion != null) map.put("Product Version", productVersion);
+        if (adoptionStatus != null) map.put("Adoption Status", adoptionStatus);
         return map;
     }
 
