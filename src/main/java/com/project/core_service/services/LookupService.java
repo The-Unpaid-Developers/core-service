@@ -299,7 +299,7 @@ public class LookupService {
             return Lookup.builder()
                     .id(id)
                     .lookupName(lookupName)
-                    .data(data != null ? data : new ArrayList<>())
+                    .data(data)
                     .uploadedAt(uploadedAt)
                     .recordCount(recordCount != null ? recordCount : 0)
                     .build();
@@ -384,12 +384,16 @@ public class LookupService {
             String productName = dataRow.get(PRODUCT_NAME_FIELD);
             String productVersion = dataRow.get(PRODUCT_VERSION_FIELD);
             
-            // Log warnings for null values to help with data quality monitoring
+            // Skip entries with null or empty product names as they are invalid
             if (productName == null || productName.trim().isEmpty()) {
-                log.warn("Tech component found with null or empty product name in row: {}", dataRow);
+                log.warn("Tech component found with null or empty product name in row: {}, skipping entry", dataRow);
+                continue;
             }
+            
+            // Log warning for missing version but still include the component
             if (productVersion == null || productVersion.trim().isEmpty()) {
                 log.warn("Tech component found with null or empty product version for product: {}", productName);
+                productVersion = ""; // Ensure we have a non-null value
             }
             
             TechComponentLookupDTO component = new TechComponentLookupDTO(productName, productVersion);
@@ -422,7 +426,7 @@ public class LookupService {
             Object dataObj = doc.get(DATA_FIELD);
             List<Map<String, String>> data = extractDataList(dataObj, logContext);
             
-            if (data == null || data.isEmpty()) {
+            if (data.isEmpty()) {
                 log.warn("{} lookup found but contains no data", logContext);
                 return new ArrayList<>();
             }
@@ -447,7 +451,7 @@ public class LookupService {
      */
     private List<Map<String, String>> extractDataList(Object dataObj, String contextName) {
         if (dataObj == null) {
-            return null;
+            return new ArrayList<>();
         }
 
         // Check if it's a List
