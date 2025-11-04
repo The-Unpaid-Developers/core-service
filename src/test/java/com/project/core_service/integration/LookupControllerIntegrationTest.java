@@ -6,7 +6,6 @@ import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -14,6 +13,8 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+import static org.springframework.data.mongodb.core.query.Query.query;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -394,5 +395,168 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
                 .file(file)
                 .param("lookupName", lookupName))
             .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("Should retrieve business capabilities successfully")
+    @Description("Tests the retrieval of business capabilities from lookup data stored in MongoDB")
+    void getBusinessCapabilities_WithStoredData_Success() throws Exception {
+        // Arrange - Upload business capabilities CSV first
+        String businessCapCsvContent = "L1,L2,L3,Description\n" +
+            "Policy Management,Policy Administration,Policy Issuance,Create and issue new insurance policies to customers\n" +
+            "Claims Management,Claims Processing,First Notice of Loss,Capture initial claim information from customers\n" +
+            "Customer Management,Customer Onboarding,Customer Registration,Register new customers in the system";
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "business-capabilities.csv",
+            "text/csv",
+            businessCapCsvContent.getBytes()
+        );
+
+        // Upload the business capabilities data first
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "business-capabilities"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve business capabilities
+        mockMvc.perform(get(BASE_URL + "/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].l1").value("Policy Management"))
+            .andExpect(jsonPath("$[0].l2").value("Policy Administration"))
+            .andExpect(jsonPath("$[0].l3").value("Policy Issuance"))
+            .andExpect(jsonPath("$[1].l1").value("Claims Management"))
+            .andExpect(jsonPath("$[1].l2").value("Claims Processing"))
+            .andExpect(jsonPath("$[1].l3").value("First Notice of Loss"))
+            .andExpect(jsonPath("$[2].l1").value("Customer Management"))
+            .andExpect(jsonPath("$[2].l2").value("Customer Onboarding"))
+            .andExpect(jsonPath("$[2].l3").value("Customer Registration"));
+    }
+
+    @Test
+    @DisplayName("Should return 404 when business capabilities lookup not found")
+    @Description("Tests error handling when business capabilities lookup does not exist in the database")
+    void getBusinessCapabilities_NotFound_Returns404() throws Exception {
+        // Ensure no business-capabilities lookup exists by cleaning database
+        mongoTemplate.remove(query(where("lookupName").is("business-capabilities")), "lookups");
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/business-capabilities"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Business capabilities lookup not found"));
+    }
+
+    @Test
+    @DisplayName("Should return empty array when business capabilities has no data")
+    @Description("Tests handling of empty business capabilities lookup")
+    void getBusinessCapabilities_EmptyData_ReturnsEmptyArray() throws Exception {
+        // Arrange - Create a business capabilities lookup with empty data
+        Lookup emptyLookup = Lookup.builder()
+            .id("business-capabilities")
+            .lookupName("business-capabilities")
+            .data(List.of())
+            .recordCount(0)
+            .uploadedAt(new java.util.Date())
+            .build();
+
+        mongoTemplate.save(emptyLookup, "lookups");
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Should handle business capabilities with missing fields gracefully")
+    @Description("Tests handling of business capabilities data with null or missing L1, L2, L3 fields")
+    void getBusinessCapabilities_WithMissingFields_HandlesGracefully() throws Exception {
+        // Arrange - Upload business capabilities CSV with some missing fields
+        String csvWithMissingFields = "L1,L2,L3,Description\n" +
+            "Policy Management,Policy Administration,Policy Issuance,Complete policy process\n" +
+            "Claims Management,,First Notice of Loss,Partial claims process\n" +
+            ",Customer Onboarding,,Partial customer process";
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "business-capabilities-partial.csv", 
+            "text/csv",
+            csvWithMissingFields.getBytes()
+        );
+
+        // Upload the data first
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "business-capabilities"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve and verify handling of missing fields
+        MvcResult result = mockMvc.perform(get(BASE_URL + "/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].l1").value("Policy Management"))
+            .andExpect(jsonPath("$[0].l2").value("Policy Administration"))
+            .andExpect(jsonPath("$[0].l3").value("Policy Issuance"))
+            .andExpect(jsonPath("$[1].l1").value("Claims Management"))
+            .andExpect(jsonPath("$[1].l2").value(""))
+            .andExpect(jsonPath("$[1].l3").value("First Notice of Loss"))
+            .andExpect(jsonPath("$[2].l1").value(""))
+            .andExpect(jsonPath("$[2].l2").value("Customer Onboarding"))
+            .andExpect(jsonPath("$[2].l3").value(""))
+            .andReturn();
+
+        // Additional verification that response is valid JSON array
+        String responseContent = result.getResponse().getContentAsString();
+        assertThat(responseContent).startsWith("[");
+        assertThat(responseContent).endsWith("]");
+    }
+
+    @Test
+    @DisplayName("Should handle large business capabilities dataset efficiently")
+    @Description("Tests performance and handling of large business capabilities dataset")
+    void getBusinessCapabilities_LargeDataset_HandlesEfficiently() throws Exception {
+        // Arrange - Create a large business capabilities CSV
+        StringBuilder csvBuilder = new StringBuilder("L1,L2,L3,Description\n");
+        for (int i = 1; i <= 100; i++) {
+            csvBuilder.append(String.format("Level1_%d,Level2_%d,Level3_%d,Description for capability %d\n", i, i, i, i));
+        }
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "large-business-capabilities.csv",
+            "text/csv",
+            csvBuilder.toString().getBytes()
+        );
+
+        // Upload the large dataset
+        mockMvc.perform(multipart(BASE_URL + "/upload")
+                .file(file)
+                .param("lookupName", "business-capabilities"))
+            .andExpect(status().isOk());
+
+        // Act & Assert - Retrieve large dataset efficiently
+        long startTime = System.currentTimeMillis();
+        
+        mockMvc.perform(get(BASE_URL + "/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(100))
+            .andExpect(jsonPath("$[0].l1").value("Level1_1"))
+            .andExpect(jsonPath("$[0].l2").value("Level2_1"))
+            .andExpect(jsonPath("$[0].l3").value("Level3_1"))
+            .andExpect(jsonPath("$[99].l1").value("Level1_100"))
+            .andExpect(jsonPath("$[99].l2").value("Level2_100"))
+            .andExpect(jsonPath("$[99].l3").value("Level3_100"));
+
+        long endTime = System.currentTimeMillis();
+        long executionTime = endTime - startTime;
+        
+        // Assert that the operation completes within reasonable time (less than 5 seconds)
+        assertThat(executionTime).isLessThan(5000);
     }
 }

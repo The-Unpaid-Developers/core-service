@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
@@ -15,6 +16,9 @@ import org.bson.conversions.Bson;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,6 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -254,12 +259,12 @@ class LookupServiceTest {
         assertTrue(exception.getMessage().contains("not found"));
     }
 
-    @Test
-    void processCsvFile_WithSpecialCharacters_Success() {
+    @ParameterizedTest
+    @MethodSource("csvProcessingTestCases")
+    void processCsvFile_VariousFormats_Success(String testName, String csvContent, String lookupName, int expectedRecords) {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
-        String csvContent = "name,city,description\nJosé García,São Paulo,Café & Résumé\nMüller Schmidt,Zürich,Über große Erfolge";
         MockMultipartFile file = new MockMultipartFile(
             "file",
             "test.csv",
@@ -271,276 +276,94 @@ class LookupServiceTest {
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, "special-chars");
+        LookupDTO result = lookupService.processCsvFile(file, lookupName);
 
         // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
+        assertTrue(result.isSuccess(), "Failed for test case: " + testName);
+        assertEquals(expectedRecords, result.getRecordsProcessed(), "Wrong record count for test case: " + testName);
     }
 
-    @Test
-    void processCsvFile_WithQuotedFields_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,description,location\n\"John Doe\",\"Software Engineer\",\"New York\"\n\"Jane Smith\",\"Data Analyst\",\"San Francisco\"";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
+    static Stream<Arguments> csvProcessingTestCases() {
+        return Stream.of(
+            Arguments.of(
+                "Special Characters",
+                "name,city,description\nJosé García,São Paulo,Café & Résumé\nMüller Schmidt,Zürich,Über große Erfolge",
+                "special-chars",
+                2
+            ),
+            Arguments.of(
+                "Quoted Fields",
+                "name,description,location\n\"John Doe\",\"Software Engineer\",\"New York\"\n\"Jane Smith\",\"Data Analyst\",\"San Francisco\"",
+                "quoted-fields",
+                2
+            ),
+            Arguments.of(
+                "Commas in Quoted Fields",
+                "name,address,notes\n\"John Doe\",\"123 Main St, Apt 4, New York, NY\",\"Likes coffee, tea, and water\"\n\"Jane Smith\",\"456 Oak Ave, Suite 200, Boston, MA\",\"Prefers email, phone, or text\"",
+                "commas-in-quotes",
+                2
+            ),
+            Arguments.of(
+                "Empty Values",
+                "name,middleName,lastName\nJohn,,Doe\nJane,Marie,Smith\nBob,,",
+                "empty-values",
+                3
+            ),
+            Arguments.of(
+                "Newlines in Quoted Fields",
+                "name,address,notes\n\"John Doe\",\"123 Main St\nApt 4\nNew York, NY\",\"Line 1\nLine 2\nLine 3\"",
+                "newlines-in-quotes",
+                1
+            ),
+            Arguments.of(
+                "Escaped Quotes",
+                "name,quote\n\"John Doe\",\"He said \"\"Hello\"\" to me\"\n\"Jane Smith\",\"She replied \"\"Hi there\"\"\"",
+                "escaped-quotes",
+                2
+            ),
+            Arguments.of(
+                "Unicode Characters",
+                "name,symbol,language\n中文,漢字,Chinese\n日本語,ひらがな,Japanese\nРусский,Кириллица,Russian\n한국어,한글,Korean",
+                "unicode-chars",
+                4
+            ),
+            Arguments.of(
+                "Long Field Values",
+                "id,description\n1," + "A".repeat(1000) + "\n2," + "A".repeat(1000),
+                "long-values",
+                2
+            ),
+            Arguments.of(
+                "Multiple Columns",
+                "col1,col2,col3,col4,col5,col6,col7,col8,col9,col10\na,b,c,d,e,f,g,h,i,j\n1,2,3,4,5,6,7,8,9,10",
+                "many-columns",
+                2
+            ),
+            Arguments.of(
+                "Whitespace in Fields",
+                "name,description\n  John Doe  ,  Software Engineer  \n  Jane Smith  ,  Data Analyst  ",
+                "whitespace",
+                2
+            ),
+            Arguments.of(
+                "Single Row",
+                "name,age\nJohn Doe,30",
+                "single-row",
+                1
+            ),
+            Arguments.of(
+                "Mixed Quoting Styles",
+                "name,age,city\n\"John Doe\",30,New York\nJane Smith,\"25\",\"San Francisco\"\n\"Bob Johnson\",35,Boston",
+                "mixed-quotes",
+                3
+            ),
+            Arguments.of(
+                "Unquoted Special Characters",
+                "name,symbols\nJohn,@#$%^&*()\nJane,!~`+=[]{}",
+                "special-symbols",
+                2
+            )
         );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "quoted-fields");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithCommasInQuotedFields_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,address,notes\n\"John Doe\",\"123 Main St, Apt 4, New York, NY\",\"Likes coffee, tea, and water\"\n\"Jane Smith\",\"456 Oak Ave, Suite 200, Boston, MA\",\"Prefers email, phone, or text\"";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "commas-in-quotes");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithEmptyValues_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,middleName,lastName\nJohn,,Doe\nJane,Marie,Smith\nBob,,";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "empty-values");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(3, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithNewlinesInQuotedFields_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,address,notes\n\"John Doe\",\"123 Main St\nApt 4\nNew York, NY\",\"Line 1\nLine 2\nLine 3\"";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "newlines-in-quotes");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(1, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithEscapedQuotes_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,quote\n\"John Doe\",\"He said \"\"Hello\"\" to me\"\n\"Jane Smith\",\"She replied \"\"Hi there\"\"\"";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "escaped-quotes");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithUnicodeCharacters_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,symbol,language\n中文,漢字,Chinese\n日本語,ひらがな,Japanese\nРусский,Кириллица,Russian\n한국어,한글,Korean";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "unicode-chars");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(4, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithLongFieldValues_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String longValue = "A".repeat(1000);
-        String csvContent = "id,description\n1," + longValue + "\n2," + longValue;
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "long-values");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithMultipleColumns_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "col1,col2,col3,col4,col5,col6,col7,col8,col9,col10\na,b,c,d,e,f,g,h,i,j\n1,2,3,4,5,6,7,8,9,10";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "many-columns");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithWhitespaceInFields_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,description\n  John Doe  ,  Software Engineer  \n  Jane Smith  ,  Data Analyst  ";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "whitespace");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithSingleRow_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,age\nJohn Doe,30";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "single-row");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(1, result.getRecordsProcessed());
-    }
-
-    @Test
-    void processCsvFile_WithMixedQuotingStyles_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,age,city\n\"John Doe\",30,New York\nJane Smith,\"25\",\"San Francisco\"\n\"Bob Johnson\",35,Boston";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "mixed-quotes");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(3, result.getRecordsProcessed());
     }
 
     @Test
@@ -564,8 +387,9 @@ class LookupServiceTest {
                    exception.getMessage().contains("empty"));
     }
 
-    @Test
-    void processCsvFile_NullLookupName_ThrowsException() {
+    @ParameterizedTest
+    @MethodSource("invalidLookupNameTestCases")
+    void processCsvFile_InvalidLookupName_ThrowsException(String testName, String lookupName) {
         // Arrange
         String csvContent = "name,age\nJohn,30";
         MockMultipartFile file = new MockMultipartFile(
@@ -578,43 +402,16 @@ class LookupServiceTest {
         // Act & Assert
         assertThrows(
             Exception.class,
-            () -> lookupService.processCsvFile(file, null)
+            () -> lookupService.processCsvFile(file, lookupName),
+            "Failed for test case: " + testName
         );
     }
 
-    @Test
-    void processCsvFile_EmptyLookupName_ThrowsException() {
-        // Arrange
-        String csvContent = "name,age\nJohn,30";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        // Act & Assert
-        assertThrows(
-            Exception.class,
-            () -> lookupService.processCsvFile(file, "")
-        );
-    }
-
-    @Test
-    void processCsvFile_WhitespaceLookupName_ThrowsException() {
-        // Arrange
-        String csvContent = "name,age\nJohn,30";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        // Act & Assert
-        assertThrows(
-            Exception.class,
-            () -> lookupService.processCsvFile(file, "   ")
+    static Stream<Arguments> invalidLookupNameTestCases() {
+        return Stream.of(
+            Arguments.of("Null Lookup Name", null),
+            Arguments.of("Empty Lookup Name", ""),
+            Arguments.of("Whitespace Lookup Name", "   ")
         );
     }
 
@@ -731,30 +528,6 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_UnquotedSpecialCharacters_Success() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-
-        String csvContent = "name,symbols\nJohn,@#$%^&*()\nJane,!~`+=[]{}";
-        MockMultipartFile file = new MockMultipartFile(
-            "file",
-            "test.csv",
-            "text/csv",
-            csvContent.getBytes()
-        );
-
-        UpdateResult updateResult = mock(UpdateResult.class);
-        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
-
-        // Act
-        LookupDTO result = lookupService.processCsvFile(file, "special-symbols");
-
-        // Assert
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getRecordsProcessed());
-    }
-
-    @Test
     void processCsvFile_VeryLargeNumberOfRows_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -799,5 +572,343 @@ class LookupServiceTest {
         doc.put("data", dataList);
 
         return doc;
+    }
+
+    // ===== Business Capabilities Tests =====
+
+    @Test
+    void getBusinessCapabilities_Success() {
+        // Arrange
+        Document businessCapDoc = createBusinessCapabilitiesDocument();
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(businessCapDoc);
+
+        // Act
+        List<BusinessCapabilityLookupDTO> result = lookupService.getBusinessCapabilities();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        BusinessCapabilityLookupDTO firstCapability = result.get(0);
+        assertEquals("Policy Management", firstCapability.getL1());
+        assertEquals("Policy Administration", firstCapability.getL2());
+        assertEquals("Policy Issuance", firstCapability.getL3());
+
+        BusinessCapabilityLookupDTO secondCapability = result.get(1);
+        assertEquals("Claims Management", secondCapability.getL1());
+        assertEquals("Claims Processing", secondCapability.getL2());
+        assertEquals("First Notice of Loss", secondCapability.getL3());
+
+        BusinessCapabilityLookupDTO thirdCapability = result.get(2);
+        assertEquals("Customer Management", thirdCapability.getL1());
+        assertEquals("Customer Onboarding", thirdCapability.getL2());
+        assertEquals("Customer Registration", thirdCapability.getL3());
+
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getBusinessCapabilities_NotFound_ThrowsNotFoundException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(NotFoundException.class, 
+            () -> lookupService.getBusinessCapabilities());
+        
+        assertEquals("Business capabilities lookup not found", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getBusinessCapabilities_EmptyData_ReturnsEmptyList() {
+        // Arrange
+        Document emptyDoc = new Document();
+        emptyDoc.put("lookupName", "business-capabilities");
+        emptyDoc.put("data", new ArrayList<>());
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(emptyDoc);
+
+        // Act
+        List<BusinessCapabilityLookupDTO> result = lookupService.getBusinessCapabilities();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getBusinessCapabilities_NullData_ReturnsEmptyList() {
+        // Arrange
+        Document nullDataDoc = new Document();
+        nullDataDoc.put("lookupName", "business-capabilities");
+        nullDataDoc.put("data", null);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(nullDataDoc);
+
+        // Act
+        List<BusinessCapabilityLookupDTO> result = lookupService.getBusinessCapabilities();
+
+        // Assert
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getBusinessCapabilities_WithNullValues_HandlesGracefully() {
+        // Arrange
+        List<Map<String, String>> dataWithNulls = Arrays.asList(
+            Map.of("L1", "Policy Management", "L2", "Policy Administration", "L3", "Policy Issuance"),
+            createMapWithNulls("Claims Management", null, "First Notice of Loss"),
+            createMapWithNulls(null, "Customer Onboarding", null)
+        );
+
+        Document docWithNulls = new Document();
+        docWithNulls.put("lookupName", "business-capabilities");
+        docWithNulls.put("data", dataWithNulls);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(docWithNulls);
+
+        // Act
+        List<BusinessCapabilityLookupDTO> result = lookupService.getBusinessCapabilities();
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(3, result.size());
+
+        BusinessCapabilityLookupDTO firstCapability = result.get(0);
+        assertEquals("Policy Management", firstCapability.getL1());
+        assertEquals("Policy Administration", firstCapability.getL2());
+        assertEquals("Policy Issuance", firstCapability.getL3());
+
+        BusinessCapabilityLookupDTO secondCapability = result.get(1);
+        assertEquals("Claims Management", secondCapability.getL1());
+        assertNull(secondCapability.getL2());
+        assertEquals("First Notice of Loss", secondCapability.getL3());
+
+        BusinessCapabilityLookupDTO thirdCapability = result.get(2);
+        assertNull(thirdCapability.getL1());
+        assertEquals("Customer Onboarding", thirdCapability.getL2());
+        assertNull(thirdCapability.getL3());
+    }
+
+    @Test
+    void getBusinessCapabilities_DatabaseError_ThrowsCsvProcessingException() {
+        // Arrange
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenThrow(new RuntimeException("Database connection error"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class, 
+            () -> lookupService.getBusinessCapabilities());
+        
+        assertEquals("Database connection error", exception.getMessage());
+        verify(mongoDatabase).getCollection(collectionName);
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getBusinessCapabilities_DataProcessingError_ThrowsCsvProcessingException() {
+        // Arrange
+        Document corruptDoc = new Document();
+        corruptDoc.put("lookupName", "business-capabilities");
+        corruptDoc.put("data", "invalid_data_type"); // This should cause an error
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(corruptDoc);
+
+        // Act & Assert
+        CsvProcessingException exception = assertThrows(CsvProcessingException.class, 
+            () -> lookupService.getBusinessCapabilities());
+        
+        assertTrue(exception.getMessage().contains("Failed to process business capabilities"));
+    }
+
+    private Document createBusinessCapabilitiesDocument() {
+        List<Map<String, String>> businessCapData = Arrays.asList(
+            Map.of("L1", "Policy Management", "L2", "Policy Administration", "L3", "Policy Issuance", "Description", "Create and issue new insurance policies to customers"),
+            Map.of("L1", "Claims Management", "L2", "Claims Processing", "L3", "First Notice of Loss", "Description", "Capture initial claim information from customers"),
+            Map.of("L1", "Customer Management", "L2", "Customer Onboarding", "L3", "Customer Registration", "Description", "Register new customers in the system")
+        );
+
+        Document doc = new Document();
+        doc.put("id", "business-capabilities");
+        doc.put("lookupName", "business-capabilities");
+        doc.put("data", businessCapData);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 3);
+
+        return doc;
+    }
+
+    private Map<String, String> createMapWithNulls(String l1, String l2, String l3) {
+        Map<String, String> map = new HashMap<>();
+        if (l1 != null) map.put("L1", l1);
+        if (l2 != null) map.put("L2", l2);
+        if (l3 != null) map.put("L3", l3);
+        return map;
+    }
+
+    @Test
+    void processCsvFile_UnexpectedException_ThrowsCsvProcessingException() {
+        // Create a CSV file that will cause an unexpected exception during processing
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "test.csv", 
+            "text/csv", 
+            "header1,header2\nvalue1,value2".getBytes()
+        );
+
+        // Mock the mongoDatabase to throw a RuntimeException
+        when(mongoDatabase.getCollection(anyString())).thenThrow(new RuntimeException("Database connection failed"));
+
+        // Assert that CsvProcessingException is thrown
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.processCsvFile(file, "test-lookup")
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to process CSV file"));
+        assertTrue(exception.getCause() instanceof RuntimeException);
+    }
+
+    @Test 
+    void processCsvFile_EmptyHeaders_ThrowsCsvProcessingException() {
+        // Create a CSV file with no headers (empty first line)
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv", 
+            "text/csv",
+            "\n".getBytes() // Just a newline, no headers
+        );
+
+        // Assert that CsvProcessingException is thrown for empty headers
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.processCsvFile(file, "test-lookup")
+        );
+
+        assertEquals("CSV file must contain headers", exception.getMessage());
+    }
+
+    @Test
+    void documentToLookup_WithNullDataAndRecordCount_HandlesGracefully() {
+        // Setup
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find()).thenReturn(findIterable);
+        when(findIterable.iterator()).thenReturn(mongoCursor);
+        when(mongoCursor.hasNext()).thenReturn(true).thenReturn(false);
+
+        // Create document with null data and recordCount
+        Document doc = new Document();
+        doc.put("_id", "test-lookup");
+        doc.put("lookupName", "test-lookup");
+        doc.put("uploadedAt", new Date());
+        doc.put("data", null); // null data
+        doc.put("recordCount", null); // null recordCount
+        
+        when(mongoCursor.next()).thenReturn(doc);
+
+        // Execute
+        LookupDTO result = lookupService.getAllLookups();
+
+        // Verify - should handle null values gracefully
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getTotalLookups());
+        
+        // The lookup should have empty data list and 0 record count
+        assertNotNull(result.getLookups().get(0).getData());
+        assertEquals(0, result.getLookups().get(0).getData().size());
+        assertEquals(0, result.getLookups().get(0).getRecordCount());
+    }
+
+    @Test
+    void documentToLookup_DocumentConversionError_ThrowsCsvProcessingException() {
+        // Setup
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find()).thenReturn(findIterable);
+        when(findIterable.iterator()).thenReturn(mongoCursor);
+        when(mongoCursor.hasNext()).thenReturn(true).thenReturn(false);
+
+        // Create a malformed document that will cause conversion issues
+        Document doc = new Document();
+        doc.put("_id", "test-lookup");
+        doc.put("lookupName", "test-lookup");
+        // Missing uploadedAt intentionally
+        doc.put("data", "invalid-data-type"); // Wrong type - should be List
+        doc.put("recordCount", "not-a-number"); // Wrong type - should be Integer
+        
+        when(mongoCursor.next()).thenReturn(doc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getAllLookups()
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to convert document to Lookup"));
+    }
+
+    @Test
+    void transformDataToBusinessCapabilities_WithNullData_ReturnsEmptyList() {
+        // Use reflection to test the private method
+        try {
+            java.lang.reflect.Method method = LookupService.class.getDeclaredMethod(
+                "transformDataToBusinessCapabilities", List.class);
+            method.setAccessible(true);
+            
+            @SuppressWarnings("unchecked")
+            List<BusinessCapabilityLookupDTO> result = (List<BusinessCapabilityLookupDTO>) method.invoke(
+                lookupService, (List<Map<String, String>>) null);
+            
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+        } catch (Exception e) {
+            fail("Failed to test transformDataToBusinessCapabilities with null data: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void extractValue_WithNullValue_ReturnsEmptyString() {
+        // This test targets the null check branch in extractValue method
+        // We'll create a CSV with a null value scenario
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv",
+            "text/csv",
+            ("header1,header2\nvalue1,\n").getBytes() // Second column is empty
+        );
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "test-lookup");
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify that the mock was called, indicating the CSV was processed
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 }

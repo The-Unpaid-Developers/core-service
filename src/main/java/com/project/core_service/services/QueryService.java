@@ -197,7 +197,6 @@ public class QueryService {
             @SuppressWarnings("unchecked")
             List<Document> pipelineStages = Document.parse("{\"stages\": " + queryString + "}")
                     .getList("stages", Document.class);
-            System.out.println(pipelineStages);
 
             if (pipelineStages == null || pipelineStages.isEmpty()) {
                 throw new IllegalArgumentException("Aggregation pipeline cannot be empty");

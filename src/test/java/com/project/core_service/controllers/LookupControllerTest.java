@@ -1,7 +1,9 @@
 package com.project.core_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.lookup.Lookup;
 import com.project.core_service.services.LookupService;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -135,5 +138,78 @@ class LookupControllerTest {
             .recordCount(10)
             .uploadedAt(new Date())
             .build();
+    }
+
+    @Test
+    void getBusinessCapabilities_Success() throws Exception {
+        // Arrange
+        List<BusinessCapabilityLookupDTO> expectedCapabilities = Arrays.asList(
+            new BusinessCapabilityLookupDTO("Policy Management", "Policy Administration", "Policy Issuance"),
+            new BusinessCapabilityLookupDTO("Claims Management", "Claims Processing", "First Notice of Loss"),
+            new BusinessCapabilityLookupDTO("Customer Management", "Customer Onboarding", "Customer Registration")
+        );
+
+        when(lookupService.getBusinessCapabilities()).thenReturn(expectedCapabilities);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].l1").value("Policy Management"))
+            .andExpect(jsonPath("$[0].l2").value("Policy Administration"))
+            .andExpect(jsonPath("$[0].l3").value("Policy Issuance"))
+            .andExpect(jsonPath("$[1].l1").value("Claims Management"))
+            .andExpect(jsonPath("$[1].l2").value("Claims Processing"))
+            .andExpect(jsonPath("$[1].l3").value("First Notice of Loss"))
+            .andExpect(jsonPath("$[2].l1").value("Customer Management"))
+            .andExpect(jsonPath("$[2].l2").value("Customer Onboarding"))
+            .andExpect(jsonPath("$[2].l3").value("Customer Registration"));
+    }
+
+    @Test
+    void getBusinessCapabilities_EmptyList_Success() throws Exception {
+        // Arrange
+        when(lookupService.getBusinessCapabilities()).thenReturn(Arrays.asList());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getBusinessCapabilities_NotFound_ThrowsException() throws Exception {
+        // Arrange
+        when(lookupService.getBusinessCapabilities()).thenThrow(new NotFoundException("Business capabilities lookup not found"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/business-capabilities"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getBusinessCapabilities_WithNullValues_Success() throws Exception {
+        // Arrange
+        List<BusinessCapabilityLookupDTO> capabilitiesWithNulls = Arrays.asList(
+            new BusinessCapabilityLookupDTO("Policy Management", null, "Policy Issuance"),
+            new BusinessCapabilityLookupDTO(null, "Claims Processing", null),
+            new BusinessCapabilityLookupDTO("Customer Management", "Customer Onboarding", "Customer Registration")
+        );
+
+        when(lookupService.getBusinessCapabilities()).thenReturn(capabilitiesWithNulls);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/business-capabilities"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0].l1").value("Policy Management"))
+            .andExpect(jsonPath("$[0].l2").doesNotExist())
+            .andExpect(jsonPath("$[0].l3").value("Policy Issuance"))
+            .andExpect(jsonPath("$[1].l1").doesNotExist())
+            .andExpect(jsonPath("$[1].l2").value("Claims Processing"))
+            .andExpect(jsonPath("$[1].l3").doesNotExist());
     }
 }
