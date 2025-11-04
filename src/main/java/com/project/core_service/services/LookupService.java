@@ -313,15 +313,7 @@ public class LookupService {
                 return new ArrayList<>();
             }
             
-            List<BusinessCapabilityLookupDTO> businessCapabilities = new ArrayList<>();
-            for (Map<String, String> record : data) {
-                BusinessCapabilityLookupDTO capability = new BusinessCapabilityLookupDTO(
-                    record.get("L1"),
-                    record.get("L2"), 
-                    record.get("L3")
-                );
-                businessCapabilities.add(capability);
-            }
+            List<BusinessCapabilityLookupDTO> businessCapabilities = transformDataToBusinessCapabilities(data);
             
             log.info("Successfully retrieved {} business capabilities", businessCapabilities.size());
             return businessCapabilities;
@@ -330,5 +322,31 @@ public class LookupService {
             log.error("Error processing business capabilities lookup", e);
             throw new CsvProcessingException("Failed to process business capabilities: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Transforms raw data from MongoDB document into BusinessCapabilityLookupDTO objects.
+     * This method provides a reusable way to convert business capability data regardless of source.
+     * 
+     * @param data List of maps containing business capability data with L1, L2, L3 keys
+     * @return List of BusinessCapabilityLookupDTO objects
+     * @throws IllegalArgumentException if data contains invalid structure
+     */
+    private List<BusinessCapabilityLookupDTO> transformDataToBusinessCapabilities(List<Map<String, String>> data) {
+        if (data == null) {
+            return new ArrayList<>();
+        }
+        
+        List<BusinessCapabilityLookupDTO> businessCapabilities = new ArrayList<>();
+        for (Map<String, String> record : data) {
+            BusinessCapabilityLookupDTO capability = new BusinessCapabilityLookupDTO(
+                record.get("L1"),
+                record.get("L2"), 
+                record.get("L3")
+            );
+            businessCapabilities.add(capability);
+        }
+        
+        return businessCapabilities;
     }
 }
