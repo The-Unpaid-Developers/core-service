@@ -16,31 +16,43 @@ class QueryTest {
         Query query = Query.builder()
                 .name("getUserByEmail")
                 .mongoQuery("{\"email\": \"test@example.com\"}")
+                .description("Retrieve user by email")
                 .build();
 
         assertEquals("getUserByEmail", query.getName());
         assertEquals("{\"email\": \"test@example.com\"}", query.getMongoQuery());
+        assertEquals("Retrieve user by email", query.getDescription());
     }
 
     @Test
     void shouldCreateQuerySuccessfully() {
         Query query = new Query(
                 "findActiveOrders",
-                "{\"status\": \"ACTIVE\"}");
+                "{\"status\": \"ACTIVE\"}",
+                "Retrieve all active orders");
 
         assertThat(query.getName()).isEqualTo("findActiveOrders");
         assertThat(query.getMongoQuery()).isEqualTo("{\"status\": \"ACTIVE\"}");
+        assertThat(query.getDescription()).isEqualTo("Retrieve all active orders");
     }
 
     @Test
     void shouldThrowExceptionWhenSettingNullForNonNullFields() {
         assertThatThrownBy(() -> new Query(
                 null,
-                "{\"category\": \"electronics\"}"))
+                "{\"category\": \"electronics\"}",
+                "Retrieve all electronics products"))
                 .isInstanceOf(NullPointerException.class);
 
         assertThatThrownBy(() -> new Query(
                 "getProducts",
+                null,
+                "Retrieve all products"))
+                .isInstanceOf(NullPointerException.class);
+
+        assertThatThrownBy(() -> new Query(
+                "getProducts",
+                "{\"category\": \"electronics\"}",
                 null))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -57,11 +69,11 @@ class QueryTest {
     void shouldRespectEqualsAndHashCode() {
         Query query1 = new Query(
                 "sameQuery",
-                "{\"active\": true}");
+                "{\"active\": true}", "test");
 
         Query query2 = new Query(
                 "sameQuery",
-                "{\"active\": true}");
+                "{\"active\": true}", "test");
 
         assertThat(query1)
                 .isEqualTo(query2)
@@ -72,11 +84,11 @@ class QueryTest {
     void shouldNotBeEqualWithDifferentData() {
         Query query1 = new Query(
                 "query1",
-                "{\"status\": \"active\"}");
+                "{\"status\": \"active\"}", "test1");
 
         Query query2 = new Query(
                 "query2",
-                "{\"status\": \"inactive\"}");
+                "{\"status\": \"inactive\"}", "test2");
 
         assertThat(query1).isNotEqualTo(query2);
     }
@@ -85,10 +97,10 @@ class QueryTest {
     void toStringShouldContainMeaningfulInfo() {
         Query query = new Query(
                 "getCustomers",
-                "{\"active\": true}");
+                "{\"active\": true}", "test");
 
         String output = query.toString();
-        assertThat(output).contains("getCustomers", "{\"active\": true}");
+        assertThat(output).contains("getCustomers", "{\"active\": true}", "test");
     }
 
     @Test
@@ -102,8 +114,10 @@ class QueryTest {
         Query query = new Query();
         query.setName("updateUser");
         query.setMongoQuery("{\"$set\": {\"lastLogin\": {\"$currentDate\": true}}}");
+        query.setDescription("Update user's last login date");
 
         assertEquals("updateUser", query.getName());
         assertEquals("{\"$set\": {\"lastLogin\": {\"$currentDate\": true}}}", query.getMongoQuery());
+        assertEquals("Update user's last login date", query.getDescription());
     }
 }

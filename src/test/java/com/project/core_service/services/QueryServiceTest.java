@@ -1,16 +1,21 @@
 package com.project.core_service.services;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import com.project.core_service.dto.CreateQueryRequestDTO;
-import com.project.core_service.dto.QueryExecutionRequestDTO;
-import com.project.core_service.dto.UpdateQueryRequestDTO;
-import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.models.query.Query;
-import com.project.core_service.repositories.QueryRepository;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
+
 import org.bson.Document;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,10 +31,15 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Stream;
+import com.project.core_service.dto.CreateQueryRequestDTO;
+import com.project.core_service.dto.QueryExecutionRequestDTO;
+import com.project.core_service.dto.UpdateQueryRequestDTO;
+import com.project.core_service.exceptions.NotFoundException;
+import com.project.core_service.models.query.Query;
+import com.project.core_service.repositories.QueryRepository;
 
 /**
  * Unit tests for {@link QueryService}.
@@ -52,7 +62,8 @@ class QueryServiceTest {
     void setup() {
         testQuery = Query.builder()
                 .name("getUserByEmail")
-                .mongoQuery("{\"email\": \"test@example.com\"}")
+                .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\"}}]")
+                .description("Retrieve user by email")
                 .build();
     }
 
@@ -64,6 +75,8 @@ class QueryServiceTest {
 
         assertTrue(result.isPresent());
         assertEquals("getUserByEmail", result.get().getName());
+        assertEquals("[{\"$match\": {\"email\": \"test@example.com\"}}]", result.get().getMongoQuery());
+        assertEquals("Retrieve user by email", result.get().getDescription());
         verify(queryRepository).findById("getUserByEmail");
     }
 
@@ -81,7 +94,8 @@ class QueryServiceTest {
     void getAllQueries() {
         Query query2 = Query.builder()
                 .name("getActiveOrders")
-                .mongoQuery("{\"status\": \"ACTIVE\"}")
+                .mongoQuery("[{\"$match\": {\"status\": \"ACTIVE\"}}]")
+                .description("Retrieve all active orders")
                 .build();
 
         when(queryRepository.findAll()).thenReturn(List.of(testQuery, query2));
@@ -112,7 +126,8 @@ class QueryServiceTest {
     void createMongoQuery_Success() {
         CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
                 .name("getUserByEmail")
-                .mongoQuery("{\"email\": \"test@example.com\"}")
+                .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\"}}]")
+                .description("Retrieve user by email")
                 .build();
 
         when(queryRepository.existsById("getUserByEmail")).thenReturn(false);
@@ -122,6 +137,8 @@ class QueryServiceTest {
 
         assertNotNull(result);
         assertEquals("getUserByEmail", result.getName());
+        assertEquals("[{\"$match\": {\"email\": \"test@example.com\"}}]", result.getMongoQuery());
+        assertEquals("Retrieve user by email", result.getDescription());
         verify(queryRepository).existsById("getUserByEmail");
         verify(queryRepository).save(any(Query.class));
     }
@@ -140,7 +157,8 @@ class QueryServiceTest {
     void createMongoQuery_ThrowsWhenNameIsEmpty() {
         CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name("   ")
-                .mongoQuery("{\"test\": \"value\"}")
+                .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                .description("test")
                 .build();
 
         IllegalArgumentException exception = assertThrows(
@@ -153,10 +171,11 @@ class QueryServiceTest {
 
     @ParameterizedTest
     @MethodSource("invalidMongoQueryTestCases")
-    void createMongoQuery_ThrowsForInvalidQueries(String name, String mongoQuery, String expectedMessageFragment) {
+    void createMongoQuery_ThrowsForInvalidQueries(String name, String mongoQuery, String description, String expectedMessageFragment) {
         CreateQueryRequestDTO invalidRequest = CreateQueryRequestDTO.builder()
                 .name(name)
                 .mongoQuery(mongoQuery)
+                .description(description)
                 .build();
 
         IllegalArgumentException exception = assertThrows(
@@ -169,16 +188,19 @@ class QueryServiceTest {
 
     static Stream<Arguments> invalidMongoQueryTestCases() {
         return Stream.of(
-                Arguments.of("dangerousQuery", "{\"$out\": \"newCollection\"}", "forbidden operation"),
-                Arguments.of("invalidJSON", "this is not valid JSON", "valid JSON format"),
-                Arguments.of("testQuery", "   ", "cannot be null or empty"));
+                Arguments.of("dangerousQuery", "[{\"$out\": \"newCollection\"}]", "forbidden operation", "forbidden operation"),
+                Arguments.of("invalidQuery1", "this is not valid array of jsons", "invalid query format", "valid format"),
+                Arguments.of("invalidQuery2", "{\"$match\": {\"email\": \"test@example.com\"}}", "invalid query format", "valid format"),
+                Arguments.of("testQuery", "   ", "query null or empty", "cannot be null or empty"),
+                Arguments.of("testDesc", "[{\"$match\": {\"email\": \"test@example.com\"}}]", " ", "cannot be null or empty"));
     }
 
     @Test
     void createMongoQuery_ThrowsWhenNameAlreadyExists() {
         CreateQueryRequestDTO request = CreateQueryRequestDTO.builder()
                 .name("getUserByEmail")
-                .mongoQuery("{\"email\": \"test@example.com\"}")
+                .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\"}}]")
+                .description("Retrieve user by email")
                 .build();
 
         when(queryRepository.existsById("getUserByEmail")).thenReturn(true);
@@ -195,12 +217,14 @@ class QueryServiceTest {
     @Test
     void updateMongoQuery_Success() {
         UpdateQueryRequestDTO request = UpdateQueryRequestDTO.builder()
-                .mongoQuery("{\"email\": \"test@example.com\", \"active\": true}")
+                .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\", \"active\": true}}]")
+                .description("Updated description")
                 .build();
 
         Query updatedQuery = Query.builder()
                 .name("getUserByEmail")
-                .mongoQuery("{\"email\": \"test@example.com\", \"active\": true}")
+                .mongoQuery("[{\"$match\": {\"email\": \"test@example.com\", \"active\": true}}]")
+                .description("Updated description")
                 .build();
 
         when(queryRepository.findById("getUserByEmail")).thenReturn(Optional.of(testQuery));
@@ -209,7 +233,8 @@ class QueryServiceTest {
         Query result = queryService.updateMongoQuery("getUserByEmail", request);
 
         assertNotNull(result);
-        assertEquals("{\"email\": \"test@example.com\", \"active\": true}", result.getMongoQuery());
+        assertEquals("[{\"$match\": {\"email\": \"test@example.com\", \"active\": true}}]", result.getMongoQuery());
+        assertEquals("Updated description", result.getDescription());
         verify(queryRepository).findById("getUserByEmail");
         verify(queryRepository).save(any(Query.class));
     }
@@ -217,7 +242,8 @@ class QueryServiceTest {
     @Test
     void updateMongoQuery_ThrowsWhenNotFound() {
         UpdateQueryRequestDTO request = UpdateQueryRequestDTO.builder()
-                .mongoQuery("{\"test\": \"value\"}")
+                .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                .description("Updated description")
                 .build();
 
         when(queryRepository.findById("nonExistent")).thenReturn(Optional.empty());
@@ -262,7 +288,8 @@ class QueryServiceTest {
         // Given
         Query storedQuery = Query.builder()
                 .name("findActiveUsers")
-                .mongoQuery("{\"active\": true}")
+                .mongoQuery("[{\"$match\": {\"active\": true}}]")
+                .description("Find all active users")
                 .build();
 
         QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
@@ -274,8 +301,14 @@ class QueryServiceTest {
         Document doc2 = new Document("name", "Jane").append("active", true);
         List<Document> expectedResults = List.of(doc1, doc2);
 
+        // Mock AggregationResults
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(expectedResults);
+
         when(queryRepository.findById("findActiveUsers")).thenReturn(Optional.of(storedQuery));
-        when(mongoTemplate.find(any(), eq(Document.class), eq("users"))).thenReturn(expectedResults);
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("users"), eq(Document.class)))
+                .thenReturn(mockResults);
 
         // When
         List<Document> results = queryService.executeMongoQuery("findActiveUsers", request);
@@ -284,7 +317,7 @@ class QueryServiceTest {
         assertNotNull(results);
         assertEquals(2, results.size());
         verify(queryRepository).findById("findActiveUsers");
-        verify(mongoTemplate).find(any(), eq(Document.class), eq("users"));
+        verify(mongoTemplate).aggregate(any(Aggregation.class), eq("users"), eq(Document.class));
     }
 
     @Test
@@ -309,7 +342,8 @@ class QueryServiceTest {
         // Given
         Query storedQuery = Query.builder()
                 .name("testQuery")
-                .mongoQuery("{\"test\": \"value\"}")
+                .mongoQuery("[{\"$match\": {\"test\": \"value\"}}]")
+                .description("Test query")
                 .build();
 
         QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
@@ -317,12 +351,40 @@ class QueryServiceTest {
 
         when(queryRepository.findById("testQuery")).thenReturn(Optional.of(storedQuery));
 
+        // When & Then - The service now uses a default collection, so this test should verify it uses the default
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(List.of());
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        List<Document> results = queryService.executeMongoQuery("testQuery", request);
+
+        assertNotNull(results);
+        verify(mongoTemplate).aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class));
+    }
+
+    @Test
+    void executeMongoQuery_ThrowsWhenPipelineNotArray() {
+        // Given - A query stored as an object instead of array (valid JSON but not a pipeline)
+        Query storedQuery = Query.builder()
+                .name("invalidPipeline")
+                .mongoQuery("{\"$match\": {\"active\": true}}")
+                .description("Invalid pipeline format")
+                .build();
+
+        QueryExecutionRequestDTO request = QueryExecutionRequestDTO.builder()
+                .collection("users")
+                .build();
+
+        when(queryRepository.findById("invalidPipeline")).thenReturn(Optional.of(storedQuery));
+
         // When & Then
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.executeMongoQuery("testQuery", request));
+                () -> queryService.executeMongoQuery("invalidPipeline", request));
 
-        assertTrue(exception.getMessage().contains("Collection name must be specified"));
+        assertTrue(exception.getMessage().contains("must be a JSON array"));
     }
 
     @Test

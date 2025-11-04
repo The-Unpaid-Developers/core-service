@@ -11,9 +11,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.BasicQuery;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -32,7 +35,7 @@ public class QueryService {
     private final QueryRepository queryRepository;
     private final MongoTemplate mongoTemplate;
 
-    private static final String COLLECTION_FIELD = "collection";
+    private static final String COLLECTION_FIELD = "solutionReviews";
 
     @Autowired
     public QueryService(QueryRepository queryRepository, MongoTemplate mongoTemplate) {
@@ -90,6 +93,10 @@ public class QueryService {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
+        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Query description cannot be null or empty");
+        }
+
         // Validate that the query is a read-only MongoDB query
         validateReadOnlyQuery(request.getMongoQuery());
 
@@ -102,6 +109,7 @@ public class QueryService {
         Query query = Query.builder()
                 .name(request.getName())
                 .mongoQuery(request.getMongoQuery())
+                .description(request.getDescription())
                 .build();
 
         return queryRepository.save(query);
@@ -139,6 +147,10 @@ public class QueryService {
         // Update the query string
         existingQuery.setMongoQuery(request.getMongoQuery());
 
+        if (request.getDescription() != null && !request.getDescription().trim().isEmpty()) {
+            existingQuery.setDescription(request.getDescription());
+        }
+        
         return queryRepository.save(existingQuery);
     }
 
@@ -157,11 +169,11 @@ public class QueryService {
     }
 
     /**
-     * Executes a stored query by name with optional filters and conditions.
+     * Executes a stored aggregation pipeline by name with optional parameters.
      *
      * @param name    the name of the query to execute
-     * @param request the execution parameters (filters, limit, skip)
-     * @return a list of documents matching the query
+     * @param request the execution parameters (collection, limit, skip)
+     * @return a list of documents matching the aggregation pipeline
      * @throws NotFoundException        if no query exists with the given name
      * @throws IllegalArgumentException if the query or parameters are invalid
      */
@@ -171,77 +183,110 @@ public class QueryService {
                 .orElseThrow(() -> new NotFoundException("Query not found with name: " + name));
 
         try {
-            // Parse the stored query as a MongoDB query document
-            Document queryDoc = Document.parse(storedQuery.getMongoQuery());
+            // Parse the stored query as a MongoDB aggregation pipeline
+            // Expected format: [{"$match": {...}}, {"$group": {...}}, ...]
+            String queryString = storedQuery.getMongoQuery().trim();
+
+            // Validate it's a JSON array
+            if (!queryString.startsWith("[")) {
+                throw new IllegalArgumentException(
+                        "MongoDB aggregation pipeline must be a JSON array starting with '['");
+            }
+
+            // Parse as a list of pipeline stages
+            @SuppressWarnings("unchecked")
+            List<Document> pipelineStages = Document.parse("{\"stages\": " + queryString + "}")
+                    .getList("stages", Document.class);
+            System.out.println(pipelineStages);
+
+            if (pipelineStages == null || pipelineStages.isEmpty()) {
+                throw new IllegalArgumentException("Aggregation pipeline cannot be empty");
+            }
 
             // Extract collection name
             String collection = request.getCollection();
             if (collection == null || collection.trim().isEmpty()) {
-                // Try to extract from query if it contains a collection field
-                if (queryDoc.containsKey(COLLECTION_FIELD)) {
-                    collection = queryDoc.getString(COLLECTION_FIELD);
-                    queryDoc.remove(COLLECTION_FIELD);
-                } else {
-                    throw new IllegalArgumentException(
-                            "Collection name must be specified either in the request or in the stored query");
-                }
+                collection = COLLECTION_FIELD;
             }
 
-            // Create BasicQuery with limit and skip
-            BasicQuery mongoQuery = new BasicQuery(queryDoc.toJson());
+            // Add pagination stages ($skip must come before $limit)
+            List<Document> modifiedPipeline = new ArrayList<>(pipelineStages);
 
-            // Apply limit (default to 100 if not specified)
-            int limit = request.getLimit() != null ? request.getLimit() : 100;
-            mongoQuery.limit(limit);
-
-            // Apply skip if specified
+            // Add $skip stage if specified (must come before $limit)
             if (request.getSkip() != null && request.getSkip() > 0) {
-                mongoQuery.skip(request.getSkip());
+                modifiedPipeline.add(new Document("$skip", request.getSkip()));
             }
 
-            // Execute the query
-            return mongoTemplate.find(mongoQuery, Document.class, collection);
+            // Add $limit stage if specified (default to 100)
+            int limit = request.getLimit() != null ? request.getLimit() : 100;
+            modifiedPipeline.add(new Document("$limit", limit));
+
+            // Build and execute the aggregation
+            List<AggregationOperation> operations = new ArrayList<>();
+
+            for (Document stage : modifiedPipeline) {
+                operations.add(context -> stage);
+            }
+
+            Aggregation aggregation = Aggregation.newAggregation(operations);
+
+            AggregationResults<Document> results = mongoTemplate.aggregate(
+                    aggregation, collection, Document.class);
+
+            return results.getMappedResults();
         } catch (Exception e) {
-            throw new IllegalArgumentException("Failed to execute query: " + e.getMessage(), e);
+            throw new IllegalArgumentException("Failed to execute aggregation pipeline: " + e.getMessage(), e);
         }
     }
 
     /**
-     * Validates that a query string is a read-only MongoDB query.
+     * Validates that an aggregation pipeline is read-only.
      *
      * <p>
-     * This method checks that the query does not contain write operations
-     * such as insert, update, delete, or other dangerous operations.
+     * This method checks that the pipeline does not contain write operations
+     * such as $out, $merge, or other dangerous operations. It allows standard
+     * read-only aggregation stages like $match, $group, $project, $lookup, etc.
      * </p>
      *
-     * @param queryString the query string to validate
-     * @throws IllegalArgumentException if the query contains write operations
+     * @param queryString the aggregation pipeline string to validate
+     * @throws IllegalArgumentException if the pipeline contains write operations
      */
     private void validateReadOnlyQuery(String queryString) {
         if (queryString == null || queryString.trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
-        // Validate that it's valid JSON first
+        String trimmedQuery = queryString.trim();
+
+        // Validate that it's pipeline format (array of documents)
         try {
-            Document.parse(queryString);
+            if (trimmedQuery.startsWith("[")) {
+                // Parse as array
+                Document.parse("{\"pipeline\": " + trimmedQuery + "}");
+            } else {
+                throw new IllegalArgumentException(
+                        "MongoDB aggregation pipeline must be a JSON array starting with '['");
+            }
         } catch (Exception e) {
-            throw new IllegalArgumentException("Query must be valid JSON format: " + e.getMessage(), e);
+            throw new IllegalArgumentException("Query must be a valid format: " + e.getMessage(), e);
         }
 
         String lowerQuery = queryString.toLowerCase();
 
         // List of forbidden MongoDB operators and operations
-        // These are MongoDB-specific operators that perform write operations
+        // These are write operations that should not be allowed
         String[] forbiddenOperators = {
-                "\"$out\"", "\"$merge\"", // Aggregation output stages
-                "insertone", "insertmany", "insert(", // Insert operations
-                "deleteone", "deletemany", "delete(", "remove(", // Delete operations
-                "updateone", "updatemany", "update(", "findandmodify", // Update operations
-                "replaceone", "replace(", // Replace operations
-                "drop(", "dropdatabase", "dropcollection", // Drop operations
-                "create(", "createcollection", "createindex", // Create operations
-                "$eval", "function(", "function ", // Code execution
+            // Write operations (CRITICAL)
+            "\"$out\"", "'$out'",
+            "\"$merge\"", "'$merge'",
+            
+            // JavaScript execution (CRITICAL - allows arbitrary code)
+            "\"$function\"", "'$function'",
+            "\"$accumulator\"", "'$accumulator'",
+            "\"$where\"", "'$where'",  // Not in aggregation but could be injected
+            
+            // Generic code execution patterns
+            "$eval", "function(", "function ", "=>", // Arrow functions
         };
 
         for (String forbidden : forbiddenOperators) {

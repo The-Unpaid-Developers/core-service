@@ -26,4 +26,9 @@ public class UpdateQueryRequestDTO {
      */
     @NonNull
     private String mongoQuery;
+
+    /**
+     * The updated description of the query's purpose if any.
+     */
+    private String description;
 }

@@ -21,7 +21,7 @@ public class QueryExecutionRequestDTO {
 
     /**
      * The collection to query against.
-     * If not provided, it will be extracted from the stored query.
+     * If not provided, it will default to the solutionReviews collection. 
      */
     private String collection;
 
