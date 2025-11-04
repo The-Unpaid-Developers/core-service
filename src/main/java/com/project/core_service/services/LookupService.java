@@ -7,6 +7,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
+import com.project.core_service.dto.LookupContextDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -44,6 +45,8 @@ public class LookupService {
     private static final String DATA_FIELD = "data";
     private static final String UPLOADED_AT_FIELD = "uploadedAt";
     private static final String RECORD_COUNT_FIELD = "recordCount";
+    private static final String DESCRIPTION_FIELD = "description";
+    private static final String FIELDS_DESCRIPTION_FIELD = "fieldsDescription";
 
     // Lookup collection names
     private static final String BUSINESS_CAPABILITIES_LOOKUP = "business-capabilities";
@@ -213,7 +216,7 @@ public class LookupService {
 
     private void saveToMongoDB(Lookup lookup) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        
+
         // Convert Lookup to BSON Document
         Map<String, Object> lookupMap = new HashMap<>();
         lookupMap.put(ID_FIELD, lookup.getId());
@@ -221,9 +224,17 @@ public class LookupService {
         lookupMap.put(DATA_FIELD, lookup.getData());
         lookupMap.put(UPLOADED_AT_FIELD, lookup.getUploadedAt());
         lookupMap.put(RECORD_COUNT_FIELD, lookup.getRecordCount());
-        
+
+        // Add description and fieldsDescription if they exist
+        if (lookup.getDescription() != null) {
+            lookupMap.put(DESCRIPTION_FIELD, lookup.getDescription());
+        }
+        if (lookup.getFieldsDescription() != null) {
+            lookupMap.put(FIELDS_DESCRIPTION_FIELD, lookup.getFieldsDescription());
+        }
+
         Document document = new Document(lookupMap);
-        
+
         // Use replaceOne with upsert to update if exists or insert if not
         ReplaceOptions options = new ReplaceOptions().upsert(true);
         collection.replaceOne(
@@ -291,10 +302,24 @@ public class LookupService {
             String lookupName = doc.getString(LOOKUP_NAME_FIELD);
             Date uploadedAt = doc.getDate(UPLOADED_AT_FIELD);
             Integer recordCount = doc.getInteger(RECORD_COUNT_FIELD);
+            String description = doc.getString(DESCRIPTION_FIELD);
 
             // Handle the data field (List of Maps)
             Object dataObj = doc.get(DATA_FIELD);
             List<Map<String, String>> data = extractDataList(dataObj, "lookup document");
+
+            // Handle fieldsDescription (Map<String, String>)
+            Object fieldsDescObj = doc.get(FIELDS_DESCRIPTION_FIELD);
+            Map<String, String> fieldsDescription = null;
+            if (fieldsDescObj instanceof Map) {
+                fieldsDescription = new HashMap<>();
+                Map<?, ?> rawMap = (Map<?, ?>) fieldsDescObj;
+                for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
+                    String key = entry.getKey() != null ? entry.getKey().toString() : "";
+                    String value = entry.getValue() != null ? entry.getValue().toString() : "";
+                    fieldsDescription.put(key, value);
+                }
+            }
 
             return Lookup.builder()
                     .id(id)
@@ -302,6 +327,8 @@ public class LookupService {
                     .data(data)
                     .uploadedAt(uploadedAt)
                     .recordCount(recordCount != null ? recordCount : 0)
+                    .description(description)
+                    .fieldsDescription(fieldsDescription)
                     .build();
 
         } catch (Exception e) {
@@ -503,5 +530,58 @@ public class LookupService {
         }
 
         return result;
+    }
+
+    /**
+     * Updates the context (description and fields description) for a lookup.
+     *
+     * @param lookupName The name of the lookup to update
+     * @param lookupContextDTO DTO containing the description and fieldsDescription
+     * @return The updated LookupContextDTO
+     * @throws NotFoundException if the lookup with the given name is not found
+     */
+    public LookupContextDTO addLookupContext(String lookupName, LookupContextDTO lookupContextDTO) {
+        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+
+        // Find the existing lookup
+        Document doc = collection.find(Filters.eq(ID_FIELD, lookupName)).first();
+
+        if (doc == null) {
+            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
+        }
+
+        // Convert existing document to Lookup object
+        Lookup existingLookup = documentToLookup(doc);
+
+        // Update the description and fieldsDescription
+        existingLookup.setDescription(lookupContextDTO.getDescription());
+        existingLookup.setFieldsDescription(lookupContextDTO.getFieldsDescription());
+
+        // Save the updated lookup back to MongoDB
+        saveToMongoDB(existingLookup);
+
+        log.info("Successfully updated context for lookup: {}", lookupName);
+
+        return lookupContextDTO;
+    }
+
+    public List<String> getFieldNames(String lookupName) {
+        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+
+        Document doc = collection.find(Filters.eq(ID_FIELD, lookupName)).first();
+
+        if (doc == null) {
+            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
+        }
+
+        Lookup lookup = documentToLookup(doc);
+
+        if (lookup.getData() == null || lookup.getData().isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        // Extract field names from the first record
+        Map<String, String> firstRecord = lookup.getData().get(0);
+        return new ArrayList<>(firstRecord.keySet());
     }
 }

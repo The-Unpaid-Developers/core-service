@@ -23,4 +23,8 @@ public class Lookup {
     private Date uploadedAt;
 
     private Integer recordCount;
+
+    private String description;
+
+    private Map<String, String> fieldsDescription;
 }

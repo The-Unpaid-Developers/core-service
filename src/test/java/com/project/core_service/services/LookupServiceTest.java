@@ -1253,4 +1253,311 @@ class LookupServiceTest {
         assertTrue(exception.getMessage().contains("Invalid data structure"));
         assertTrue(exception.getMessage().contains("expected List but got String"));
     }
+
+    // ===== addLookupContext Tests =====
+
+    @Test
+    void addLookupContext_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+        Map<String, String> fieldsDescription = Map.of(
+            "field1", "Description for field1",
+            "field2", "Description for field2"
+        );
+
+        com.project.core_service.dto.LookupContextDTO contextDTO =
+            com.project.core_service.dto.LookupContextDTO.builder()
+                .description("Test lookup description")
+                .fieldsDescription(fieldsDescription)
+                .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Test lookup description", result.getDescription());
+        assertEquals(fieldsDescription, result.getFieldsDescription());
+        verify(mongoCollection).find(any(Bson.class));
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void addLookupContext_LookupNotFound_ThrowsNotFoundException() {
+        // Arrange
+        String lookupName = "non-existent-lookup";
+        com.project.core_service.dto.LookupContextDTO contextDTO =
+            com.project.core_service.dto.LookupContextDTO.builder()
+                .description("Test description")
+                .fieldsDescription(Map.of("field1", "desc1"))
+                .build();
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(
+            NotFoundException.class,
+            () -> lookupService.addLookupContext(lookupName, contextDTO)
+        );
+
+        assertTrue(exception.getMessage().contains("not found"));
+        assertTrue(exception.getMessage().contains(lookupName));
+        verify(mongoCollection).find(any(Bson.class));
+        verify(mongoCollection, never()).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void addLookupContext_WithEmptyFieldsDescription_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+        Map<String, String> emptyFieldsDescription = new HashMap<>();
+
+        com.project.core_service.dto.LookupContextDTO contextDTO =
+            com.project.core_service.dto.LookupContextDTO.builder()
+                .description("Test description with empty fields")
+                .fieldsDescription(emptyFieldsDescription)
+                .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("Test description with empty fields", result.getDescription());
+        assertTrue(result.getFieldsDescription().isEmpty());
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void addLookupContext_UpdatesExistingContext_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+
+        // Create existing document with old context
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        existingDoc.put("description", "Old description");
+        existingDoc.put("fieldsDescription", Map.of("oldField", "old description"));
+
+        // New context to update
+        Map<String, String> newFieldsDescription = Map.of(
+            "newField1", "New description 1",
+            "newField2", "New description 2"
+        );
+
+        com.project.core_service.dto.LookupContextDTO contextDTO =
+            com.project.core_service.dto.LookupContextDTO.builder()
+                .description("New updated description")
+                .fieldsDescription(newFieldsDescription)
+                .build();
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("New updated description", result.getDescription());
+        assertEquals(newFieldsDescription, result.getFieldsDescription());
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    // ===== getFieldNames Tests =====
+
+    @Test
+    void getFieldNames_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+        List<Map<String, String>> data = Arrays.asList(
+            Map.of("name", "John", "age", "30", "department", "Engineering"),
+            Map.of("name", "Jane", "age", "25", "department", "Marketing")
+        );
+
+        Document doc = new Document();
+        doc.put("_id", lookupName);
+        doc.put("lookupName", lookupName);
+        doc.put("data", data);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 2);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(doc);
+
+        // Act
+        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+
+        // Assert
+        assertNotNull(fieldNames);
+        assertEquals(3, fieldNames.size());
+        assertTrue(fieldNames.contains("name"));
+        assertTrue(fieldNames.contains("age"));
+        assertTrue(fieldNames.contains("department"));
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getFieldNames_LookupNotFound_ThrowsNotFoundException() {
+        // Arrange
+        String lookupName = "non-existent-lookup";
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(
+            NotFoundException.class,
+            () -> lookupService.getFieldNames(lookupName)
+        );
+
+        assertTrue(exception.getMessage().contains("not found"));
+        assertTrue(exception.getMessage().contains(lookupName));
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getFieldNames_EmptyData_ReturnsEmptyList() {
+        // Arrange
+        String lookupName = "empty-lookup";
+
+        Document doc = new Document();
+        doc.put("_id", lookupName);
+        doc.put("lookupName", lookupName);
+        doc.put("data", new ArrayList<>()); // Empty data list
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 0);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(doc);
+
+        // Act
+        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+
+        // Assert
+        assertNotNull(fieldNames);
+        assertTrue(fieldNames.isEmpty());
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getFieldNames_NullData_ReturnsEmptyList() {
+        // Arrange
+        String lookupName = "null-data-lookup";
+
+        Document doc = new Document();
+        doc.put("_id", lookupName);
+        doc.put("lookupName", lookupName);
+        doc.put("data", null); // Null data
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 0);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(doc);
+
+        // Act
+        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+
+        // Assert
+        assertNotNull(fieldNames);
+        assertTrue(fieldNames.isEmpty());
+        verify(mongoCollection).find(any(Bson.class));
+    }
+
+    @Test
+    void getFieldNames_WithMultipleFields_ReturnsAllFields() {
+        // Arrange
+        String lookupName = "multi-field-lookup";
+        List<Map<String, String>> data = Arrays.asList(
+            Map.of(
+                "Product Name", "Java",
+                "Product Version", "17",
+                "Adoption Status", "mainstream",
+                "Product Category", "Programming Languages",
+                "End-of-Life Date", "12/31/2025"
+            )
+        );
+
+        Document doc = new Document();
+        doc.put("_id", lookupName);
+        doc.put("lookupName", lookupName);
+        doc.put("data", data);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 1);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(doc);
+
+        // Act
+        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+
+        // Assert
+        assertNotNull(fieldNames);
+        assertEquals(5, fieldNames.size());
+        assertTrue(fieldNames.contains("Product Name"));
+        assertTrue(fieldNames.contains("Product Version"));
+        assertTrue(fieldNames.contains("Adoption Status"));
+        assertTrue(fieldNames.contains("Product Category"));
+        assertTrue(fieldNames.contains("End-of-Life Date"));
+    }
+
+    @Test
+    void getFieldNames_ExtractsFromFirstRecordOnly() {
+        // Arrange - First record has 3 fields, second has 4, but we only care about first
+        String lookupName = "test-lookup";
+        List<Map<String, String>> data = Arrays.asList(
+            Map.of("field1", "value1", "field2", "value2", "field3", "value3"),
+            Map.of("field1", "value1", "field2", "value2", "field3", "value3", "field4", "value4")
+        );
+
+        Document doc = new Document();
+        doc.put("_id", lookupName);
+        doc.put("lookupName", lookupName);
+        doc.put("data", data);
+        doc.put("uploadedAt", new Date());
+        doc.put("recordCount", 2);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(doc);
+
+        // Act
+        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+
+        // Assert
+        assertNotNull(fieldNames);
+        assertEquals(3, fieldNames.size()); // Only fields from first record
+        assertTrue(fieldNames.contains("field1"));
+        assertTrue(fieldNames.contains("field2"));
+        assertTrue(fieldNames.contains("field3"));
+        assertFalse(fieldNames.contains("field4")); // field4 is only in second record
+    }
 }

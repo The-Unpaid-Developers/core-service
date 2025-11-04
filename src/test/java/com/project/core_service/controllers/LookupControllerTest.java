@@ -3,6 +3,7 @@ package com.project.core_service.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
+import com.project.core_service.dto.LookupContextDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.lookup.Lookup;
@@ -11,13 +12,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -284,5 +288,217 @@ class LookupControllerTest {
             .andExpect(jsonPath("$[1].productVersion").value("20.x"))
             .andExpect(jsonPath("$[2].productName").value(".NET Core"))
             .andExpect(jsonPath("$[2].productVersion").value("8"));
+    }
+
+    // ===== addLookupContext Tests =====
+
+    @Test
+    void addLookupContext_Success() throws Exception {
+        // Arrange
+        String lookupName = "test-lookup";
+        Map<String, String> fieldsDescription = new HashMap<>();
+        fieldsDescription.put("field1", "Description for field1");
+        fieldsDescription.put("field2", "Description for field2");
+
+        LookupContextDTO requestDTO = LookupContextDTO.builder()
+            .description("Test lookup description")
+            .fieldsDescription(fieldsDescription)
+            .build();
+
+        LookupContextDTO responseDTO = LookupContextDTO.builder()
+            .description("Test lookup description")
+            .fieldsDescription(fieldsDescription)
+            .build();
+
+        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+            .thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDTO)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Test lookup description"))
+            .andExpect(jsonPath("$.fieldsDescription.field1").value("Description for field1"))
+            .andExpect(jsonPath("$.fieldsDescription.field2").value("Description for field2"));
+    }
+
+    @Test
+    void addLookupContext_LookupNotFound_ReturnsNotFound() throws Exception {
+        // Arrange
+        String lookupName = "non-existent-lookup";
+        LookupContextDTO requestDTO = LookupContextDTO.builder()
+            .description("Test description")
+            .fieldsDescription(Map.of("field1", "desc1"))
+            .build();
+
+        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+            .thenThrow(new NotFoundException("Lookup with name '" + lookupName + "' not found"));
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDTO)))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void addLookupContext_WithEmptyFieldsDescription_Success() throws Exception {
+        // Arrange
+        String lookupName = "test-lookup";
+        Map<String, String> emptyFieldsDescription = new HashMap<>();
+
+        LookupContextDTO requestDTO = LookupContextDTO.builder()
+            .description("Test description with empty fields")
+            .fieldsDescription(emptyFieldsDescription)
+            .build();
+
+        LookupContextDTO responseDTO = LookupContextDTO.builder()
+            .description("Test description with empty fields")
+            .fieldsDescription(emptyFieldsDescription)
+            .build();
+
+        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+            .thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDTO)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Test description with empty fields"))
+            .andExpect(jsonPath("$.fieldsDescription").isEmpty());
+    }
+
+    @Test
+    void addLookupContext_WithMultipleFields_Success() throws Exception {
+        // Arrange
+        String lookupName = "tech-components";
+        Map<String, String> fieldsDescription = new HashMap<>();
+        fieldsDescription.put("Product Name", "Name of the technology product");
+        fieldsDescription.put("Product Version", "Version number of the product");
+        fieldsDescription.put("Adoption Status", "Current adoption status");
+        fieldsDescription.put("End-of-Life Date", "Date when support ends");
+
+        LookupContextDTO requestDTO = LookupContextDTO.builder()
+            .description("Tech components with EOL information")
+            .fieldsDescription(fieldsDescription)
+            .build();
+
+        LookupContextDTO responseDTO = LookupContextDTO.builder()
+            .description("Tech components with EOL information")
+            .fieldsDescription(fieldsDescription)
+            .build();
+
+        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+            .thenReturn(responseDTO);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(requestDTO)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Tech components with EOL information"))
+            .andExpect(jsonPath("$.fieldsDescription['Product Name']").value("Name of the technology product"))
+            .andExpect(jsonPath("$.fieldsDescription['Product Version']").value("Version number of the product"))
+            .andExpect(jsonPath("$.fieldsDescription['Adoption Status']").value("Current adoption status"))
+            .andExpect(jsonPath("$.fieldsDescription['End-of-Life Date']").value("Date when support ends"));
+    }
+
+    // ===== getFieldNames Tests =====
+
+    @Test
+    void getFieldNames_Success() throws Exception {
+        // Arrange
+        String lookupName = "test-lookup";
+        List<String> fieldNames = Arrays.asList("name", "age", "department");
+
+        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0]").value("name"))
+            .andExpect(jsonPath("$[1]").value("age"))
+            .andExpect(jsonPath("$[2]").value("department"));
+    }
+
+    @Test
+    void getFieldNames_LookupNotFound_ReturnsNotFound() throws Exception {
+        // Arrange
+        String lookupName = "non-existent-lookup";
+
+        when(lookupService.getFieldNames(lookupName))
+            .thenThrow(new NotFoundException("Lookup with name '" + lookupName + "' not found"));
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getFieldNames_EmptyData_ReturnsEmptyList() throws Exception {
+        // Arrange
+        String lookupName = "empty-lookup";
+
+        when(lookupService.getFieldNames(lookupName)).thenReturn(Arrays.asList());
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getFieldNames_WithMultipleFields_Success() throws Exception {
+        // Arrange
+        String lookupName = "tech-components";
+        List<String> fieldNames = Arrays.asList(
+            "Product Name",
+            "Product Version",
+            "Adoption Status",
+            "Product Category",
+            "End-of-Life Date"
+        );
+
+        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(5))
+            .andExpect(jsonPath("$[0]").value("Product Name"))
+            .andExpect(jsonPath("$[1]").value("Product Version"))
+            .andExpect(jsonPath("$[2]").value("Adoption Status"))
+            .andExpect(jsonPath("$[3]").value("Product Category"))
+            .andExpect(jsonPath("$[4]").value("End-of-Life Date"));
+    }
+
+    @Test
+    void getFieldNames_WithSpecialCharacters_Success() throws Exception {
+        // Arrange
+        String lookupName = "special-lookup";
+        List<String> fieldNames = Arrays.asList(
+            "field_with_underscore",
+            "field-with-dash",
+            "field with spaces",
+            "field.with.dots"
+        );
+
+        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+
+        // Act & Assert
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(4))
+            .andExpect(jsonPath("$[0]").value("field_with_underscore"))
+            .andExpect(jsonPath("$[1]").value("field-with-dash"))
+            .andExpect(jsonPath("$[2]").value("field with spaces"))
+            .andExpect(jsonPath("$[3]").value("field.with.dots"));
     }
 }
