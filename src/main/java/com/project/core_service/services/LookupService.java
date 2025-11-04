@@ -326,7 +326,7 @@ public class LookupService {
         }
         
         try {
-            Object dataObj = doc.get("data");
+            Object dataObj = doc.get(DATA_FIELD);
             List<Map<String, String>> data = extractDataList(dataObj, "business capabilities");
             
             if (data == null || data.isEmpty()) {
@@ -389,7 +389,7 @@ public class LookupService {
         }
         
         try {
-            Object dataObj = doc.get("data");
+            Object dataObj = doc.get(DATA_FIELD);
             List<Map<String, String>> data = extractDataList(dataObj, "tech components");
             
             if (data == null || data.isEmpty()) {
