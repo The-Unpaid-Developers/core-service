@@ -1118,4 +1118,140 @@ class LookupServiceTest {
         // Verify that the mock was called, indicating the CSV was processed
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
+
+    @Test
+    void extractDataList_WithNullItemInList_SkipsNullItems() throws Exception {
+        // Setup - create a list with a null item
+        List<Object> dataWithNull = new ArrayList<>();
+        dataWithNull.add(Map.of("Product Name", "Java", "Product Version", "17"));
+        dataWithNull.add(null); // This should be skipped with a warning
+        dataWithNull.add(Map.of("Product Name", "Node.js", "Product Version", "18"));
+
+        // Mock the MongoDB setup for tech components using the same pattern as existing tests
+        Document techDoc = new Document()
+            .append("lookupName", "tech_eol")
+            .append("data", dataWithNull);
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techDoc);
+
+        // Execute
+        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
+
+        // Verify - should have 2 items (null item skipped)
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void extractDataList_WithNonMapItemInList_ThrowsCsvProcessingException() throws Exception {
+        // Setup - create a list with a non-Map item
+        List<Object> dataWithInvalidItem = new ArrayList<>();
+        dataWithInvalidItem.add(Map.of("Product Name", "Java", "Product Version", "17"));
+        dataWithInvalidItem.add("invalid-string-item"); // This should cause exception
+        dataWithInvalidItem.add(Map.of("Product Name", "Node.js", "Product Version", "18"));
+
+        // Mock the MongoDB setup for tech components using the same pattern as existing tests
+        Document techDoc = new Document()
+            .append("lookupName", "tech_eol")
+            .append("data", dataWithInvalidItem);
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(techDoc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getTechComponents()
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid item at index 1"));
+        assertTrue(exception.getMessage().contains("expected Map but got String"));
+    }
+
+    @Test
+    void extractValue_WithNullValueInCsvRecord_ReturnsEmptyString() throws Exception {
+        // Create a CSV content with explicit null handling scenario
+        String csvContent = "Product Name,Product Version\n" +
+                           "Java,17\n" +
+                           "Node.js,"; // Empty value that may be treated as null
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "test-null-value.csv", 
+            "text/csv", 
+            csvContent.getBytes()
+        );
+
+        // Mock the MongoDB operations
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any()))
+            .thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "test-null-value");
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify the data was processed (empty values handled correctly)
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void processCsvFile_WithMalformedCsvStructure_HandlesGracefully() throws Exception {
+        // Create malformed CSV with inconsistent column counts
+        String malformedCsv = "Product Name,Product Version,Extra Column\n" +
+                             "Java,17\n" + // Missing third column
+                             "Node.js,18,mainstream,extra-data\n"; // Too many columns
+
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "malformed.csv", 
+            "text/csv", 
+            malformedCsv.getBytes()
+        );
+
+        // Mock the MongoDB operations
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any()))
+            .thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "malformed-test");
+
+        // Verify that the service handles malformed CSV gracefully
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify processing completed despite malformed structure
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void extractDataList_WithNonListDataStructure_ThrowsCsvProcessingException() throws Exception {
+        // Setup - provide a string instead of a List
+        String invalidData = "not-a-list-structure";
+
+        // Mock the MongoDB setup for business capabilities using the same pattern as existing tests
+        Document businessDoc = new Document()
+            .append("lookupName", "business-capabilities")
+            .append("data", invalidData); // String instead of List
+            
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(businessDoc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getBusinessCapabilities()
+        );
+
+        assertTrue(exception.getMessage().contains("Invalid data structure"));
+        assertTrue(exception.getMessage().contains("expected List but got String"));
+    }
 }

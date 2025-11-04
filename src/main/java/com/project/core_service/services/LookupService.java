@@ -49,6 +49,10 @@ public class LookupService {
     private static final String BUSINESS_CAPABILITIES_LOOKUP = "business-capabilities";
     private static final String TECH_EOL_LOOKUP = "tech_eol";
 
+    // Error messages
+    private static final String BUSINESS_CAPABILITIES_NOT_FOUND_MSG = "Business capabilities lookup not found";
+    private static final String TECH_COMPONENTS_NOT_FOUND_MSG = "Tech components lookup not found";
+
     // CSV field names for business capabilities
     private static final String L1_FIELD = "L1";
     private static final String L2_FIELD = "L2";
@@ -318,31 +322,8 @@ public class LookupService {
     public List<BusinessCapabilityLookupDTO> getBusinessCapabilities() {
         log.info("Getting business capabilities from lookup");
         
-        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        Document doc = collection.find(Filters.eq(LOOKUP_NAME_FIELD, BUSINESS_CAPABILITIES_LOOKUP)).first();
-        
-        if (doc == null) {
-            throw new NotFoundException("Business capabilities lookup not found");
-        }
-        
-        try {
-            Object dataObj = doc.get(DATA_FIELD);
-            List<Map<String, String>> data = extractDataList(dataObj, "business capabilities");
-            
-            if (data == null || data.isEmpty()) {
-                log.warn("Business capabilities lookup found but contains no data");
-                return new ArrayList<>();
-            }
-            
-            List<BusinessCapabilityLookupDTO> businessCapabilities = transformDataToBusinessCapabilities(data);
-            
-            log.info("Successfully retrieved {} business capabilities", businessCapabilities.size());
-            return businessCapabilities;
-            
-        } catch (Exception e) {
-            log.error("Error processing business capabilities lookup", e);
-            throw new CsvProcessingException("Failed to process business capabilities: " + e.getMessage(), e);
-        }
+        List<Map<String, String>> data = getLookupData(BUSINESS_CAPABILITIES_LOOKUP, BUSINESS_CAPABILITIES_NOT_FOUND_MSG, "business capabilities");
+        return transformDataToBusinessCapabilities(data);
     }
 
     /**
@@ -381,31 +362,8 @@ public class LookupService {
     public List<TechComponentLookupDTO> getTechComponents() {
         log.info("Getting tech components from lookup");
         
-        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        Document doc = collection.find(Filters.eq(LOOKUP_NAME_FIELD, TECH_EOL_LOOKUP)).first();
-        
-        if (doc == null) {
-            throw new NotFoundException("Tech components lookup not found");
-        }
-        
-        try {
-            Object dataObj = doc.get(DATA_FIELD);
-            List<Map<String, String>> data = extractDataList(dataObj, "tech components");
-            
-            if (data == null || data.isEmpty()) {
-                log.warn("Tech components lookup found but contains no data");
-                return new ArrayList<>();
-            }
-            
-            List<TechComponentLookupDTO> techComponents = transformDataToTechComponents(data);
-            
-            log.info("Successfully retrieved {} tech components", techComponents.size());
-            return techComponents;
-            
-        } catch (Exception e) {
-            log.error("Error processing tech components lookup", e);
-            throw new CsvProcessingException("Failed to process tech components: " + e.getMessage(), e);
-        }
+        List<Map<String, String>> data = getLookupData(TECH_EOL_LOOKUP, TECH_COMPONENTS_NOT_FOUND_MSG, "tech components");
+        return transformDataToTechComponents(data);
     }
 
     /**
@@ -423,14 +381,59 @@ public class LookupService {
         
         List<TechComponentLookupDTO> techComponents = new ArrayList<>();
         for (Map<String, String> dataRow : data) {
-            TechComponentLookupDTO component = new TechComponentLookupDTO(
-                dataRow.get(PRODUCT_NAME_FIELD),
-                dataRow.get(PRODUCT_VERSION_FIELD)
-            );
+            String productName = dataRow.get(PRODUCT_NAME_FIELD);
+            String productVersion = dataRow.get(PRODUCT_VERSION_FIELD);
+            
+            // Log warnings for null values to help with data quality monitoring
+            if (productName == null || productName.trim().isEmpty()) {
+                log.warn("Tech component found with null or empty product name in row: {}", dataRow);
+            }
+            if (productVersion == null || productVersion.trim().isEmpty()) {
+                log.warn("Tech component found with null or empty product version for product: {}", productName);
+            }
+            
+            TechComponentLookupDTO component = new TechComponentLookupDTO(productName, productVersion);
             techComponents.add(component);
         }
         
         return techComponents;
+    }
+
+    /**
+     * Generic method to retrieve lookup data from MongoDB collection.
+     * This method consolidates the common logic for fetching and processing lookup data.
+     * 
+     * @param lookupName The name of the lookup collection to retrieve
+     * @param notFoundMessage The error message to use if lookup is not found
+     * @param logContext Context for logging (e.g., "business capabilities", "tech components")
+     * @return List of maps containing the lookup data
+     * @throws NotFoundException if the specified lookup is not found
+     * @throws CsvProcessingException if data processing fails
+     */
+    private List<Map<String, String>> getLookupData(String lookupName, String notFoundMessage, String logContext) {
+        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+        Document doc = collection.find(Filters.eq(LOOKUP_NAME_FIELD, lookupName)).first();
+        
+        if (doc == null) {
+            throw new NotFoundException(notFoundMessage);
+        }
+        
+        try {
+            Object dataObj = doc.get(DATA_FIELD);
+            List<Map<String, String>> data = extractDataList(dataObj, logContext);
+            
+            if (data == null || data.isEmpty()) {
+                log.warn("{} lookup found but contains no data", logContext);
+                return new ArrayList<>();
+            }
+            
+            log.info("Successfully retrieved {} {} records", data.size(), logContext);
+            return data;
+            
+        } catch (Exception e) {
+            log.error("Error processing {} lookup", logContext, e);
+            throw new CsvProcessingException("Failed to process " + logContext + ": " + e.getMessage(), e);
+        }
     }
 
     /**
