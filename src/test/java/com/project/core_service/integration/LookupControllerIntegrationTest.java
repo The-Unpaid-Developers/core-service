@@ -958,13 +958,17 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         uploadLookup("multi-record", csvContent);
 
         // Act & Assert - Should only get fields from first record structure
-        mockMvc.perform(get(BASE_URL + "/multi-record/get-field-names"))
+        MvcResult result = mockMvc.perform(get(BASE_URL + "/multi-record/get-field-names"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
             .andExpect(jsonPath("$.length()").value(3))
-            .andExpect(jsonPath("$[0]").value("field1"))
-            .andExpect(jsonPath("$[1]").value("field2"))
-            .andExpect(jsonPath("$[2]").value("field3"));
+            .andReturn();
+
+        // Verify all three field names are present (order may vary due to Map implementation)
+        String responseContent = result.getResponse().getContentAsString();
+        assertThat(responseContent).contains("field1");
+        assertThat(responseContent).contains("field2");
+        assertThat(responseContent).contains("field3");
     }
 
     @Test
