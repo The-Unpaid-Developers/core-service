@@ -1,15 +1,19 @@
 package com.project.core_service.integration;
 
+import com.project.core_service.dto.LookupContextDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.models.lookup.Lookup;
 import io.qameta.allure.Description;
 import io.qameta.allure.Feature;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MvcResult;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -719,5 +723,291 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         
         // Assert that the operation completes within reasonable time (less than 5 seconds)
         assertThat(executionTime).isLessThan(5000);
+    }
+
+    // ===== addLookupContext Integration Tests =====
+
+    @Test
+    @DisplayName("Should add lookup context successfully")
+    @Description("Tests adding description and field descriptions to an existing lookup")
+    void addLookupContext_ExistingLookup_Success() throws Exception {
+        // Arrange - Upload a lookup first
+        String csvContent = "name,age,department\nJohn,30,Engineering\nJane,25,Marketing";
+        uploadLookup("employees", csvContent);
+
+        // Create context DTO
+        Map<String, String> fieldsDescription = new HashMap<>();
+        fieldsDescription.put("name", "Employee full name");
+        fieldsDescription.put("age", "Employee age in years");
+        fieldsDescription.put("department", "Department where employee works");
+
+        LookupContextDTO contextDTO = LookupContextDTO.builder()
+            .description("Employee directory lookup containing staff information")
+            .fieldsDescription(fieldsDescription)
+            .build();
+
+        // Act & Assert - Add context
+        mockMvc.perform(post(BASE_URL + "/employees/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(contextDTO)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Employee directory lookup containing staff information"))
+            .andExpect(jsonPath("$.fieldsDescription.name").value("Employee full name"))
+            .andExpect(jsonPath("$.fieldsDescription.age").value("Employee age in years"))
+            .andExpect(jsonPath("$.fieldsDescription.department").value("Department where employee works"));
+
+        // Verify context was saved in MongoDB
+        Lookup savedLookup = mongoTemplate.findOne(
+            query(where("_id").is("employees")),
+            Lookup.class,
+            "lookups"
+        );
+
+        assertThat(savedLookup).isNotNull();
+        assertThat(savedLookup.getDescription()).isEqualTo("Employee directory lookup containing staff information");
+        assertThat(savedLookup.getFieldsDescription()).isNotNull();
+        assertThat(savedLookup.getFieldsDescription()).hasSize(3);
+        assertThat(savedLookup.getFieldsDescription().get("name")).isEqualTo("Employee full name");
+    }
+
+    @Test
+    @DisplayName("Should return 404 when adding context to non-existent lookup")
+    @Description("Tests error handling when trying to add context to a lookup that doesn't exist")
+    void addLookupContext_NonExistentLookup_Returns404() throws Exception {
+        // Arrange
+        LookupContextDTO contextDTO = LookupContextDTO.builder()
+            .description("Test description")
+            .fieldsDescription(Map.of("field1", "description1"))
+            .build();
+
+        // Act & Assert
+        mockMvc.perform(post(BASE_URL + "/non-existent/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(contextDTO)))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Lookup with name 'non-existent' not found"));
+    }
+
+    @Test
+    @DisplayName("Should update existing context successfully")
+    @Description("Tests updating context that already exists on a lookup")
+    void addLookupContext_UpdateExisting_Success() throws Exception {
+        // Arrange - Upload lookup and add initial context
+        uploadLookup("projects", "code,title,status\nP001,Project Alpha,Active");
+
+        LookupContextDTO initialContext = LookupContextDTO.builder()
+            .description("Initial project description")
+            .fieldsDescription(Map.of("code", "Project code"))
+            .build();
+
+        mockMvc.perform(post(BASE_URL + "/projects/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(initialContext)))
+            .andExpect(status().isOk());
+
+        // Act - Update context with new values
+        Map<String, String> updatedFieldsDesc = new HashMap<>();
+        updatedFieldsDesc.put("code", "Updated project code description");
+        updatedFieldsDesc.put("title", "Project title description");
+        updatedFieldsDesc.put("status", "Current project status");
+
+        LookupContextDTO updatedContext = LookupContextDTO.builder()
+            .description("Updated project lookup with complete information")
+            .fieldsDescription(updatedFieldsDesc)
+            .build();
+
+        // Assert - Verify update
+        mockMvc.perform(post(BASE_URL + "/projects/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(updatedContext)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Updated project lookup with complete information"))
+            .andExpect(jsonPath("$.fieldsDescription.code").value("Updated project code description"))
+            .andExpect(jsonPath("$.fieldsDescription.title").value("Project title description"))
+            .andExpect(jsonPath("$.fieldsDescription.status").value("Current project status"));
+
+        // Verify in database that old context was replaced
+        Lookup savedLookup = mongoTemplate.findOne(
+            query(where("_id").is("projects")),
+            Lookup.class,
+            "lookups"
+        );
+
+        assertThat(savedLookup.getDescription()).isEqualTo("Updated project lookup with complete information");
+        assertThat(savedLookup.getFieldsDescription()).hasSize(3);
+    }
+
+    @Test
+    @DisplayName("Should handle empty fields description")
+    @Description("Tests adding context with empty fieldsDescription map")
+    void addLookupContext_EmptyFieldsDescription_Success() throws Exception {
+        // Arrange
+        uploadLookup("test-lookup", "id,value\n1,test");
+
+        LookupContextDTO contextDTO = LookupContextDTO.builder()
+            .description("Lookup with no field descriptions")
+            .fieldsDescription(new HashMap<>())
+            .build();
+
+        // Act & Assert
+        mockMvc.perform(post(BASE_URL + "/test-lookup/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(contextDTO)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.description").value("Lookup with no field descriptions"))
+            .andExpect(jsonPath("$.fieldsDescription").isEmpty());
+
+        // Verify in database
+        Lookup savedLookup = mongoTemplate.findOne(
+            query(where("_id").is("test-lookup")),
+            Lookup.class,
+            "lookups"
+        );
+
+        assertThat(savedLookup.getDescription()).isEqualTo("Lookup with no field descriptions");
+        assertThat(savedLookup.getFieldsDescription()).isEmpty();
+    }
+
+    // ===== getFieldNames Integration Tests =====
+
+    @Test
+    @DisplayName("Should retrieve field names successfully")
+    @Description("Tests retrieving field names from an existing lookup")
+    void getFieldNames_ExistingLookup_Success() throws Exception {
+        // Arrange - Upload a lookup
+        String csvContent = "firstName,lastName,email,phone,department\nJohn,Doe,john@example.com,555-1234,Engineering";
+        uploadLookup("contacts", csvContent);
+
+        // Act & Assert
+        MvcResult result = mockMvc.perform(get(BASE_URL + "/contacts/get-field-names"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(5))
+            .andReturn();
+
+        // Verify the field names are correct
+        String responseContent = result.getResponse().getContentAsString();
+        assertThat(responseContent).contains("firstName");
+        assertThat(responseContent).contains("lastName");
+        assertThat(responseContent).contains("email");
+        assertThat(responseContent).contains("phone");
+        assertThat(responseContent).contains("department");
+    }
+
+    @Test
+    @DisplayName("Should return 404 when getting field names for non-existent lookup")
+    @Description("Tests error handling when requesting field names for a lookup that doesn't exist")
+    void getFieldNames_NonExistentLookup_Returns404() throws Exception {
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/non-existent/get-field-names"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.message").value("Lookup with name 'non-existent' not found"));
+    }
+
+    @Test
+    @DisplayName("Should return empty array for lookup with no data")
+    @Description("Tests handling of lookup with empty data list")
+    void getFieldNames_EmptyData_ReturnsEmptyArray() throws Exception {
+        // Arrange - Create lookup with empty data
+        Lookup emptyLookup = Lookup.builder()
+            .id("empty-lookup")
+            .lookupName("empty-lookup")
+            .data(List.of())
+            .recordCount(0)
+            .uploadedAt(new java.util.Date())
+            .build();
+
+        mongoTemplate.save(emptyLookup, "lookups");
+
+        // Act & Assert
+        mockMvc.perform(get(BASE_URL + "/empty-lookup/get-field-names"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @DisplayName("Should handle field names with special characters")
+    @Description("Tests retrieving field names that contain spaces and special characters")
+    void getFieldNames_SpecialCharacters_Success() throws Exception {
+        // Arrange
+        String csvContent = "Product Name,Product Version,End-of-Life Date,Adoption Status\nJava,17,12/31/2025,mainstream";
+        uploadLookup("tech-products", csvContent);
+
+        // Act & Assert
+        MvcResult result = mockMvc.perform(get(BASE_URL + "/tech-products/get-field-names"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(4))
+            .andReturn();
+
+        // Verify field names with spaces are handled correctly
+        String responseContent = result.getResponse().getContentAsString();
+        assertThat(responseContent).contains("Product Name");
+        assertThat(responseContent).contains("Product Version");
+        assertThat(responseContent).contains("End-of-Life Date");
+        assertThat(responseContent).contains("Adoption Status");
+    }
+
+    @Test
+    @DisplayName("Should extract field names from first record only")
+    @Description("Tests that field names are extracted from the first data record")
+    void getFieldNames_MultipleRecords_ExtractsFromFirst() throws Exception {
+        // Arrange - Upload with multiple records where second has extra field
+        String csvContent = "field1,field2,field3\nvalue1,value2,value3\nvalue4,value5,value6";
+        uploadLookup("multi-record", csvContent);
+
+        // Act & Assert - Should only get fields from first record structure
+        mockMvc.perform(get(BASE_URL + "/multi-record/get-field-names"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$[0]").value("field1"))
+            .andExpect(jsonPath("$[1]").value("field2"))
+            .andExpect(jsonPath("$[2]").value("field3"));
+    }
+
+    @Test
+    @DisplayName("Should support complete context and field names workflow")
+    @Description("Tests the complete workflow of adding context and retrieving field names")
+    void contextAndFieldNames_CompleteWorkflow_Success() throws Exception {
+        // 1. Upload lookup
+        String csvContent = "employeeId,name,email,department\n001,John Doe,john@example.com,Engineering";
+        uploadLookup("staff", csvContent);
+
+        // 2. Get field names
+        MvcResult fieldNamesResult = mockMvc.perform(get(BASE_URL + "/staff/get-field-names"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.length()").value(4))
+            .andReturn();
+
+        // 3. Add context based on field names
+        Map<String, String> fieldsDesc = new HashMap<>();
+        fieldsDesc.put("employeeId", "Unique employee identifier");
+        fieldsDesc.put("name", "Full name of employee");
+        fieldsDesc.put("email", "Corporate email address");
+        fieldsDesc.put("department", "Department assignment");
+
+        LookupContextDTO contextDTO = LookupContextDTO.builder()
+            .description("Staff directory with employee information")
+            .fieldsDescription(fieldsDesc)
+            .build();
+
+        mockMvc.perform(post(BASE_URL + "/staff/add-lookup-context")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(contextDTO)))
+            .andExpect(status().isOk());
+
+        // 4. Verify complete lookup with context
+        Lookup finalLookup = mongoTemplate.findOne(
+            query(where("_id").is("staff")),
+            Lookup.class,
+            "lookups"
+        );
+
+        assertThat(finalLookup).isNotNull();
+        assertThat(finalLookup.getDescription()).isEqualTo("Staff directory with employee information");
+        assertThat(finalLookup.getFieldsDescription()).hasSize(4);
+        assertThat(finalLookup.getData()).hasSize(1);
     }
 }

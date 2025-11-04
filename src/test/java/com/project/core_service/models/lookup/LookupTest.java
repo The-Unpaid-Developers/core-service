@@ -19,6 +19,10 @@ class LookupTest {
             Map.of("name", "John", "age", "30"),
             Map.of("name", "Jane", "age", "25")
         );
+        Map<String, String> fieldsDescription = Map.of(
+            "name", "Employee name",
+            "age", "Employee age"
+        );
 
         Lookup lookup = Lookup.builder()
             .id("employees")
@@ -26,6 +30,8 @@ class LookupTest {
             .data(data)
             .uploadedAt(now)
             .recordCount(2)
+            .description("Lookup containing employee information")
+            .fieldsDescription(fieldsDescription)
             .build();
 
         // Assert
@@ -34,27 +40,34 @@ class LookupTest {
         assertEquals(2, lookup.getRecordCount());
         assertEquals(now, lookup.getUploadedAt());
         assertEquals(2, lookup.getData().size());
+        assertEquals("Lookup containing employee information", lookup.getDescription());
+        assertEquals(fieldsDescription, lookup.getFieldsDescription());
     }
 
     @Test
     void lookup_JsonSerialization_Success() throws Exception {
         // Arrange
+        Map<String, String> fieldsDesc = Map.of("key", "The key field");
         Lookup lookup = Lookup.builder()
             .id("test")
             .lookupName("Test Lookup")
             .recordCount(1)
             .data(Collections.singletonList(Map.of("key", "value")))
             .uploadedAt(new Date())
+            .description("Test description")
+            .fieldsDescription(fieldsDesc)
             .build();
 
         // Act - Serialize to JSON
         String json = objectMapper.writeValueAsString(lookup);
-        
+
         // Assert - Deserialize back
         Lookup deserializedLookup = objectMapper.readValue(json, Lookup.class);
         assertEquals(lookup.getId(), deserializedLookup.getId());
         assertEquals(lookup.getLookupName(), deserializedLookup.getLookupName());
         assertEquals(lookup.getRecordCount(), deserializedLookup.getRecordCount());
+        assertEquals(lookup.getDescription(), deserializedLookup.getDescription());
+        assertEquals(lookup.getFieldsDescription(), deserializedLookup.getFieldsDescription());
     }
 
     @Test
@@ -62,6 +75,7 @@ class LookupTest {
         // Arrange
         Date date = new Date();
         List<Map<String, String>> data = Arrays.asList(Map.of("key", "value"));
+        Map<String, String> fieldsDesc = Map.of("key", "Key description");
 
         Lookup lookup1 = Lookup.builder()
             .id("test")
@@ -69,6 +83,8 @@ class LookupTest {
             .data(data)
             .uploadedAt(date)
             .recordCount(1)
+            .description("Test description")
+            .fieldsDescription(fieldsDesc)
             .build();
 
         Lookup lookup2 = Lookup.builder()
@@ -77,6 +93,8 @@ class LookupTest {
             .data(data)
             .uploadedAt(date)
             .recordCount(1)
+            .description("Test description")
+            .fieldsDescription(fieldsDesc)
             .build();
 
         // Assert
@@ -95,6 +113,8 @@ class LookupTest {
         assertNull(lookup.getData());
         assertNull(lookup.getUploadedAt());
         assertNull(lookup.getRecordCount());
+        assertNull(lookup.getDescription());
+        assertNull(lookup.getFieldsDescription());
     }
 
     @Test
@@ -102,9 +122,10 @@ class LookupTest {
         // Arrange
         Date date = new Date();
         List<Map<String, String>> data = Collections.singletonList(Map.of("key", "value"));
+        Map<String, String> fieldsDesc = Map.of("key", "Field description");
 
         // Act
-        Lookup lookup = new Lookup("test-id", "Test Name", data, date, 1);
+        Lookup lookup = new Lookup("test-id", "Test Name", data, date, 1, "Test description", fieldsDesc);
 
         // Assert
         assertEquals("test-id", lookup.getId());
@@ -112,6 +133,8 @@ class LookupTest {
         assertEquals(data, lookup.getData());
         assertEquals(date, lookup.getUploadedAt());
         assertEquals(1, lookup.getRecordCount());
+        assertEquals("Test description", lookup.getDescription());
+        assertEquals(fieldsDesc, lookup.getFieldsDescription());
     }
 
     @Test
@@ -120,6 +143,7 @@ class LookupTest {
         Lookup lookup = new Lookup();
         Date date = new Date();
         List<Map<String, String>> data = Collections.singletonList(Map.of("test", "data"));
+        Map<String, String> fieldsDesc = Map.of("test", "Test field description");
 
         // Act
         lookup.setId("setter-test");
@@ -127,6 +151,8 @@ class LookupTest {
         lookup.setData(data);
         lookup.setUploadedAt(date);
         lookup.setRecordCount(5);
+        lookup.setDescription("Setter description");
+        lookup.setFieldsDescription(fieldsDesc);
 
         // Assert
         assertEquals("setter-test", lookup.getId());
@@ -134,17 +160,22 @@ class LookupTest {
         assertEquals(data, lookup.getData());
         assertEquals(date, lookup.getUploadedAt());
         assertEquals(5, lookup.getRecordCount());
+        assertEquals("Setter description", lookup.getDescription());
+        assertEquals(fieldsDesc, lookup.getFieldsDescription());
     }
 
     @Test
     void lookup_ToString_ContainsAllFields() {
         // Arrange
+        Map<String, String> fieldsDesc = Map.of("field", "Field description");
         Lookup lookup = Lookup.builder()
             .id("test-id")
             .lookupName("Test Lookup")
             .recordCount(10)
             .uploadedAt(new Date())
             .data(Collections.singletonList(Map.of("field", "value")))
+            .description("Test description")
+            .fieldsDescription(fieldsDesc)
             .build();
 
         // Act
@@ -154,6 +185,7 @@ class LookupTest {
         assertTrue(result.contains("id=test-id"));
         assertTrue(result.contains("lookupName=Test Lookup"));
         assertTrue(result.contains("recordCount=10"));
+        assertTrue(result.contains("description=Test description"));
     }
 
     @Test
@@ -165,6 +197,8 @@ class LookupTest {
             .data(null)
             .uploadedAt(null)
             .recordCount(null)
+            .description(null)
+            .fieldsDescription(null)
             .build();
 
         // Assert
@@ -173,5 +207,7 @@ class LookupTest {
         assertNull(lookup.getData());
         assertNull(lookup.getUploadedAt());
         assertNull(lookup.getRecordCount());
+        assertNull(lookup.getDescription());
+        assertNull(lookup.getFieldsDescription());
     }
 }
