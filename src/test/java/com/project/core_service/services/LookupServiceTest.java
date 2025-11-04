@@ -881,7 +881,7 @@ class LookupServiceTest {
 
         // Assert
         assertNotNull(result);
-        assertEquals(3, result.size());
+        assertEquals(2, result.size()); // Should exclude the entry with null product name
 
         TechComponentLookupDTO firstComponent = result.get(0);
         assertEquals("Spring Boot", firstComponent.getProductName());
@@ -889,11 +889,7 @@ class LookupServiceTest {
 
         TechComponentLookupDTO secondComponent = result.get(1);
         assertEquals("Node.js", secondComponent.getProductName());
-        assertNull(secondComponent.getProductVersion());
-
-        TechComponentLookupDTO thirdComponent = result.get(2);
-        assertNull(thirdComponent.getProductName());
-        assertEquals("8", thirdComponent.getProductVersion());
+        assertEquals("", secondComponent.getProductVersion()); // Empty string for null version
     }
 
     @Test
@@ -1120,7 +1116,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void extractDataList_WithNullItemInList_SkipsNullItems() throws Exception {
+    void extractDataList_WithNullItemInList_SkipsNullItems() {
         // Setup - create a list with a null item
         List<Object> dataWithNull = new ArrayList<>();
         dataWithNull.add(Map.of("Product Name", "Java", "Product Version", "17"));
@@ -1145,7 +1141,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void extractDataList_WithNonMapItemInList_ThrowsCsvProcessingException() throws Exception {
+    void extractDataList_WithNonMapItemInList_ThrowsCsvProcessingException() {
         // Setup - create a list with a non-Map item
         List<Object> dataWithInvalidItem = new ArrayList<>();
         dataWithInvalidItem.add(Map.of("Product Name", "Java", "Product Version", "17"));
@@ -1172,11 +1168,12 @@ class LookupServiceTest {
     }
 
     @Test
-    void extractValue_WithNullValueInCsvRecord_ReturnsEmptyString() throws Exception {
+    void extractValue_WithNullValueInCsvRecord_ReturnsEmptyString() {
         // Create a CSV content with explicit null handling scenario
-        String csvContent = "Product Name,Product Version\n" +
-                           "Java,17\n" +
-                           "Node.js,"; // Empty value that may be treated as null
+        String csvContent = """
+                Product Name,Product Version
+                Java,17
+                Node.js,"""; // Empty value that may be treated as null
 
         MockMultipartFile file = new MockMultipartFile(
             "file", 
@@ -1202,11 +1199,13 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_WithMalformedCsvStructure_HandlesGracefully() throws Exception {
+    void processCsvFile_WithMalformedCsvStructure_HandlesGracefully() {
         // Create malformed CSV with inconsistent column counts
-        String malformedCsv = "Product Name,Product Version,Extra Column\n" +
-                             "Java,17\n" + // Missing third column
-                             "Node.js,18,mainstream,extra-data\n"; // Too many columns
+        String malformedCsv = """
+                Product Name,Product Version,Extra Column
+                Java,17
+                Node.js,18,mainstream,extra-data
+                """; // Missing third column in second row, too many columns in third row
 
         MockMultipartFile file = new MockMultipartFile(
             "file", 
@@ -1232,7 +1231,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void extractDataList_WithNonListDataStructure_ThrowsCsvProcessingException() throws Exception {
+    void extractDataList_WithNonListDataStructure_ThrowsCsvProcessingException() {
         // Setup - provide a string instead of a List
         String invalidData = "not-a-list-structure";
 

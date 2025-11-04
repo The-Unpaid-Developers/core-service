@@ -665,13 +665,11 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         MvcResult result = mockMvc.perform(get(BASE_URL + "/tech-components"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length()").value(3))
+            .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].productName").value("Spring Boot"))
             .andExpect(jsonPath("$[0].productVersion").value("3.2"))
             .andExpect(jsonPath("$[1].productName").value("Node.js"))
             .andExpect(jsonPath("$[1].productVersion").value(""))
-            .andExpect(jsonPath("$[2].productName").value(""))
-            .andExpect(jsonPath("$[2].productVersion").value("8"))
             .andReturn();
 
         // Additional verification that response is valid JSON array
