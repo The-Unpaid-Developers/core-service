@@ -133,7 +133,7 @@ public class QueryService {
             throw new IllegalArgumentException("Updated query request cannot be null");
         }
 
-        if (request.getMongoQuery().trim().isEmpty()) {
+        if (request.getMongoQuery() == null || request.getMongoQuery().trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 

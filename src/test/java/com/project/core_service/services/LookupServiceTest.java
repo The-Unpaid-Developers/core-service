@@ -766,4 +766,149 @@ class LookupServiceTest {
         if (l3 != null) map.put("L3", l3);
         return map;
     }
+
+    @Test
+    void processCsvFile_UnexpectedException_ThrowsCsvProcessingException() {
+        // Create a CSV file that will cause an unexpected exception during processing
+        MockMultipartFile file = new MockMultipartFile(
+            "file", 
+            "test.csv", 
+            "text/csv", 
+            "header1,header2\nvalue1,value2".getBytes()
+        );
+
+        // Mock the mongoDatabase to throw a RuntimeException
+        when(mongoDatabase.getCollection(anyString())).thenThrow(new RuntimeException("Database connection failed"));
+
+        // Assert that CsvProcessingException is thrown
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.processCsvFile(file, "test-lookup")
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to process CSV file"));
+        assertTrue(exception.getCause() instanceof RuntimeException);
+    }
+
+    @Test 
+    void processCsvFile_EmptyHeaders_ThrowsCsvProcessingException() {
+        // Create a CSV file with no headers (empty first line)
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv", 
+            "text/csv",
+            "\n".getBytes() // Just a newline, no headers
+        );
+
+        // Assert that CsvProcessingException is thrown for empty headers
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.processCsvFile(file, "test-lookup")
+        );
+
+        assertEquals("CSV file must contain headers", exception.getMessage());
+    }
+
+    @Test
+    void documentToLookup_WithNullDataAndRecordCount_HandlesGracefully() {
+        // Setup
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find()).thenReturn(findIterable);
+        when(findIterable.iterator()).thenReturn(mongoCursor);
+        when(mongoCursor.hasNext()).thenReturn(true).thenReturn(false);
+
+        // Create document with null data and recordCount
+        Document doc = new Document();
+        doc.put("_id", "test-lookup");
+        doc.put("lookupName", "test-lookup");
+        doc.put("uploadedAt", new Date());
+        doc.put("data", null); // null data
+        doc.put("recordCount", null); // null recordCount
+        
+        when(mongoCursor.next()).thenReturn(doc);
+
+        // Execute
+        LookupDTO result = lookupService.getAllLookups();
+
+        // Verify - should handle null values gracefully
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getTotalLookups());
+        
+        // The lookup should have empty data list and 0 record count
+        assertNotNull(result.getLookups().get(0).getData());
+        assertEquals(0, result.getLookups().get(0).getData().size());
+        assertEquals(0, result.getLookups().get(0).getRecordCount());
+    }
+
+    @Test
+    void documentToLookup_DocumentConversionError_ThrowsCsvProcessingException() {
+        // Setup
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find()).thenReturn(findIterable);
+        when(findIterable.iterator()).thenReturn(mongoCursor);
+        when(mongoCursor.hasNext()).thenReturn(true).thenReturn(false);
+
+        // Create a malformed document that will cause conversion issues
+        Document doc = new Document();
+        doc.put("_id", "test-lookup");
+        doc.put("lookupName", "test-lookup");
+        // Missing uploadedAt intentionally
+        doc.put("data", "invalid-data-type"); // Wrong type - should be List
+        doc.put("recordCount", "not-a-number"); // Wrong type - should be Integer
+        
+        when(mongoCursor.next()).thenReturn(doc);
+
+        // Execute and verify
+        CsvProcessingException exception = assertThrows(
+            CsvProcessingException.class,
+            () -> lookupService.getAllLookups()
+        );
+
+        assertTrue(exception.getMessage().contains("Failed to convert document to Lookup"));
+    }
+
+    @Test
+    void transformDataToBusinessCapabilities_WithNullData_ReturnsEmptyList() {
+        // Use reflection to test the private method
+        try {
+            java.lang.reflect.Method method = LookupService.class.getDeclaredMethod(
+                "transformDataToBusinessCapabilities", List.class);
+            method.setAccessible(true);
+            
+            @SuppressWarnings("unchecked")
+            List<BusinessCapabilityLookupDTO> result = (List<BusinessCapabilityLookupDTO>) method.invoke(
+                lookupService, (List<Map<String, String>>) null);
+            
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+        } catch (Exception e) {
+            fail("Failed to test transformDataToBusinessCapabilities with null data: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void extractValue_WithNullValue_ReturnsEmptyString() {
+        // This test targets the null check branch in extractValue method
+        // We'll create a CSV with a null value scenario
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv",
+            "text/csv",
+            ("header1,header2\nvalue1,\n").getBytes() // Second column is empty
+        );
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(mock(UpdateResult.class));
+
+        // Execute
+        LookupDTO result = lookupService.processCsvFile(file, "test-lookup");
+
+        // Verify
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        
+        // Verify that the mock was called, indicating the CSV was processed
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
 }
