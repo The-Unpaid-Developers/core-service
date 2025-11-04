@@ -133,7 +133,7 @@ public class QueryService {
             throw new IllegalArgumentException("Updated query request cannot be null");
         }
 
-        if (request.getMongoQuery() == null || request.getMongoQuery().trim().isEmpty()) {
+        if (request.getMongoQuery().trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
@@ -197,7 +197,6 @@ public class QueryService {
             @SuppressWarnings("unchecked")
             List<Document> pipelineStages = Document.parse("{\"stages\": " + queryString + "}")
                     .getList("stages", Document.class);
-            System.out.println(pipelineStages);
 
             if (pipelineStages == null || pipelineStages.isEmpty()) {
                 throw new IllegalArgumentException("Aggregation pipeline cannot be empty");

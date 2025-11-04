@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
-public class BusinessCapabilityTest {
+class BusinessCapabilityTest {
     @Test
     void shouldCreateBusinessCapabilitySuccessfully() {
         BusinessCapability capability = new BusinessCapability(

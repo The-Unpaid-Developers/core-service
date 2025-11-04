@@ -4,6 +4,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
+import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
@@ -283,6 +284,51 @@ public class LookupService {
             log.error("Error converting document to Lookup", e);
             log.error("Document JSON: {}", doc.toJson());
             throw new CsvProcessingException("Failed to convert document to Lookup: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Get business capabilities from the "business-capabilities" lookup.
+     * Transforms the lookup data into a list of BusinessCapabilityLookupDTO objects.
+     * 
+     * @return List of BusinessCapabilityLookupDTO objects
+     * @throws NotFoundException if business-capabilities lookup not found
+     */
+    public List<BusinessCapabilityLookupDTO> getBusinessCapabilities() {
+        log.info("Getting business capabilities from lookup");
+        
+        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+        Document doc = collection.find(Filters.eq("lookupName", "business-capabilities")).first();
+        
+        if (doc == null) {
+            throw new NotFoundException("Business capabilities lookup not found");
+        }
+        
+        try {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> data = (List<Map<String, String>>) doc.get("data");
+            
+            if (data == null || data.isEmpty()) {
+                log.warn("Business capabilities lookup found but contains no data");
+                return new ArrayList<>();
+            }
+            
+            List<BusinessCapabilityLookupDTO> businessCapabilities = new ArrayList<>();
+            for (Map<String, String> record : data) {
+                BusinessCapabilityLookupDTO capability = new BusinessCapabilityLookupDTO(
+                    record.get("L1"),
+                    record.get("L2"), 
+                    record.get("L3")
+                );
+                businessCapabilities.add(capability);
+            }
+            
+            log.info("Successfully retrieved {} business capabilities", businessCapabilities.size());
+            return businessCapabilities;
+            
+        } catch (Exception e) {
+            log.error("Error processing business capabilities lookup", e);
+            throw new CsvProcessingException("Failed to process business capabilities: " + e.getMessage(), e);
         }
     }
 }

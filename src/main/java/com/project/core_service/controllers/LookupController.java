@@ -5,8 +5,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.services.LookupService;
+
+import java.util.List;
 
 
 @RestController
@@ -30,6 +33,11 @@ public class LookupController {
     @GetMapping
     public ResponseEntity<LookupDTO> getAllLookups() {
         return ResponseEntity.ok(lookupService.getAllLookups());
+    }
+
+    @GetMapping("/business-capabilities")
+    public ResponseEntity<List<BusinessCapabilityLookupDTO>> getBusinessCapabilities() {
+        return ResponseEntity.ok(lookupService.getBusinessCapabilities());
     }
 
     @GetMapping("/{lookupName}")
