@@ -16,8 +16,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateLookupDTO {
-    @NonNull
     private String description;
-    @NonNull
     private MultipartFile lookupFile;
 }

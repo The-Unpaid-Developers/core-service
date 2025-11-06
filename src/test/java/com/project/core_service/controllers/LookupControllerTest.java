@@ -2,12 +2,13 @@ package com.project.core_service.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
+import com.project.core_service.dto.CreateLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
+import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.models.lookup.Lookup;
 import com.project.core_service.services.LookupService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -44,23 +46,29 @@ class LookupControllerTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void uploadCsvFile_ValidRequest_Success() throws Exception {
+    void createLookup_ValidRequest_Success() throws Exception {
         // Arrange
         MockMultipartFile file = new MockMultipartFile(
-            "file",
+            "lookupFile",
             "test.csv",
             "text/csv",
             "name,age\nJohn,30".getBytes()
         );
 
+        List<Map<String, String>> data = Arrays.asList(Map.of("name", "John", "age", "30"));
+        Map<String, String> fieldDescriptions = Map.of("name", "", "age", "");
+
         LookupDTO expectedResponse = LookupDTO.builder()
-            .success(true)
+            .id("employees")
             .lookupName("employees")
-            .recordsProcessed(1)
-            .message("CSV file processed and stored successfully")
+            .data(data)
+            .uploadedAt(new Date())
+            .recordCount(1)
+            .description("Employee data")
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
-        when(lookupService.createLookup(any()))
+        when(lookupService.createLookup(any(CreateLookupDTO.class)))
             .thenReturn(expectedResponse);
 
         // Act & Assert
@@ -69,45 +77,48 @@ class LookupControllerTest {
                 .param("lookupName", "employees")
                 .param("description", "Employee data"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.id").value("employees"))
             .andExpect(jsonPath("$.lookupName").value("employees"))
-            .andExpect(jsonPath("$.recordsProcessed").value(1));
-    }
-
-    @Test
-    void uploadCsvFile_MissingFile_BadRequest() throws Exception {
-        mockMvc.perform(multipart("/api/v1/lookups/upload")
-                .param("lookupName", "test"))
-            .andExpect(status().isBadRequest());
+            .andExpect(jsonPath("$.recordCount").value(1))
+            .andExpect(jsonPath("$.description").value("Employee data"));
     }
 
     @Test
     void getAllLookups_Success() throws Exception {
         // Arrange
-        LookupDTO expectedResponse = LookupDTO.builder()
-            .totalLookups(2)
-            .lookups(Arrays.asList(
-                createMockLookup("lookup1", "Lookup 1"),
-                createMockLookup("lookup2", "Lookup 2")
-            ))
-            .build();
+        List<LookupWODataDTO> expectedResponse = Arrays.asList(
+            createMockLookupWOData("lookup1", "Lookup 1", 10),
+            createMockLookupWOData("lookup2", "Lookup 2", 20)
+        );
 
         when(lookupService.getAllLookups()).thenReturn(expectedResponse);
 
         // Act & Assert
         mockMvc.perform(get("/api/v1/lookups"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.totalLookups").value(2))
-            .andExpect(jsonPath("$.lookups").isArray())
-            .andExpect(jsonPath("$.lookups[0].id").value("lookup1"));
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$.length()").value(2))
+            .andExpect(jsonPath("$[0].id").value("lookup1"))
+            .andExpect(jsonPath("$[0].lookupName").value("Lookup 1"))
+            .andExpect(jsonPath("$[0].recordCount").value(10))
+            .andExpect(jsonPath("$[1].id").value("lookup2"));
     }
 
     @Test
     void getLookupByName_ExistingLookup_Success() throws Exception {
         // Arrange
         String lookupName = "employees";
+        List<Map<String, String>> data = Arrays.asList(Map.of("name", "John", "age", "30"));
+        Map<String, String> fieldDescriptions = Map.of("name", "Employee name", "age", "Age");
+
         LookupDTO expectedResponse = LookupDTO.builder()
-            .lookups(Arrays.asList(createMockLookup(lookupName, "Employee Data")))
+            .id(lookupName)
+            .lookupName(lookupName)
+            .data(data)
+            .uploadedAt(new Date())
+            .recordCount(1)
+            .description("Employee Data")
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
         when(lookupService.getLookupByName(lookupName)).thenReturn(expectedResponse);
@@ -115,35 +126,30 @@ class LookupControllerTest {
         // Act & Assert
         mockMvc.perform(get("/api/v1/lookups/{lookupName}", lookupName))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.lookups[0].id").value(lookupName))
-            .andExpect(jsonPath("$.lookups[0].lookupName").value("Employee Data"));
+            .andExpect(jsonPath("$.id").value(lookupName))
+            .andExpect(jsonPath("$.lookupName").value(lookupName))
+            .andExpect(jsonPath("$.description").value("Employee Data"))
+            .andExpect(jsonPath("$.recordCount").value(1));
     }
 
     @Test
     void deleteLookup_Success() throws Exception {
         // Arrange
         String lookupName = "employees";
-        LookupDTO expectedResponse = LookupDTO.builder()
-            .success(true)
-            .lookupName(lookupName)
-            .message("Lookup deleted successfully")
-            .build();
-
-        when(lookupService.deleteLookup(lookupName)).thenReturn(expectedResponse);
+        doNothing().when(lookupService).deleteLookup(lookupName);
 
         // Act & Assert
         mockMvc.perform(delete("/api/v1/lookups/{lookupName}", lookupName))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.lookupName").value(lookupName));
+            .andExpect(status().isNoContent());
     }
 
-    private Lookup createMockLookup(String id, String name) {
-        return Lookup.builder()
+    private LookupWODataDTO createMockLookupWOData(String id, String name, int recordCount) {
+        return LookupWODataDTO.builder()
             .id(id)
             .lookupName(name)
-            .recordCount(10)
+            .recordCount(recordCount)
             .uploadedAt(new Date())
+            .description("Test description")
             .build();
     }
 
@@ -464,11 +470,17 @@ class LookupControllerTest {
             "name,age\nJohn,30".getBytes()
         );
 
+        List<Map<String, String>> data = Arrays.asList(Map.of("name", "John", "age", "30"));
+        Map<String, String> fieldDescriptions = Map.of("name", "", "age", "");
+
         LookupDTO expectedResponse = LookupDTO.builder()
-            .success(true)
+            .id(lookupName)
             .lookupName(lookupName)
-            .recordsProcessed(1)
-            .message("CSV file processed and stored successfully")
+            .data(data)
+            .uploadedAt(new Date())
+            .recordCount(1)
+            .description("Updated description")
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
         when(lookupService.updateLookup(eq(lookupName), any(UpdateLookupDTO.class)))
@@ -483,9 +495,10 @@ class LookupControllerTest {
                     return request;
                 }))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.id").value(lookupName))
             .andExpect(jsonPath("$.lookupName").value(lookupName))
-            .andExpect(jsonPath("$.recordsProcessed").value(1));
+            .andExpect(jsonPath("$.recordCount").value(1))
+            .andExpect(jsonPath("$.description").value("Updated description"));
     }
 
     @Test
@@ -518,11 +531,17 @@ class LookupControllerTest {
         // Arrange
         String lookupName = "test-lookup";
 
+        List<Map<String, String>> data = Arrays.asList(Map.of("name", "John", "age", "30"));
+        Map<String, String> fieldDescriptions = Map.of("name", "Name field", "age", "Age field");
+
         LookupDTO expectedResponse = LookupDTO.builder()
-            .success(true)
+            .id(lookupName)
             .lookupName(lookupName)
-            .recordsProcessed(5)
-            .message("CSV file processed and stored successfully")
+            .data(data)
+            .uploadedAt(new Date())
+            .recordCount(5)
+            .description("Updated description only")
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
         when(lookupService.updateLookup(eq(lookupName), any(UpdateLookupDTO.class)))
@@ -536,7 +555,8 @@ class LookupControllerTest {
                     return request;
                 }))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.lookupName").value(lookupName));
+            .andExpect(jsonPath("$.id").value(lookupName))
+            .andExpect(jsonPath("$.lookupName").value(lookupName))
+            .andExpect(jsonPath("$.description").value("Updated description only"));
     }
 }
