@@ -189,25 +189,50 @@ class LookupTest {
     }
 
     @Test
-    void lookup_NullFields_HandledCorrectly() {
-        // Act
-        Lookup lookup = Lookup.builder()
-            .id("test")
-            .lookupName(null)
-            .data(null)
-            .uploadedAt(null)
-            .recordCount(null)
-            .description(null)
-            .fieldDescriptions(null)
-            .build();
+    void lookup_NullLookupName_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName(null)
+                .data(List.of())
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description("Test")
+                .fieldDescriptions(Map.of())
+                .build();
+        });
+    }
 
-        // Assert
-        assertEquals("test", lookup.getId());
-        assertNull(lookup.getLookupName());
-        assertNull(lookup.getData());
-        assertNull(lookup.getUploadedAt());
-        assertNull(lookup.getRecordCount());
-        assertNull(lookup.getDescription());
-        assertNull(lookup.getFieldDescriptions());
+    @Test
+    void lookup_NullData_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName("test-lookup")
+                .data(null)
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description("Test")
+                .fieldDescriptions(Map.of())
+                .build();
+        });
+    }
+
+    @Test
+    void lookup_NullDescription_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName("test-lookup")
+                .data(List.of())
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description(null)
+                .fieldDescriptions(Map.of())
+                .build();
+        });
     }
 }

@@ -84,16 +84,15 @@ class LookupFieldDescriptionsDTOTest {
         }
 
         @Test
-        @DisplayName("Should handle null fieldDescriptions")
-        void shouldHandleNullFieldDescriptions() {
+        @DisplayName("Should throw exception when fieldDescriptions is null")
+        void shouldThrowExceptionWhenFieldDescriptionsIsNull() {
             // Arrange
             LookupFieldDescriptionsDTO dto = new LookupFieldDescriptionsDTO();
 
-            // Act
-            dto.setFieldDescriptions(null);
-
-            // Assert
-            assertNull(dto.getFieldDescriptions());
+            // Act & Assert
+            assertThrows(NullPointerException.class, () -> {
+                dto.setFieldDescriptions(null);
+            });
         }
     }
 

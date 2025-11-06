@@ -235,17 +235,16 @@ class CreateLookupDTOTest {
         }
 
         @Test
-        @DisplayName("Should handle null file")
-        void shouldHandleNullFile() {
-            // Act
-            CreateLookupDTO dto = CreateLookupDTO.builder()
-                .lookupName("test")
-                .description("Test")
-                .lookupFile(null)
-                .build();
-
-            // Assert
-            assertNull(dto.getLookupFile());
+        @DisplayName("Should throw exception when file is null")
+        void shouldThrowExceptionWhenFileIsNull() {
+            // Act & Assert
+            assertThrows(NullPointerException.class, () -> {
+                CreateLookupDTO dto = CreateLookupDTO.builder()
+                    .lookupName("test")
+                    .description("Test")
+                    .lookupFile(null)
+                    .build();
+            });
         }
     }
 }
