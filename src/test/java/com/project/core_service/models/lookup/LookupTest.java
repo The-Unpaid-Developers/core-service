@@ -31,7 +31,7 @@ class LookupTest {
             .uploadedAt(now)
             .recordCount(2)
             .description("Lookup containing employee information")
-            .fieldsDescription(fieldsDescription)
+            .fieldDescriptions(fieldsDescription)
             .build();
 
         // Assert
@@ -41,7 +41,7 @@ class LookupTest {
         assertEquals(now, lookup.getUploadedAt());
         assertEquals(2, lookup.getData().size());
         assertEquals("Lookup containing employee information", lookup.getDescription());
-        assertEquals(fieldsDescription, lookup.getFieldsDescription());
+        assertEquals(fieldsDescription, lookup.getFieldDescriptions());
     }
 
     @Test
@@ -55,7 +55,7 @@ class LookupTest {
             .data(Collections.singletonList(Map.of("key", "value")))
             .uploadedAt(new Date())
             .description("Test description")
-            .fieldsDescription(fieldsDesc)
+            .fieldDescriptions(fieldsDesc)
             .build();
 
         // Act - Serialize to JSON
@@ -67,7 +67,7 @@ class LookupTest {
         assertEquals(lookup.getLookupName(), deserializedLookup.getLookupName());
         assertEquals(lookup.getRecordCount(), deserializedLookup.getRecordCount());
         assertEquals(lookup.getDescription(), deserializedLookup.getDescription());
-        assertEquals(lookup.getFieldsDescription(), deserializedLookup.getFieldsDescription());
+        assertEquals(lookup.getFieldDescriptions(), deserializedLookup.getFieldDescriptions());
     }
 
     @Test
@@ -84,7 +84,7 @@ class LookupTest {
             .uploadedAt(date)
             .recordCount(1)
             .description("Test description")
-            .fieldsDescription(fieldsDesc)
+            .fieldDescriptions(fieldsDesc)
             .build();
 
         Lookup lookup2 = Lookup.builder()
@@ -94,7 +94,7 @@ class LookupTest {
             .uploadedAt(date)
             .recordCount(1)
             .description("Test description")
-            .fieldsDescription(fieldsDesc)
+            .fieldDescriptions(fieldsDesc)
             .build();
 
         // Assert
@@ -114,7 +114,7 @@ class LookupTest {
         assertNull(lookup.getUploadedAt());
         assertNull(lookup.getRecordCount());
         assertNull(lookup.getDescription());
-        assertNull(lookup.getFieldsDescription());
+        assertNull(lookup.getFieldDescriptions());
     }
 
     @Test
@@ -134,7 +134,7 @@ class LookupTest {
         assertEquals(date, lookup.getUploadedAt());
         assertEquals(1, lookup.getRecordCount());
         assertEquals("Test description", lookup.getDescription());
-        assertEquals(fieldsDesc, lookup.getFieldsDescription());
+        assertEquals(fieldsDesc, lookup.getFieldDescriptions());
     }
 
     @Test
@@ -152,7 +152,7 @@ class LookupTest {
         lookup.setUploadedAt(date);
         lookup.setRecordCount(5);
         lookup.setDescription("Setter description");
-        lookup.setFieldsDescription(fieldsDesc);
+        lookup.setFieldDescriptions(fieldsDesc);
 
         // Assert
         assertEquals("setter-test", lookup.getId());
@@ -161,7 +161,7 @@ class LookupTest {
         assertEquals(date, lookup.getUploadedAt());
         assertEquals(5, lookup.getRecordCount());
         assertEquals("Setter description", lookup.getDescription());
-        assertEquals(fieldsDesc, lookup.getFieldsDescription());
+        assertEquals(fieldsDesc, lookup.getFieldDescriptions());
     }
 
     @Test
@@ -175,7 +175,7 @@ class LookupTest {
             .uploadedAt(new Date())
             .data(Collections.singletonList(Map.of("field", "value")))
             .description("Test description")
-            .fieldsDescription(fieldsDesc)
+            .fieldDescriptions(fieldsDesc)
             .build();
 
         // Act
@@ -189,25 +189,50 @@ class LookupTest {
     }
 
     @Test
-    void lookup_NullFields_HandledCorrectly() {
-        // Act
-        Lookup lookup = Lookup.builder()
-            .id("test")
-            .lookupName(null)
-            .data(null)
-            .uploadedAt(null)
-            .recordCount(null)
-            .description(null)
-            .fieldsDescription(null)
-            .build();
+    void lookup_NullLookupName_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName(null)
+                .data(List.of())
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description("Test")
+                .fieldDescriptions(Map.of())
+                .build();
+        });
+    }
 
-        // Assert
-        assertEquals("test", lookup.getId());
-        assertNull(lookup.getLookupName());
-        assertNull(lookup.getData());
-        assertNull(lookup.getUploadedAt());
-        assertNull(lookup.getRecordCount());
-        assertNull(lookup.getDescription());
-        assertNull(lookup.getFieldsDescription());
+    @Test
+    void lookup_NullData_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName("test-lookup")
+                .data(null)
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description("Test")
+                .fieldDescriptions(Map.of())
+                .build();
+        });
+    }
+
+    @Test
+    void lookup_NullDescription_ThrowsException() {
+        // Act & Assert
+        assertThrows(NullPointerException.class, () -> {
+            Lookup.builder()
+                .id("test")
+                .lookupName("test-lookup")
+                .data(List.of())
+                .uploadedAt(new Date())
+                .recordCount(0)
+                .description(null)
+                .fieldDescriptions(Map.of())
+                .build();
+        });
     }
 }

@@ -1,6 +1,5 @@
 package com.project.core_service.dto;
 
-import com.project.core_service.models.lookup.Lookup;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -12,93 +11,113 @@ class LookupDTOTest {
     @Test
     void builder_AllFields_Success() {
         // Arrange
-        List<Lookup> lookups = Arrays.asList(
-            createMockLookup("lookup1", "Test Lookup 1"),
-            createMockLookup("lookup2", "Test Lookup 2")
+        List<Map<String, String>> data = Arrays.asList(
+            Map.of("name", "John", "age", "30"),
+            Map.of("name", "Jane", "age", "25")
         );
+        Map<String, String> fieldDescriptions = Map.of(
+            "name", "Employee name",
+            "age", "Employee age"
+        );
+        Date now = new Date();
 
         // Act
         LookupDTO dto = LookupDTO.builder()
-                .success(true)
+                .id("test-lookup")
                 .lookupName("test-lookup")
-                .recordsProcessed(100)
-                .totalLookups(2)
-                .message("Success message")
-                .lookups(lookups)
+                .data(data)
+                .uploadedAt(now)
+                .recordCount(2)
+                .description("Test description")
+                .fieldDescriptions(fieldDescriptions)
                 .build();
 
         // Assert
-        assertTrue(dto.isSuccess());
+        assertEquals("test-lookup", dto.getId());
         assertEquals("test-lookup", dto.getLookupName());
-        assertEquals(Integer.valueOf(100), dto.getRecordsProcessed());
-        assertEquals(Integer.valueOf(2), dto.getTotalLookups());
-        assertEquals("Success message", dto.getMessage());
-        assertEquals(2, dto.getLookups().size());
+        assertEquals(2, dto.getData().size());
+        assertEquals(now, dto.getUploadedAt());
+        assertEquals(Integer.valueOf(2), dto.getRecordCount());
+        assertEquals("Test description", dto.getDescription());
+        assertEquals(fieldDescriptions, dto.getFieldDescriptions());
     }
 
     @Test
     void builder_MinimalFields_Success() {
         // Act
         LookupDTO dto = LookupDTO.builder()
-                .success(false)
-                .message("Error occurred")
+                .id("minimal")
+                .lookupName("minimal")
                 .build();
 
         // Assert
-        assertFalse(dto.isSuccess());
-        assertEquals("Error occurred", dto.getMessage());
-        assertNull(dto.getLookupName());
-        assertNull(dto.getRecordsProcessed()); // Changed expectation
-        assertNull(dto.getTotalLookups()); // Changed expectation
-        assertNull(dto.getLookups());
+        assertEquals("minimal", dto.getId());
+        assertEquals("minimal", dto.getLookupName());
+        assertNull(dto.getData());
+        assertNull(dto.getUploadedAt());
+        assertNull(dto.getRecordCount());
+        assertNull(dto.getDescription());
+        assertNull(dto.getFieldDescriptions());
     }
 
     @Test
-    void builder_EmptyLookupsList_Success() {
+    void builder_EmptyData_Success() {
         // Act
         LookupDTO dto = LookupDTO.builder()
-                .lookups(new ArrayList<>())
-                .totalLookups(0)
+                .id("empty")
+                .lookupName("empty")
+                .data(new ArrayList<>())
+                .recordCount(0)
+                .fieldDescriptions(new HashMap<>())
                 .build();
 
         // Assert
-        assertNotNull(dto.getLookups());
-        assertTrue(dto.getLookups().isEmpty());
-        assertEquals(Integer.valueOf(0), dto.getTotalLookups());
+        assertNotNull(dto.getData());
+        assertTrue(dto.getData().isEmpty());
+        assertEquals(Integer.valueOf(0), dto.getRecordCount());
+        assertNotNull(dto.getFieldDescriptions());
+        assertTrue(dto.getFieldDescriptions().isEmpty());
     }
 
     @Test
-    void builder_NullLookupsList_Success() {
+    void builder_NullData_Success() {
         // Act
         LookupDTO dto = LookupDTO.builder()
-                .lookups(null)
+                .id("null-data")
+                .data(null)
+                .fieldDescriptions(null)
                 .build();
 
         // Assert
-        assertNull(dto.getLookups());
+        assertNull(dto.getData());
+        assertNull(dto.getFieldDescriptions());
     }
 
     @Test
     void settersAndGetters_AllFields_Success() {
         // Arrange
         LookupDTO dto = new LookupDTO();
-        List<Lookup> lookups = Arrays.asList(createMockLookup("test", "Test"));
+        List<Map<String, String>> data = Arrays.asList(Map.of("key", "value"));
+        Map<String, String> fieldDescs = Map.of("key", "Key field");
+        Date date = new Date();
 
         // Act
-        dto.setSuccess(true);
-        dto.setLookupName("setter-test");
-        dto.setRecordsProcessed(50);
-        dto.setTotalLookups(1);
-        dto.setMessage("Setter message");
-        dto.setLookups(lookups);
+        dto.setId("setter-test");
+        dto.setLookupName("Setter Test");
+        dto.setData(data);
+        dto.setUploadedAt(date);
+        dto.setRecordCount(1);
+        dto.setDescription("Setter description");
+        dto.setFieldDescriptions(fieldDescs);
 
         // Assert
-        assertTrue(dto.isSuccess());
-        assertEquals("setter-test", dto.getLookupName());
-        assertEquals(Integer.valueOf(50), dto.getRecordsProcessed());
-        assertEquals(Integer.valueOf(1), dto.getTotalLookups());
-        assertEquals("Setter message", dto.getMessage());
-        assertEquals(1, dto.getLookups().size());
+        assertEquals("setter-test", dto.getId());
+        assertEquals("Setter Test", dto.getLookupName());
+        assertEquals(1, dto.getData().size());
+        assertEquals(date, dto.getUploadedAt());
+        assertEquals(Integer.valueOf(1), dto.getRecordCount());
+        assertEquals("Setter description", dto.getDescription());
+        assertEquals(fieldDescs, dto.getFieldDescriptions());
     }
 
     @Test
@@ -107,49 +126,62 @@ class LookupDTOTest {
         LookupDTO dto = new LookupDTO();
 
         // Assert
-        assertFalse(dto.isSuccess()); // boolean defaults to false
+        assertNull(dto.getId());
         assertNull(dto.getLookupName());
-        assertNull(dto.getRecordsProcessed()); // Changed expectation
-        assertNull(dto.getTotalLookups()); // Changed expectation
-        assertNull(dto.getMessage());
-        assertNull(dto.getLookups());
+        assertNull(dto.getData());
+        assertNull(dto.getUploadedAt());
+        assertNull(dto.getRecordCount());
+        assertNull(dto.getDescription());
+        assertNull(dto.getFieldDescriptions());
     }
 
     @Test
     void toString_ContainsAllFields() {
         // Arrange
+        Map<String, String> fieldDescs = Map.of("field", "Field description");
         LookupDTO dto = LookupDTO.builder()
-                .success(true)
+                .id("test")
                 .lookupName("test")
-                .recordsProcessed(10)
-                .totalLookups(1)
-                .message("Test message")
+                .recordCount(10)
+                .description("Test description")
+                .fieldDescriptions(fieldDescs)
                 .build();
 
         // Act
         String result = dto.toString();
 
         // Assert
-        assertTrue(result.contains("success=true"));
+        assertTrue(result.contains("id=test"));
         assertTrue(result.contains("lookupName=test"));
-        assertTrue(result.contains("recordsProcessed=10"));
-        assertTrue(result.contains("totalLookups=1"));
-        assertTrue(result.contains("message=Test message"));
+        assertTrue(result.contains("recordCount=10"));
+        assertTrue(result.contains("description=Test description"));
     }
 
     @Test
     void equals_SameContent_ReturnsTrue() {
         // Arrange
+        Date date = new Date();
+        List<Map<String, String>> data = Arrays.asList(Map.of("key", "value"));
+        Map<String, String> fieldDescs = Map.of("key", "Key description");
+
         LookupDTO dto1 = LookupDTO.builder()
-                .success(true)
+                .id("test")
                 .lookupName("test")
-                .recordsProcessed(10)
+                .data(data)
+                .uploadedAt(date)
+                .recordCount(1)
+                .description("Test")
+                .fieldDescriptions(fieldDescs)
                 .build();
 
         LookupDTO dto2 = LookupDTO.builder()
-                .success(true)
+                .id("test")
                 .lookupName("test")
-                .recordsProcessed(10)
+                .data(data)
+                .uploadedAt(date)
+                .recordCount(1)
+                .description("Test")
+                .fieldDescriptions(fieldDescs)
                 .build();
 
         // Act & Assert
@@ -161,12 +193,12 @@ class LookupDTOTest {
     void equals_DifferentContent_ReturnsFalse() {
         // Arrange
         LookupDTO dto1 = LookupDTO.builder()
-                .success(true)
+                .id("test1")
                 .lookupName("test1")
                 .build();
 
         LookupDTO dto2 = LookupDTO.builder()
-                .success(true)
+                .id("test2")
                 .lookupName("test2")
                 .build();
 
@@ -177,7 +209,7 @@ class LookupDTOTest {
     @Test
     void equals_NullComparison_ReturnsFalse() {
         // Arrange
-        LookupDTO dto = LookupDTO.builder().success(true).build();
+        LookupDTO dto = LookupDTO.builder().id("test").build();
 
         // Act & Assert
         assertNotEquals(null, dto);
@@ -186,23 +218,10 @@ class LookupDTOTest {
     @Test
     void equals_DifferentClass_ReturnsFalse() {
         // Arrange
-        LookupDTO dto = LookupDTO.builder().success(true).build();
+        LookupDTO dto = LookupDTO.builder().id("test").build();
         String other = "not a dto";
 
         // Act & Assert
         assertNotEquals(other, dto);
-    }
-
-    private Lookup createMockLookup(String id, String name) {
-        Map<String, String> data = new HashMap<>();
-        data.put("field1", "value1");
-        
-        return Lookup.builder()
-                .id(id)
-                .lookupName(name)
-                .data(Arrays.asList(data))
-                .recordCount(1)
-                .uploadedAt(new Date())
-                .build();
     }
 }

@@ -4,10 +4,11 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
-import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
-import com.project.core_service.dto.TechComponentLookupDTO;
-import com.project.core_service.dto.LookupContextDTO;
+import com.project.core_service.dto.UpdateLookupDTO;
+import com.project.core_service.dto.CreateLookupDTO;
+import com.project.core_service.dto.LookupFieldDescriptionsDTO;
+import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -46,43 +47,62 @@ public class LookupService {
     private static final String UPLOADED_AT_FIELD = "uploadedAt";
     private static final String RECORD_COUNT_FIELD = "recordCount";
     private static final String DESCRIPTION_FIELD = "description";
-    private static final String FIELDS_DESCRIPTION_FIELD = "fieldsDescription";
-
-    // Lookup collection names
-    private static final String BUSINESS_CAPABILITIES_LOOKUP = "business-capabilities";
-    private static final String TECH_EOL_LOOKUP = "tech_eol";
-
-    // Error messages
-    private static final String BUSINESS_CAPABILITIES_NOT_FOUND_MSG = "Business capabilities lookup not found";
-    private static final String TECH_COMPONENTS_NOT_FOUND_MSG = "Tech components lookup not found";
-
-    // CSV field names for business capabilities
-    private static final String L1_FIELD = "L1";
-    private static final String L2_FIELD = "L2";
-    private static final String L3_FIELD = "L3";
-
-    // CSV field names for tech components
-    private static final String PRODUCT_NAME_FIELD = "Product Name";
-    private static final String PRODUCT_VERSION_FIELD = "Product Version";
+    private static final String FIELD_DESCRIPTIONS_FIELD = "fieldDescriptions";
 
     @Autowired
     public LookupService(MongoDatabase mongoDatabase) {
         this.mongoDatabase = mongoDatabase;
     }
 
-    public LookupDTO processCsvFile(MultipartFile file, String lookupName) {
+    public LookupDTO createLookup(CreateLookupDTO createLookupDTO) {
+        if (createLookupDTO.getLookupName() == null || createLookupDTO.getLookupName().trim().isEmpty()) {
+            throw new IllegalArgumentException("lookupName parameter is required and cannot be empty");
+        }
+
+        if (createLookupDTO.getDescription() == null || createLookupDTO.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("description parameter is required and cannot be empty");
+        }
+
+        List<Map<String, String>> lookupData = processCsvFileToData(createLookupDTO.getLookupFile());
+        // new fieldDescriptions with empty descriptions
+        Map<String, String> newfieldDescriptions = generateFieldDescMap(
+                new ArrayList<>(lookupData.get(0).keySet())
+        );
+
+        // Create and return the lookup object
+        Lookup lookup = Lookup.builder()
+                .id(createLookupDTO.getLookupName())
+                .lookupName(createLookupDTO.getLookupName())
+                .data(lookupData)
+                .description(createLookupDTO.getDescription())
+                .fieldDescriptions(newfieldDescriptions)
+                .uploadedAt(new Date())
+                .recordCount(lookupData.size())
+                .build();
+
+        // Store in MongoDB
+        saveToMongoDB(lookup);
+
+        // Return response
+        return LookupDTO.builder().id(lookup.getId())
+                .lookupName(lookup.getLookupName())
+                .description(lookup.getDescription())
+                .data(lookup.getData())
+                .fieldDescriptions(lookup.getFieldDescriptions())
+                .uploadedAt(lookup.getUploadedAt())
+                .recordCount(lookup.getRecordCount())
+                .build();
+    }
+
+    private List<Map<String, String>> processCsvFileToData(MultipartFile lookupFile) {
         // Validate file
-        if (file == null || file.isEmpty()) {
+        if (lookupFile == null || lookupFile.isEmpty()) {
             throw new InvalidFileException("file parameter is required and cannot be empty");
         }
 
-        if (lookupName == null || lookupName.trim().isEmpty()) {
-            throw new InvalidFileException("lookupName parameter is required and cannot be empty");
-        }
-
         // Validate file type
-        String contentType = file.getContentType();
-        String fileName = file.getOriginalFilename();
+        String contentType = lookupFile.getContentType();
+        String fileName = lookupFile.getOriginalFilename();
         if (!fileName.toLowerCase().endsWith(".csv") &&
             !"text/csv".equals(contentType)) {
             throw new InvalidFileException("File must be a CSV file");
@@ -90,27 +110,8 @@ public class LookupService {
 
         try {
             // Parse CSV to List of Maps
-            List<Map<String, String>> csvData = parseCsvToJson(file);
+            return parseCsvToJson(lookupFile);
 
-            // Create the lookup object
-            Lookup lookup = Lookup.builder()
-                    .id(lookupName)
-                    .lookupName(lookupName)
-                    .data(csvData)
-                    .uploadedAt(new Date())
-                    .recordCount(csvData.size())
-                    .build();
-
-            // Store in MongoDB
-            saveToMongoDB(lookup);
-
-            // Return response
-            return LookupDTO.builder()
-                    .success(true)
-                    .lookupName(lookupName)
-                    .recordsProcessed(csvData.size())
-                    .message("CSV file processed and stored successfully")
-                    .build();
         } catch (InvalidFileException | CsvProcessingException e) {
             // Re-throw dedicated exceptions
             throw e;
@@ -224,14 +225,8 @@ public class LookupService {
         lookupMap.put(DATA_FIELD, lookup.getData());
         lookupMap.put(UPLOADED_AT_FIELD, lookup.getUploadedAt());
         lookupMap.put(RECORD_COUNT_FIELD, lookup.getRecordCount());
-
-        // Add description and fieldsDescription if they exist
-        if (lookup.getDescription() != null) {
-            lookupMap.put(DESCRIPTION_FIELD, lookup.getDescription());
-        }
-        if (lookup.getFieldsDescription() != null) {
-            lookupMap.put(FIELDS_DESCRIPTION_FIELD, lookup.getFieldsDescription());
-        }
+        lookupMap.put(DESCRIPTION_FIELD, lookup.getDescription());
+        lookupMap.put(FIELD_DESCRIPTIONS_FIELD, lookup.getFieldDescriptions());
 
         Document document = new Document(lookupMap);
 
@@ -244,25 +239,35 @@ public class LookupService {
         );
     }
 
-    public LookupDTO getAllLookups() {
+    private Map<String, String> generateFieldDescMap(List<String> fieldNames) {
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        for (String fieldName : fieldNames) {
+            fieldDescriptions.put(fieldName, ""); // Default empty description
+        }
+        return fieldDescriptions;
+    }
+
+    public List<LookupWODataDTO> getAllLookups() {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
 
-        List<Lookup> lookups = new ArrayList<>();
+        List<LookupWODataDTO> lookups = new ArrayList<>();
 
         // Fetch all documents and convert to Lookup objects
         for (Document doc : collection.find()) {
             Lookup lookup = documentToLookup(doc);
-            lookups.add(lookup);
+            lookups.add(LookupWODataDTO.builder()
+                    .id(lookup.getId())
+                    .lookupName(lookup.getLookupName())
+                    .uploadedAt(lookup.getUploadedAt())
+                    .recordCount(lookup.getRecordCount())
+                    .description(lookup.getDescription())
+                    .build());
         }
 
-        return LookupDTO.builder()
-                .success(true)
-                .totalLookups(lookups.size())
-                .lookups(lookups)
-                .build();
+        return lookups;
     }
 
-    public LookupDTO getLookupByName(String lookupName) {
+    public Lookup findLookupByName(String lookupName) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
 
         Document doc = collection.find(Filters.eq(ID_FIELD, lookupName)).first();
@@ -273,13 +278,23 @@ public class LookupService {
 
         Lookup lookup = documentToLookup(doc);
 
-        return LookupDTO.builder()
-                .success(true)
-                .lookups(new ArrayList<>(List.of(lookup)))
+        return lookup;
+    }
+
+    public LookupDTO getLookupByName(String lookupName) {
+        Lookup lookup = findLookupByName(lookupName);
+
+        return LookupDTO.builder().id(lookup.getId())
+                .lookupName(lookup.getLookupName())
+                .description(lookup.getDescription())
+                .data(lookup.getData())
+                .fieldDescriptions(lookup.getFieldDescriptions())
+                .uploadedAt(lookup.getUploadedAt())
+                .recordCount(lookup.getRecordCount())
                 .build();
     }
 
-    public LookupDTO deleteLookup(String lookupName) {
+    public void deleteLookup(String lookupName) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
 
         long deletedCount = collection.deleteOne(Filters.eq(ID_FIELD, lookupName)).getDeletedCount();
@@ -287,12 +302,6 @@ public class LookupService {
         if (deletedCount == 0) {
             throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
         }
-
-        return LookupDTO.builder()
-                .success(true)
-                .lookupName(lookupName)
-                .message("Lookup deleted successfully")
-                .build();
     }
 
     private Lookup documentToLookup(Document doc) {
@@ -308,16 +317,16 @@ public class LookupService {
             Object dataObj = doc.get(DATA_FIELD);
             List<Map<String, String>> data = extractDataList(dataObj, "lookup document");
 
-            // Handle fieldsDescription (Map<String, String>)
-            Object fieldsDescObj = doc.get(FIELDS_DESCRIPTION_FIELD);
-            Map<String, String> fieldsDescription = null;
-            if (fieldsDescObj instanceof Map) {
-                fieldsDescription = new HashMap<>();
-                Map<?, ?> rawMap = (Map<?, ?>) fieldsDescObj;
+            // Handle fieldDescriptions (Map<String, String>)
+            Object fieldDescObj = doc.get(FIELD_DESCRIPTIONS_FIELD);
+            Map<String, String> fieldDescriptions = null;
+            if (fieldDescObj instanceof Map) {
+                fieldDescriptions = new HashMap<>();
+                Map<?, ?> rawMap = (Map<?, ?>) fieldDescObj;
                 for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
                     String key = entry.getKey() != null ? entry.getKey().toString() : "";
                     String value = entry.getValue() != null ? entry.getValue().toString() : "";
-                    fieldsDescription.put(key, value);
+                    fieldDescriptions.put(key, value);
                 }
             }
 
@@ -328,7 +337,7 @@ public class LookupService {
                     .uploadedAt(uploadedAt)
                     .recordCount(recordCount != null ? recordCount : 0)
                     .description(description)
-                    .fieldsDescription(fieldsDescription)
+                    .fieldDescriptions(fieldDescriptions)
                     .build();
 
         } catch (Exception e) {
@@ -336,134 +345,6 @@ public class LookupService {
             log.error("Error converting document to Lookup", e);
             log.error("Document JSON: {}", doc.toJson());
             throw new CsvProcessingException("Failed to convert document to Lookup: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * Get business capabilities from the "business-capabilities" lookup.
-     * Transforms the lookup data into a list of BusinessCapabilityLookupDTO objects.
-     * 
-     * @return List of BusinessCapabilityLookupDTO objects
-     * @throws NotFoundException if business-capabilities lookup not found
-     */
-    public List<BusinessCapabilityLookupDTO> getBusinessCapabilities() {
-        log.info("Getting business capabilities from lookup");
-        
-        List<Map<String, String>> data = getLookupData(BUSINESS_CAPABILITIES_LOOKUP, BUSINESS_CAPABILITIES_NOT_FOUND_MSG, "business capabilities");
-        return transformDataToBusinessCapabilities(data);
-    }
-
-    /**
-     * Transforms raw data from MongoDB document into BusinessCapabilityLookupDTO objects.
-     * This method provides a reusable way to convert business capability data regardless of source.
-     * 
-     * @param data List of maps containing business capability data with L1, L2, L3 keys
-     * @return List of BusinessCapabilityLookupDTO objects
-     * @throws IllegalArgumentException if data contains invalid structure
-     */
-    private List<BusinessCapabilityLookupDTO> transformDataToBusinessCapabilities(List<Map<String, String>> data) {
-        if (data == null) {
-            return new ArrayList<>();
-        }
-        
-        List<BusinessCapabilityLookupDTO> businessCapabilities = new ArrayList<>();
-        for (Map<String, String> dataRow : data) {
-            BusinessCapabilityLookupDTO capability = new BusinessCapabilityLookupDTO(
-                dataRow.get(L1_FIELD),
-                dataRow.get(L2_FIELD), 
-                dataRow.get(L3_FIELD)
-            );
-            businessCapabilities.add(capability);
-        }
-        
-        return businessCapabilities;
-    }
-
-    /**
-     * Get tech components from the "tech_eol" lookup.
-     * Transforms the lookup data into a list of TechComponentLookupDTO objects.
-     * 
-     * @return List of TechComponentLookupDTO objects
-     * @throws NotFoundException if tech_eol lookup not found
-     */
-    public List<TechComponentLookupDTO> getTechComponents() {
-        log.info("Getting tech components from lookup");
-        
-        List<Map<String, String>> data = getLookupData(TECH_EOL_LOOKUP, TECH_COMPONENTS_NOT_FOUND_MSG, "tech components");
-        return transformDataToTechComponents(data);
-    }
-
-    /**
-     * Transforms raw data from MongoDB document into TechComponentLookupDTO objects.
-     * This method provides a reusable way to convert tech component data regardless of source.
-     * 
-     * @param data List of maps containing tech component data with Product Name and Product Version keys
-     * @return List of TechComponentLookupDTO objects
-     * @throws IllegalArgumentException if data contains invalid structure
-     */
-    private List<TechComponentLookupDTO> transformDataToTechComponents(List<Map<String, String>> data) {
-        if (data == null) {
-            return new ArrayList<>();
-        }
-        
-        List<TechComponentLookupDTO> techComponents = new ArrayList<>();
-        for (Map<String, String> dataRow : data) {
-            String productName = dataRow.get(PRODUCT_NAME_FIELD);
-            String productVersion = dataRow.get(PRODUCT_VERSION_FIELD);
-            
-            // Skip entries with null or empty product names as they are invalid
-            if (productName == null || productName.trim().isEmpty()) {
-                log.warn("Tech component found with null or empty product name in row: {}, skipping entry", dataRow);
-                continue;
-            }
-            
-            // Log warning for missing version but still include the component
-            if (productVersion == null || productVersion.trim().isEmpty()) {
-                log.warn("Tech component found with null or empty product version for product: {}", productName);
-                productVersion = ""; // Ensure we have a non-null value
-            }
-            
-            TechComponentLookupDTO component = new TechComponentLookupDTO(productName, productVersion);
-            techComponents.add(component);
-        }
-        
-        return techComponents;
-    }
-
-    /**
-     * Generic method to retrieve lookup data from MongoDB collection.
-     * This method consolidates the common logic for fetching and processing lookup data.
-     * 
-     * @param lookupName The name of the lookup collection to retrieve
-     * @param notFoundMessage The error message to use if lookup is not found
-     * @param logContext Context for logging (e.g., "business capabilities", "tech components")
-     * @return List of maps containing the lookup data
-     * @throws NotFoundException if the specified lookup is not found
-     * @throws CsvProcessingException if data processing fails
-     */
-    private List<Map<String, String>> getLookupData(String lookupName, String notFoundMessage, String logContext) {
-        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
-        Document doc = collection.find(Filters.eq(LOOKUP_NAME_FIELD, lookupName)).first();
-        
-        if (doc == null) {
-            throw new NotFoundException(notFoundMessage);
-        }
-        
-        try {
-            Object dataObj = doc.get(DATA_FIELD);
-            List<Map<String, String>> data = extractDataList(dataObj, logContext);
-            
-            if (data.isEmpty()) {
-                log.warn("{} lookup found but contains no data", logContext);
-                return new ArrayList<>();
-            }
-            
-            log.info("Successfully retrieved {} {} records", data.size(), logContext);
-            return data;
-            
-        } catch (Exception e) {
-            log.error("Error processing {} lookup", logContext, e);
-            throw new CsvProcessingException("Failed to process " + logContext + ": " + e.getMessage(), e);
         }
     }
 
@@ -533,55 +414,93 @@ public class LookupService {
     }
 
     /**
-     * Updates the context (description and fields description) for a lookup.
+     * Updates the context (description and field description) for a lookup.
      *
      * @param lookupName The name of the lookup to update
-     * @param lookupContextDTO DTO containing the description and fieldsDescription
+     * @param lookupFieldDescriptionsDTO DTO containing the description and fieldDescriptions
      * @return The updated LookupContextDTO
      * @throws NotFoundException if the lookup with the given name is not found
      */
-    public LookupContextDTO addLookupContext(String lookupName, LookupContextDTO lookupContextDTO) {
-        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+    public LookupFieldDescriptionsDTO updateFieldDescriptions(String lookupName, LookupFieldDescriptionsDTO lookupFieldDescriptionsDTO) {
+        Lookup existingLookup = findLookupByName(lookupName);
 
-        // Find the existing lookup
-        Document doc = collection.find(Filters.eq(ID_FIELD, lookupName)).first();
-
-        if (doc == null) {
-            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
-        }
-
-        // Convert existing document to Lookup object
-        Lookup existingLookup = documentToLookup(doc);
-
-        // Update the description and fieldsDescription
-        existingLookup.setDescription(lookupContextDTO.getDescription());
-        existingLookup.setFieldsDescription(lookupContextDTO.getFieldsDescription());
+        // Update the fieldDescriptions
+        existingLookup.setFieldDescriptions(lookupFieldDescriptionsDTO.getFieldDescriptions());
 
         // Save the updated lookup back to MongoDB
         saveToMongoDB(existingLookup);
 
         log.info("Successfully updated context for lookup: {}", lookupName);
 
-        return lookupContextDTO;
+        return lookupFieldDescriptionsDTO;
     }
 
-    public List<String> getFieldNames(String lookupName) {
-        MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
+    private Map<String, String> getFieldDescriptions(String lookupName) {
+        Lookup lookup = findLookupByName(lookupName);
 
-        Document doc = collection.find(Filters.eq(ID_FIELD, lookupName)).first();
+        return lookup.getFieldDescriptions();
+    }
 
-        if (doc == null) {
-            throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
+    public LookupFieldDescriptionsDTO getFieldDescriptionsDTO(String lookupName) {
+        return LookupFieldDescriptionsDTO.builder()
+                .fieldDescriptions(getFieldDescriptions(lookupName))
+                .build();
+    }
+
+    private Map<String, String> mergeFieldDescriptions(Map<String, String> existingFieldDescriptions, Map<String, String> newFieldDescriptions) {
+        try {
+            Map<String, String> mergedDescriptions = new HashMap<>();
+
+            for (String fieldName : newFieldDescriptions.keySet()) {
+                if (existingFieldDescriptions.containsKey(fieldName)) {
+                    mergedDescriptions.put(fieldName, existingFieldDescriptions.get(fieldName));
+                } else {
+                    mergedDescriptions.put(fieldName, ""); // Default empty description
+                }
+            }
+            return mergedDescriptions;
+        } catch (NotFoundException e) {
+            return newFieldDescriptions;
+        }
+    }
+
+    public LookupDTO updateLookup(String lookupName, UpdateLookupDTO updateLookupDTO) {
+        // throws exception if not found
+        Lookup existingLookup = findLookupByName(lookupName);
+
+        if (updateLookupDTO.getDescription() != null && !updateLookupDTO.getDescription().trim().isEmpty()) {
+            existingLookup.setDescription(updateLookupDTO.getDescription());
         }
 
-        Lookup lookup = documentToLookup(doc);
+        if (updateLookupDTO.getLookupFile() != null && !updateLookupDTO.getLookupFile().isEmpty()) {
+            List<Map<String, String>> lookupData = processCsvFileToData(updateLookupDTO.getLookupFile());
+            existingLookup.setData(lookupData);
+            existingLookup.setRecordCount(lookupData.size());
+            existingLookup.setUploadedAt(new Date());
 
-        if (lookup.getData() == null || lookup.getData().isEmpty()) {
-            return new ArrayList<>();
+                    // new fieldDescriptions with empty descriptions
+            Map<String, String> newfieldDescriptions = generateFieldDescMap(
+                    new ArrayList<>(lookupData.get(0).keySet())
+            );
+            // merge field descriptions if lookup exists
+            Map<String, String> mergedFieldDescriptions = mergeFieldDescriptions(
+                    existingLookup.getFieldDescriptions(),
+                    newfieldDescriptions
+            );
+            existingLookup.setFieldDescriptions(mergedFieldDescriptions);
         }
 
-        // Extract field names from the first record
-        Map<String, String> firstRecord = lookup.getData().get(0);
-        return new ArrayList<>(firstRecord.keySet());
+        // Store in MongoDB
+        saveToMongoDB(existingLookup);
+
+        // Return response
+        return LookupDTO.builder().id(existingLookup.getId())
+                .lookupName(existingLookup.getLookupName())
+                .description(existingLookup.getDescription())
+                .data(existingLookup.getData())
+                .fieldDescriptions(existingLookup.getFieldDescriptions())
+                .uploadedAt(existingLookup.getUploadedAt())
+                .recordCount(existingLookup.getRecordCount())
+                .build();
     }
 }

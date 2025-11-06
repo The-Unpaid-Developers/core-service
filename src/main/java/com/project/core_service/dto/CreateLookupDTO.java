@@ -7,20 +7,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
 import java.util.List;
-import java.util.Map;
+
+import org.springframework.web.multipart.MultipartFile;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class LookupDTO {
-    private String id;
+public class CreateLookupDTO {
+    @NonNull
     private String lookupName;
-    private List<Map<String, String>> data;
-    private Date uploadedAt;
-    private Integer recordCount;
+    @NonNull
     private String description;
-    private Map<String, String> fieldDescriptions;
+    @NonNull
+    private MultipartFile lookupFile;
 }

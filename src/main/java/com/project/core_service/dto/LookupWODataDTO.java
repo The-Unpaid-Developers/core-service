@@ -1,26 +1,26 @@
 package com.project.core_service.dto;
 
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+
 import com.mongodb.lang.NonNull;
-import com.project.core_service.models.lookup.Lookup;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
+/**
+ * DTO for Lookup without data and field descriptions fields.
+ */
 @Data
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class LookupDTO {
+@NoArgsConstructor
+@Builder
+public class LookupWODataDTO {
     private String id;
     private String lookupName;
-    private List<Map<String, String>> data;
     private Date uploadedAt;
     private Integer recordCount;
     private String description;
-    private Map<String, String> fieldDescriptions;
 }
