@@ -9,6 +9,7 @@ import com.mongodb.client.result.UpdateResult;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
+import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -54,6 +55,9 @@ class LookupServiceTest {
 
     private final String collectionName = "test_lookups";
 
+    private final String FIELD_DESCRIPTIONS_FIELD = "fieldDescriptions";
+    private final String DESCRIPTION_FIELD = "description";
+
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(lookupService, "collectionName", collectionName);
@@ -61,49 +65,60 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_ValidCsv_Success() {
+    void createLookup_ValidCsv_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        
+
         String csvContent = "name,age,department\nJohn Doe,30,Engineering\nJane Smith,25,Marketing";
         MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "test.csv", 
-            "text/csv", 
+            "file",
+            "test.csv",
+            "text/csv",
             csvContent.getBytes()
         );
-        String lookupName = "employees";
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("employees")
+            .description("Employee lookup")
+            .lookupFile(file)
+            .build();
 
         // Mock the replaceOne operation
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, lookupName);
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Assert
         assertTrue(result.isSuccess());
-        assertEquals(lookupName, result.getLookupName());
+        assertEquals("employees", result.getLookupName());
         assertEquals(2, result.getRecordsProcessed());
         assertEquals("CSV file processed and stored successfully", result.getMessage());
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 
     @Test
-    void processCsvFile_EmptyFile_ThrowsException() {
+    void createLookup_EmptyFile_ThrowsException() {
         // Arrange
         MockMultipartFile emptyFile = new MockMultipartFile("file", "test.csv", "text/csv", new byte[0]);
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test")
+            .description("Test lookup")
+            .lookupFile(emptyFile)
+            .build();
 
         // Act & Assert
         InvalidFileException exception = assertThrows(
             InvalidFileException.class,
-            () -> lookupService.processCsvFile(emptyFile, "test")
+            () -> lookupService.createLookup(createLookupDTO)
         );
         assertEquals("file parameter is required and cannot be empty", exception.getMessage());
     }
 
     @Test
-    void processCsvFile_InvalidFileType_ThrowsException() {
+    void createLookup_InvalidFileType_ThrowsException() {
         // Arrange
         MockMultipartFile txtFile = new MockMultipartFile(
             "file",
@@ -112,33 +127,45 @@ class LookupServiceTest {
             "some content".getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test")
+            .description("Test lookup")
+            .lookupFile(txtFile)
+            .build();
+
         // Act & Assert
         InvalidFileException exception = assertThrows(
             InvalidFileException.class,
-            () -> lookupService.processCsvFile(txtFile, "test")
+            () -> lookupService.createLookup(createLookupDTO)
         );
         assertEquals("File must be a CSV file", exception.getMessage());
     }
 
     @Test
-    void processCsvFile_CsvWithBOM_Success() throws Exception {
+    void createLookup_CsvWithBOM_Success() throws Exception {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        
+
         String csvContent = "\uFEFFname,age\nJohn,30";
         MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "test.csv", 
-            "text/csv", 
+            "file",
+            "test.csv",
+            "text/csv",
             csvContent.getBytes("UTF-8")
         );
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
 
         // Mock the replaceOne operation
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, "test");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Assert
         assertTrue(result.isSuccess());
@@ -146,7 +173,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_IOException_ThrowsException() throws Exception {
+    void createLookup_IOException_ThrowsException() throws Exception {
         // Arrange
         MockMultipartFile file = mock(MockMultipartFile.class);
         when(file.isEmpty()).thenReturn(false);
@@ -154,10 +181,16 @@ class LookupServiceTest {
         when(file.getContentType()).thenReturn("text/csv");
         when(file.getInputStream()).thenThrow(new IOException("IO Error"));
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         // Act & Assert
         CsvProcessingException exception = assertThrows(
             CsvProcessingException.class,
-            () -> lookupService.processCsvFile(file, "test")
+            () -> lookupService.createLookup(createLookupDTO)
         );
         assertTrue(exception.getMessage().contains("Error parsing CSV file"));
     }
@@ -262,7 +295,7 @@ class LookupServiceTest {
 
     @ParameterizedTest
     @MethodSource("csvProcessingTestCases")
-    void processCsvFile_VariousFormats_Success(String testName, String csvContent, String lookupName, int expectedRecords) {
+    void createLookup_VariousFormats_Success(String testName, String csvContent, String lookupName, int expectedRecords) {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
@@ -273,11 +306,17 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName(lookupName)
+            .description("Test lookup for " + testName)
+            .lookupFile(file)
+            .build();
+
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, lookupName);
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Assert
         assertTrue(result.isSuccess(), "Failed for test case: " + testName);
@@ -368,7 +407,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_OnlyHeaders_ThrowsException() {
+    void createLookup_OnlyHeaders_ThrowsException() {
         // Arrange
         String csvContent = "name,age,department";
         MockMultipartFile file = new MockMultipartFile(
@@ -378,10 +417,16 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("only-headers")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         // Act & Assert
         CsvProcessingException exception = assertThrows(
             CsvProcessingException.class,
-            () -> lookupService.processCsvFile(file, "only-headers")
+            () -> lookupService.createLookup(createLookupDTO)
         );
         assertTrue(exception.getMessage().contains("CSV file contains no data rows") ||
                    exception.getMessage().contains("no data") ||
@@ -390,7 +435,7 @@ class LookupServiceTest {
 
     @ParameterizedTest
     @MethodSource("invalidLookupNameTestCases")
-    void processCsvFile_InvalidLookupName_ThrowsException(String testName, String lookupName) {
+    void createLookup_InvalidLookupName_ThrowsException(String testName, String lookupName) {
         // Arrange
         String csvContent = "name,age\nJohn,30";
         MockMultipartFile file = new MockMultipartFile(
@@ -400,10 +445,16 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName(lookupName)
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         // Act & Assert
         assertThrows(
             Exception.class,
-            () -> lookupService.processCsvFile(file, lookupName),
+            () -> lookupService.createLookup(createLookupDTO),
             "Failed for test case: " + testName
         );
     }
@@ -417,7 +468,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_InconsistentColumnCount_HandledGracefully() {
+    void createLookup_InconsistentColumnCount_HandledGracefully() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
@@ -430,13 +481,19 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("inconsistent-columns")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act - Apache Commons CSV handles this by either ignoring extra columns or leaving missing ones blank
         // The service should either succeed or throw a meaningful exception
         try {
-            LookupDTO result = lookupService.processCsvFile(file, "inconsistent-columns");
+            LookupDTO result = lookupService.createLookup(createLookupDTO);
             // If it succeeds, verify it processed some rows
             assertTrue(result.isSuccess());
             assertTrue(result.getRecordsProcessed() > 0);
@@ -447,7 +504,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_NoHeaders_ThrowsException() {
+    void createLookup_NoHeaders_ThrowsException() {
         // Arrange
         // CSV with only data rows, no header
         String csvContent = "John Doe,30,Engineering\nJane Smith,25,Marketing";
@@ -458,6 +515,12 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("no-headers")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         // Note: This might actually succeed if the service treats the first row as headers
         // The behavior depends on the implementation. Let's verify what happens.
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -465,7 +528,7 @@ class LookupServiceTest {
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, "no-headers");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Assert - The first row will be treated as headers
         assertTrue(result.isSuccess());
@@ -473,7 +536,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_DuplicateHeaders_Success() {
+    void createLookup_DuplicateHeaders_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
@@ -485,12 +548,18 @@ class LookupServiceTest {
             csvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("duplicate-headers")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act - Duplicate headers might be handled by the CSV parser
         try {
-            LookupDTO result = lookupService.processCsvFile(file, "duplicate-headers");
+            LookupDTO result = lookupService.createLookup(createLookupDTO);
             // If it succeeds, verify it processed the rows
             assertTrue(result.isSuccess());
             assertEquals(2, result.getRecordsProcessed());
@@ -501,7 +570,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_TabSeparatedValues_ThrowsOrHandlesGracefully() {
+    void createLookup_TabSeparatedValues_ThrowsOrHandlesGracefully() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
@@ -514,12 +583,18 @@ class LookupServiceTest {
             tsvContent.getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("tab-separated")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act - TSV might be treated as a single column CSV
         try {
-            LookupDTO result = lookupService.processCsvFile(file, "tab-separated");
+            LookupDTO result = lookupService.createLookup(createLookupDTO);
             // Will likely succeed but treat each line as a single column
             assertTrue(result.isSuccess());
         } catch (CsvProcessingException e) {
@@ -529,7 +604,7 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_VeryLargeNumberOfRows_Success() {
+    void createLookup_VeryLargeNumberOfRows_Success() {
         // Arrange
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
 
@@ -546,11 +621,17 @@ class LookupServiceTest {
             csvBuilder.toString().getBytes()
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("large-dataset")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         UpdateResult updateResult = mock(UpdateResult.class);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        LookupDTO result = lookupService.processCsvFile(file, "large-dataset");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Assert
         assertTrue(result.isSuccess());
@@ -971,14 +1052,20 @@ class LookupServiceTest {
     }
 
     @Test
-    void processCsvFile_UnexpectedException_ThrowsCsvProcessingException() {
+    void createLookup_UnexpectedException_ThrowsCsvProcessingException() {
         // Create a CSV file that will cause an unexpected exception during processing
         MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "test.csv", 
-            "text/csv", 
+            "file",
+            "test.csv",
+            "text/csv",
             "header1,header2\nvalue1,value2".getBytes()
         );
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test-lookup")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
 
         // Mock the mongoDatabase to throw a RuntimeException
         when(mongoDatabase.getCollection(anyString())).thenThrow(new RuntimeException("Database connection failed"));
@@ -986,27 +1073,33 @@ class LookupServiceTest {
         // Assert that CsvProcessingException is thrown
         CsvProcessingException exception = assertThrows(
             CsvProcessingException.class,
-            () -> lookupService.processCsvFile(file, "test-lookup")
+            () -> lookupService.createLookup(createLookupDTO)
         );
 
         assertTrue(exception.getMessage().contains("Failed to process CSV file"));
         assertTrue(exception.getCause() instanceof RuntimeException);
     }
 
-    @Test 
-    void processCsvFile_EmptyHeaders_ThrowsCsvProcessingException() {
+    @Test
+    void createLookup_EmptyHeaders_ThrowsCsvProcessingException() {
         // Create a CSV file with no headers (empty first line)
         MockMultipartFile file = new MockMultipartFile(
             "file",
-            "test.csv", 
+            "test.csv",
             "text/csv",
             "\n".getBytes() // Just a newline, no headers
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test-lookup")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         // Assert that CsvProcessingException is thrown for empty headers
         CsvProcessingException exception = assertThrows(
             CsvProcessingException.class,
-            () -> lookupService.processCsvFile(file, "test-lookup")
+            () -> lookupService.createLookup(createLookupDTO)
         );
 
         assertEquals("CSV file must contain headers", exception.getMessage());
@@ -1101,16 +1194,22 @@ class LookupServiceTest {
             ("header1,header2\nvalue1,\n").getBytes() // Second column is empty
         );
 
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test-lookup")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
+
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(mock(UpdateResult.class));
 
         // Execute
-        LookupDTO result = lookupService.processCsvFile(file, "test-lookup");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Verify
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        
+
         // Verify that the mock was called, indicating the CSV was processed
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
@@ -1176,11 +1275,17 @@ class LookupServiceTest {
                 Node.js,"""; // Empty value that may be treated as null
 
         MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "test-null-value.csv", 
-            "text/csv", 
+            "file",
+            "test-null-value.csv",
+            "text/csv",
             csvContent.getBytes()
         );
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("test-null-value")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
 
         // Mock the MongoDB operations
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -1188,18 +1293,18 @@ class LookupServiceTest {
             .thenReturn(mock(UpdateResult.class));
 
         // Execute
-        LookupDTO result = lookupService.processCsvFile(file, "test-null-value");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Verify
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        
+
         // Verify the data was processed (empty values handled correctly)
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 
     @Test
-    void processCsvFile_WithMalformedCsvStructure_HandlesGracefully() {
+    void createLookup_WithMalformedCsvStructure_HandlesGracefully() {
         // Create malformed CSV with inconsistent column counts
         String malformedCsv = """
                 Product Name,Product Version,Extra Column
@@ -1208,11 +1313,17 @@ class LookupServiceTest {
                 """; // Missing third column in second row, too many columns in third row
 
         MockMultipartFile file = new MockMultipartFile(
-            "file", 
-            "malformed.csv", 
-            "text/csv", 
+            "file",
+            "malformed.csv",
+            "text/csv",
             malformedCsv.getBytes()
         );
+
+        com.project.core_service.dto.CreateLookupDTO createLookupDTO = com.project.core_service.dto.CreateLookupDTO.builder()
+            .lookupName("malformed-test")
+            .description("Test lookup")
+            .lookupFile(file)
+            .build();
 
         // Mock the MongoDB operations
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -1220,12 +1331,12 @@ class LookupServiceTest {
             .thenReturn(mock(UpdateResult.class));
 
         // Execute
-        LookupDTO result = lookupService.processCsvFile(file, "malformed-test");
+        LookupDTO result = lookupService.createLookup(createLookupDTO);
 
         // Verify that the service handles malformed CSV gracefully
         assertNotNull(result);
         assertTrue(result.isSuccess());
-        
+
         // Verify processing completed despite malformed structure
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
@@ -1254,21 +1365,20 @@ class LookupServiceTest {
         assertTrue(exception.getMessage().contains("expected List but got String"));
     }
 
-    // ===== addLookupContext Tests =====
+    // ===== updateFieldDescriptions Tests =====
 
     @Test
-    void addLookupContext_Success() {
+    void updateFieldDescriptions_Success() {
         // Arrange
         String lookupName = "test-lookup";
-        Map<String, String> fieldsDescription = Map.of(
+        Map<String, String> fieldDescriptions = Map.of(
             "field1", "Description for field1",
             "field2", "Description for field2"
         );
 
-        com.project.core_service.dto.LookupContextDTO contextDTO =
-            com.project.core_service.dto.LookupContextDTO.builder()
-                .description("Test lookup description")
-                .fieldsDescription(fieldsDescription)
+        com.project.core_service.dto.LookupFieldDescriptionsDTO contextDTO =
+            com.project.core_service.dto.LookupFieldDescriptionsDTO.builder()
+                .fieldDescriptions(fieldDescriptions)
                 .build();
 
         Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
@@ -1281,24 +1391,22 @@ class LookupServiceTest {
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+        com.project.core_service.dto.LookupFieldDescriptionsDTO result = lookupService.updateFieldDescriptions(lookupName, contextDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals("Test lookup description", result.getDescription());
-        assertEquals(fieldsDescription, result.getFieldsDescription());
+        assertEquals(fieldDescriptions, result.getFieldDescriptions());
         verify(mongoCollection).find(any(Bson.class));
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 
     @Test
-    void addLookupContext_LookupNotFound_ThrowsNotFoundException() {
+    void updateFieldDescriptions_LookupNotFound_ThrowsNotFoundException() {
         // Arrange
         String lookupName = "non-existent-lookup";
-        com.project.core_service.dto.LookupContextDTO contextDTO =
-            com.project.core_service.dto.LookupContextDTO.builder()
-                .description("Test description")
-                .fieldsDescription(Map.of("field1", "desc1"))
+        com.project.core_service.dto.LookupFieldDescriptionsDTO contextDTO =
+            com.project.core_service.dto.LookupFieldDescriptionsDTO.builder()
+                .fieldDescriptions(Map.of("field1", "desc1"))
                 .build();
 
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -1308,7 +1416,7 @@ class LookupServiceTest {
         // Act & Assert
         NotFoundException exception = assertThrows(
             NotFoundException.class,
-            () -> lookupService.addLookupContext(lookupName, contextDTO)
+            () -> lookupService.updateFieldDescriptions(lookupName, contextDTO)
         );
 
         assertTrue(exception.getMessage().contains("not found"));
@@ -1318,15 +1426,14 @@ class LookupServiceTest {
     }
 
     @Test
-    void addLookupContext_WithEmptyFieldsDescription_Success() {
+    void updateFieldDescriptions_WithEmptyFieldDescriptions_Success() {
         // Arrange
         String lookupName = "test-lookup";
-        Map<String, String> emptyFieldsDescription = new HashMap<>();
+        Map<String, String> emptyFieldDescriptions = new HashMap<>();
 
-        com.project.core_service.dto.LookupContextDTO contextDTO =
-            com.project.core_service.dto.LookupContextDTO.builder()
-                .description("Test description with empty fields")
-                .fieldsDescription(emptyFieldsDescription)
+        com.project.core_service.dto.LookupFieldDescriptionsDTO contextDTO =
+            com.project.core_service.dto.LookupFieldDescriptionsDTO.builder()
+                .fieldDescriptions(emptyFieldDescriptions)
                 .build();
 
         Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
@@ -1339,35 +1446,32 @@ class LookupServiceTest {
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+        com.project.core_service.dto.LookupFieldDescriptionsDTO result = lookupService.updateFieldDescriptions(lookupName, contextDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals("Test description with empty fields", result.getDescription());
-        assertTrue(result.getFieldsDescription().isEmpty());
+        assertTrue(result.getFieldDescriptions().isEmpty());
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 
     @Test
-    void addLookupContext_UpdatesExistingContext_Success() {
+    void updateFieldDescriptions_UpdatesExistingContext_Success() {
         // Arrange
         String lookupName = "test-lookup";
 
         // Create existing document with old context
         Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
-        existingDoc.put("description", "Old description");
-        existingDoc.put("fieldsDescription", Map.of("oldField", "old description"));
+        existingDoc.put("fieldDescriptions", Map.of("oldField", "old description"));
 
         // New context to update
-        Map<String, String> newFieldsDescription = Map.of(
+        Map<String, String> newFieldDescriptions = Map.of(
             "newField1", "New description 1",
             "newField2", "New description 2"
         );
 
-        com.project.core_service.dto.LookupContextDTO contextDTO =
-            com.project.core_service.dto.LookupContextDTO.builder()
-                .description("New updated description")
-                .fieldsDescription(newFieldsDescription)
+        com.project.core_service.dto.LookupFieldDescriptionsDTO contextDTO =
+            com.project.core_service.dto.LookupFieldDescriptionsDTO.builder()
+                .fieldDescriptions(newFieldDescriptions)
                 .build();
 
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
@@ -1378,53 +1482,46 @@ class LookupServiceTest {
         when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
 
         // Act
-        com.project.core_service.dto.LookupContextDTO result = lookupService.addLookupContext(lookupName, contextDTO);
+        com.project.core_service.dto.LookupFieldDescriptionsDTO result = lookupService.updateFieldDescriptions(lookupName, contextDTO);
 
         // Assert
         assertNotNull(result);
-        assertEquals("New updated description", result.getDescription());
-        assertEquals(newFieldsDescription, result.getFieldsDescription());
+        assertEquals(newFieldDescriptions, result.getFieldDescriptions());
         verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
     }
 
-    // ===== getFieldNames Tests =====
+    // ===== getFieldDescriptionsDTO Tests =====
 
     @Test
-    void getFieldNames_Success() {
+    void getFieldDescriptionsDTO_Success() {
         // Arrange
         String lookupName = "test-lookup";
-        List<Map<String, String>> data = Arrays.asList(
-            Map.of("name", "John", "age", "30", "department", "Engineering"),
-            Map.of("name", "Jane", "age", "25", "department", "Marketing")
+        Map<String, String> fieldDescriptions = Map.of(
+            "field1", "Description 1",
+            "field2", "Description 2"
         );
 
-        Document doc = new Document();
-        doc.put("_id", lookupName);
-        doc.put("lookupName", lookupName);
-        doc.put("data", data);
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 2);
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        existingDoc.put(FIELD_DESCRIPTIONS_FIELD, fieldDescriptions);
 
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
         when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(doc);
+        when(findIterable.first()).thenReturn(existingDoc);
 
         // Act
-        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+        com.project.core_service.dto.LookupFieldDescriptionsDTO result = lookupService.getFieldDescriptionsDTO(lookupName);
 
         // Assert
-        assertNotNull(fieldNames);
-        assertEquals(3, fieldNames.size());
-        assertTrue(fieldNames.contains("name"));
-        assertTrue(fieldNames.contains("age"));
-        assertTrue(fieldNames.contains("department"));
+        assertNotNull(result);
+        assertEquals(fieldDescriptions, result.getFieldDescriptions());
+        assertEquals(2, result.getFieldDescriptions().size());
         verify(mongoCollection).find(any(Bson.class));
     }
 
     @Test
-    void getFieldNames_LookupNotFound_ThrowsNotFoundException() {
+    void getFieldDescriptionsDTO_LookupNotFound_ThrowsNotFoundException() {
         // Arrange
-        String lookupName = "non-existent-lookup";
+        String lookupName = "non-existent";
 
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
         when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
@@ -1433,131 +1530,227 @@ class LookupServiceTest {
         // Act & Assert
         NotFoundException exception = assertThrows(
             NotFoundException.class,
-            () -> lookupService.getFieldNames(lookupName)
+            () -> lookupService.getFieldDescriptionsDTO(lookupName)
         );
 
         assertTrue(exception.getMessage().contains("not found"));
         assertTrue(exception.getMessage().contains(lookupName));
-        verify(mongoCollection).find(any(Bson.class));
     }
 
     @Test
-    void getFieldNames_EmptyData_ReturnsEmptyList() {
+    void getFieldDescriptionsDTO_EmptyFieldDescriptions_Success() {
         // Arrange
-        String lookupName = "empty-lookup";
-
-        Document doc = new Document();
-        doc.put("_id", lookupName);
-        doc.put("lookupName", lookupName);
-        doc.put("data", new ArrayList<>()); // Empty data list
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 0);
-
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(doc);
-
-        // Act
-        List<String> fieldNames = lookupService.getFieldNames(lookupName);
-
-        // Assert
-        assertNotNull(fieldNames);
-        assertTrue(fieldNames.isEmpty());
-        verify(mongoCollection).find(any(Bson.class));
-    }
-
-    @Test
-    void getFieldNames_NullData_ReturnsEmptyList() {
-        // Arrange
-        String lookupName = "null-data-lookup";
-
-        Document doc = new Document();
-        doc.put("_id", lookupName);
-        doc.put("lookupName", lookupName);
-        doc.put("data", null); // Null data
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 0);
-
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(doc);
-
-        // Act
-        List<String> fieldNames = lookupService.getFieldNames(lookupName);
-
-        // Assert
-        assertNotNull(fieldNames);
-        assertTrue(fieldNames.isEmpty());
-        verify(mongoCollection).find(any(Bson.class));
-    }
-
-    @Test
-    void getFieldNames_WithMultipleFields_ReturnsAllFields() {
-        // Arrange
-        String lookupName = "multi-field-lookup";
-        List<Map<String, String>> data = Arrays.asList(
-            Map.of(
-                "Product Name", "Java",
-                "Product Version", "17",
-                "Adoption Status", "mainstream",
-                "Product Category", "Programming Languages",
-                "End-of-Life Date", "12/31/2025"
-            )
-        );
-
-        Document doc = new Document();
-        doc.put("_id", lookupName);
-        doc.put("lookupName", lookupName);
-        doc.put("data", data);
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 1);
-
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(doc);
-
-        // Act
-        List<String> fieldNames = lookupService.getFieldNames(lookupName);
-
-        // Assert
-        assertNotNull(fieldNames);
-        assertEquals(5, fieldNames.size());
-        assertTrue(fieldNames.contains("Product Name"));
-        assertTrue(fieldNames.contains("Product Version"));
-        assertTrue(fieldNames.contains("Adoption Status"));
-        assertTrue(fieldNames.contains("Product Category"));
-        assertTrue(fieldNames.contains("End-of-Life Date"));
-    }
-
-    @Test
-    void getFieldNames_ExtractsFromFirstRecordOnly() {
-        // Arrange - First record has 3 fields, second has 4, but we only care about first
         String lookupName = "test-lookup";
-        List<Map<String, String>> data = Arrays.asList(
-            Map.of("field1", "value1", "field2", "value2", "field3", "value3"),
-            Map.of("field1", "value1", "field2", "value2", "field3", "value3", "field4", "value4")
-        );
+        Map<String, String> emptyFieldDescriptions = new HashMap<>();
 
-        Document doc = new Document();
-        doc.put("_id", lookupName);
-        doc.put("lookupName", lookupName);
-        doc.put("data", data);
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 2);
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        existingDoc.put(FIELD_DESCRIPTIONS_FIELD, emptyFieldDescriptions);
 
         when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
         when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(doc);
+        when(findIterable.first()).thenReturn(existingDoc);
 
         // Act
-        List<String> fieldNames = lookupService.getFieldNames(lookupName);
+        com.project.core_service.dto.LookupFieldDescriptionsDTO result = lookupService.getFieldDescriptionsDTO(lookupName);
 
         // Assert
-        assertNotNull(fieldNames);
-        assertEquals(3, fieldNames.size()); // Only fields from first record
-        assertTrue(fieldNames.contains("field1"));
-        assertTrue(fieldNames.contains("field2"));
-        assertTrue(fieldNames.contains("field3"));
-        assertFalse(fieldNames.contains("field4")); // field4 is only in second record
+        assertNotNull(result);
+        assertTrue(result.getFieldDescriptions().isEmpty());
+    }
+
+    // ===== updateLookup Tests =====
+
+    @Test
+    void updateLookup_WithFileAndDescription_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+        String csvContent = "name,age\nJohn,30\nJane,25";
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv",
+            "text/csv",
+            csvContent.getBytes()
+        );
+
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description("Updated description")
+            .lookupFile(file)
+            .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        Map<String, String> existingFieldDescs = Map.of("name", "Old name desc", "id", "ID field");
+        existingDoc.put(FIELD_DESCRIPTIONS_FIELD, existingFieldDescs);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        LookupDTO result = lookupService.updateLookup(lookupName, updateDTO);
+
+        // Assert
+        assertTrue(result.isSuccess());
+        assertEquals(lookupName, result.getLookupName());
+        assertEquals(2, result.getRecordsProcessed());
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void updateLookup_OnlyDescription_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description("Updated description only")
+            .lookupFile(null)
+            .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        LookupDTO result = lookupService.updateLookup(lookupName, updateDTO);
+
+        // Assert
+        assertTrue(result.isSuccess());
+        assertEquals(lookupName, result.getLookupName());
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void updateLookup_OnlyFile_KeepsExistingDescription() {
+        // Arrange
+        String lookupName = "test-lookup";
+        String csvContent = "name,age\nJohn,30";
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv",
+            "text/csv",
+            csvContent.getBytes()
+        );
+
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description(null)
+            .lookupFile(file)
+            .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        existingDoc.put(DESCRIPTION_FIELD, "Existing description");
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        LookupDTO result = lookupService.updateLookup(lookupName, updateDTO);
+
+        // Assert
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getRecordsProcessed());
+    }
+
+    @Test
+    void updateLookup_MergesFieldDescriptions_Success() {
+        // Arrange
+        String lookupName = "test-lookup";
+        String csvContent = "name,age,department\nJohn,30,IT";
+        MockMultipartFile file = new MockMultipartFile(
+            "file",
+            "test.csv",
+            "text/csv",
+            csvContent.getBytes()
+        );
+
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description("Updated")
+            .lookupFile(file)
+            .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+        // Existing field descriptions - note "name" and "age" exist, but "department" is new
+        Map<String, String> existingFieldDescs = new HashMap<>();
+        existingFieldDescs.put("name", "Employee name");
+        existingFieldDescs.put("age", "Employee age");
+        existingDoc.put(FIELD_DESCRIPTIONS_FIELD, existingFieldDescs);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        UpdateResult updateResult = mock(UpdateResult.class);
+        when(mongoCollection.replaceOne(any(Bson.class), any(Document.class), any())).thenReturn(updateResult);
+
+        // Act
+        LookupDTO result = lookupService.updateLookup(lookupName, updateDTO);
+
+        // Assert
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getRecordsProcessed());
+        verify(mongoCollection).replaceOne(any(Bson.class), any(Document.class), any());
+    }
+
+    @Test
+    void updateLookup_LookupNotFound_ThrowsNotFoundException() {
+        // Arrange
+        String lookupName = "non-existent";
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description("New description")
+            .lookupFile(null)
+            .build();
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(null);
+
+        // Act & Assert
+        NotFoundException exception = assertThrows(
+            NotFoundException.class,
+            () -> lookupService.updateLookup(lookupName, updateDTO)
+        );
+
+        assertTrue(exception.getMessage().contains("not found"));
+    }
+
+    @Test
+    void updateLookup_InvalidFile_ThrowsInvalidFileException() {
+        // Arrange
+        String lookupName = "test-lookup";
+        MockMultipartFile invalidFile = new MockMultipartFile(
+            "file",
+            "test.txt",
+            "text/plain",
+            "invalid content".getBytes()
+        );
+
+        UpdateLookupDTO updateDTO = UpdateLookupDTO.builder()
+            .description("Updated")
+            .lookupFile(invalidFile)
+            .build();
+
+        Document existingDoc = createValidMockDocument(lookupName, "Test Lookup", 5);
+
+        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
+        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
+        when(findIterable.first()).thenReturn(existingDoc);
+
+        // Act & Assert
+        InvalidFileException exception = assertThrows(
+            InvalidFileException.class,
+            () -> lookupService.updateLookup(lookupName, updateDTO)
+        );
+
+        assertEquals("File must be a CSV file", exception.getMessage());
     }
 }
