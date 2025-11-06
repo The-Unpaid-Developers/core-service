@@ -3,8 +3,9 @@ package com.project.core_service.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
-import com.project.core_service.dto.LookupContextDTO;
+import com.project.core_service.dto.LookupFieldDescriptionsDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
+import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.lookup.Lookup;
 import com.project.core_service.services.LookupService;
@@ -59,13 +60,14 @@ class LookupControllerTest {
             .message("CSV file processed and stored successfully")
             .build();
 
-        when(lookupService.processCsvFile(any(), eq("employees")))
+        when(lookupService.createLookup(any()))
             .thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(multipart("/api/v1/lookups/upload")
+        mockMvc.perform(multipart("/api/v1/lookups")
                 .file(file)
-                .param("lookupName", "employees"))
+                .param("lookupName", "employees")
+                .param("description", "Employee data"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.lookupName").value("employees"))
@@ -290,215 +292,251 @@ class LookupControllerTest {
             .andExpect(jsonPath("$[2].productVersion").value("8"));
     }
 
-    // ===== addLookupContext Tests =====
+    // ===== updateFieldDescriptions Tests =====
 
     @Test
-    void addLookupContext_Success() throws Exception {
+    void updateFieldDescriptions_Success() throws Exception {
         // Arrange
         String lookupName = "test-lookup";
-        Map<String, String> fieldsDescription = new HashMap<>();
-        fieldsDescription.put("field1", "Description for field1");
-        fieldsDescription.put("field2", "Description for field2");
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        fieldDescriptions.put("field1", "Description for field1");
+        fieldDescriptions.put("field2", "Description for field2");
 
-        LookupContextDTO requestDTO = LookupContextDTO.builder()
-            .description("Test lookup description")
-            .fieldsDescription(fieldsDescription)
+        LookupFieldDescriptionsDTO requestDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
-        LookupContextDTO responseDTO = LookupContextDTO.builder()
-            .description("Test lookup description")
-            .fieldsDescription(fieldsDescription)
+        LookupFieldDescriptionsDTO responseDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
-        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+        when(lookupService.updateFieldDescriptions(eq(lookupName), any(LookupFieldDescriptionsDTO.class)))
             .thenReturn(responseDTO);
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+        mockMvc.perform(put("/api/v1/lookups/{lookupName}/field-descriptions", lookupName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDTO)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.description").value("Test lookup description"))
-            .andExpect(jsonPath("$.fieldsDescription.field1").value("Description for field1"))
-            .andExpect(jsonPath("$.fieldsDescription.field2").value("Description for field2"));
+            .andExpect(jsonPath("$.fieldDescriptions.field1").value("Description for field1"))
+            .andExpect(jsonPath("$.fieldDescriptions.field2").value("Description for field2"));
     }
 
     @Test
-    void addLookupContext_LookupNotFound_ReturnsNotFound() throws Exception {
+    void updateFieldDescriptions_LookupNotFound_ReturnsNotFound() throws Exception {
         // Arrange
         String lookupName = "non-existent-lookup";
-        LookupContextDTO requestDTO = LookupContextDTO.builder()
-            .description("Test description")
-            .fieldsDescription(Map.of("field1", "desc1"))
+        LookupFieldDescriptionsDTO requestDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(Map.of("field1", "desc1"))
             .build();
 
-        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+        when(lookupService.updateFieldDescriptions(eq(lookupName), any(LookupFieldDescriptionsDTO.class)))
             .thenThrow(new NotFoundException("Lookup with name '" + lookupName + "' not found"));
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+        mockMvc.perform(put("/api/v1/lookups/{lookupName}/field-descriptions", lookupName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDTO)))
             .andExpect(status().isNotFound());
     }
 
     @Test
-    void addLookupContext_WithEmptyFieldsDescription_Success() throws Exception {
+    void updateFieldDescriptions_WithEmptyFieldDescriptions_Success() throws Exception {
         // Arrange
         String lookupName = "test-lookup";
-        Map<String, String> emptyFieldsDescription = new HashMap<>();
+        Map<String, String> emptyFieldDescriptions = new HashMap<>();
 
-        LookupContextDTO requestDTO = LookupContextDTO.builder()
-            .description("Test description with empty fields")
-            .fieldsDescription(emptyFieldsDescription)
+        LookupFieldDescriptionsDTO requestDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(emptyFieldDescriptions)
             .build();
 
-        LookupContextDTO responseDTO = LookupContextDTO.builder()
-            .description("Test description with empty fields")
-            .fieldsDescription(emptyFieldsDescription)
+        LookupFieldDescriptionsDTO responseDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(emptyFieldDescriptions)
             .build();
 
-        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+        when(lookupService.updateFieldDescriptions(eq(lookupName), any(LookupFieldDescriptionsDTO.class)))
             .thenReturn(responseDTO);
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+        mockMvc.perform(put("/api/v1/lookups/{lookupName}/field-descriptions", lookupName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDTO)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.description").value("Test description with empty fields"))
-            .andExpect(jsonPath("$.fieldsDescription").isEmpty());
+            .andExpect(jsonPath("$.fieldDescriptions").isEmpty());
     }
 
     @Test
-    void addLookupContext_WithMultipleFields_Success() throws Exception {
+    void updateFieldDescriptions_WithMultipleFields_Success() throws Exception {
         // Arrange
         String lookupName = "tech-components";
-        Map<String, String> fieldsDescription = new HashMap<>();
-        fieldsDescription.put("Product Name", "Name of the technology product");
-        fieldsDescription.put("Product Version", "Version number of the product");
-        fieldsDescription.put("Adoption Status", "Current adoption status");
-        fieldsDescription.put("End-of-Life Date", "Date when support ends");
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        fieldDescriptions.put("Product Name", "Name of the technology product");
+        fieldDescriptions.put("Product Version", "Version number of the product");
+        fieldDescriptions.put("Adoption Status", "Current adoption status");
+        fieldDescriptions.put("End-of-Life Date", "Date when support ends");
 
-        LookupContextDTO requestDTO = LookupContextDTO.builder()
-            .description("Tech components with EOL information")
-            .fieldsDescription(fieldsDescription)
+        LookupFieldDescriptionsDTO requestDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
-        LookupContextDTO responseDTO = LookupContextDTO.builder()
-            .description("Tech components with EOL information")
-            .fieldsDescription(fieldsDescription)
+        LookupFieldDescriptionsDTO responseDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(fieldDescriptions)
             .build();
 
-        when(lookupService.addLookupContext(eq(lookupName), any(LookupContextDTO.class)))
+        when(lookupService.updateFieldDescriptions(eq(lookupName), any(LookupFieldDescriptionsDTO.class)))
             .thenReturn(responseDTO);
 
         // Act & Assert
-        mockMvc.perform(post("/api/v1/lookups/{lookupName}/add-lookup-context", lookupName)
+        mockMvc.perform(put("/api/v1/lookups/{lookupName}/field-descriptions", lookupName)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDTO)))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$.description").value("Tech components with EOL information"))
-            .andExpect(jsonPath("$.fieldsDescription['Product Name']").value("Name of the technology product"))
-            .andExpect(jsonPath("$.fieldsDescription['Product Version']").value("Version number of the product"))
-            .andExpect(jsonPath("$.fieldsDescription['Adoption Status']").value("Current adoption status"))
-            .andExpect(jsonPath("$.fieldsDescription['End-of-Life Date']").value("Date when support ends"));
+            .andExpect(jsonPath("$.fieldDescriptions['Product Name']").value("Name of the technology product"))
+            .andExpect(jsonPath("$.fieldDescriptions['Product Version']").value("Version number of the product"))
+            .andExpect(jsonPath("$.fieldDescriptions['Adoption Status']").value("Current adoption status"))
+            .andExpect(jsonPath("$.fieldDescriptions['End-of-Life Date']").value("Date when support ends"));
     }
 
-    // ===== getFieldNames Tests =====
+    // ===== getFieldDescriptions Tests =====
 
     @Test
-    void getFieldNames_Success() throws Exception {
+    void getFieldDescriptions_Success() throws Exception {
         // Arrange
         String lookupName = "test-lookup";
-        List<String> fieldNames = Arrays.asList("name", "age", "department");
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        fieldDescriptions.put("field1", "Description for field1");
+        fieldDescriptions.put("field2", "Description for field2");
 
-        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+        LookupFieldDescriptionsDTO responseDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(fieldDescriptions)
+            .build();
+
+        when(lookupService.getFieldDescriptionsDTO(lookupName)).thenReturn(responseDTO);
 
         // Act & Assert
-        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/field-descriptions", lookupName))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length()").value(3))
-            .andExpect(jsonPath("$[0]").value("name"))
-            .andExpect(jsonPath("$[1]").value("age"))
-            .andExpect(jsonPath("$[2]").value("department"));
+            .andExpect(jsonPath("$.fieldDescriptions.field1").value("Description for field1"))
+            .andExpect(jsonPath("$.fieldDescriptions.field2").value("Description for field2"));
     }
 
     @Test
-    void getFieldNames_LookupNotFound_ReturnsNotFound() throws Exception {
+    void getFieldDescriptions_LookupNotFound_ReturnsNotFound() throws Exception {
         // Arrange
         String lookupName = "non-existent-lookup";
 
-        when(lookupService.getFieldNames(lookupName))
+        when(lookupService.getFieldDescriptionsDTO(lookupName))
             .thenThrow(new NotFoundException("Lookup with name '" + lookupName + "' not found"));
 
         // Act & Assert
-        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/field-descriptions", lookupName))
             .andExpect(status().isNotFound());
     }
 
     @Test
-    void getFieldNames_EmptyData_ReturnsEmptyList() throws Exception {
+    void getFieldDescriptions_EmptyFieldDescriptions_Success() throws Exception {
         // Arrange
-        String lookupName = "empty-lookup";
+        String lookupName = "test-lookup";
+        Map<String, String> emptyFieldDescriptions = new HashMap<>();
 
-        when(lookupService.getFieldNames(lookupName)).thenReturn(Arrays.asList());
+        LookupFieldDescriptionsDTO responseDTO = LookupFieldDescriptionsDTO.builder()
+            .fieldDescriptions(emptyFieldDescriptions)
+            .build();
+
+        when(lookupService.getFieldDescriptionsDTO(lookupName)).thenReturn(responseDTO);
 
         // Act & Assert
-        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+        mockMvc.perform(get("/api/v1/lookups/{lookupName}/field-descriptions", lookupName))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length()").value(0));
+            .andExpect(jsonPath("$.fieldDescriptions").isEmpty());
+    }
+
+    // ===== updateLookup Tests =====
+
+    @Test
+    void updateLookup_Success() throws Exception {
+        // Arrange
+        String lookupName = "test-lookup";
+        MockMultipartFile file = new MockMultipartFile(
+            "lookupFile",
+            "test.csv",
+            "text/csv",
+            "name,age\nJohn,30".getBytes()
+        );
+
+        LookupDTO expectedResponse = LookupDTO.builder()
+            .success(true)
+            .lookupName(lookupName)
+            .recordsProcessed(1)
+            .message("CSV file processed and stored successfully")
+            .build();
+
+        when(lookupService.updateLookup(eq(lookupName), any(UpdateLookupDTO.class)))
+            .thenReturn(expectedResponse);
+
+        // Act & Assert
+        mockMvc.perform(multipart("/api/v1/lookups/{lookupName}", lookupName)
+                .file(file)
+                .param("description", "Updated description")
+                .with(request -> {
+                    request.setMethod("PUT");
+                    return request;
+                }))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.lookupName").value(lookupName))
+            .andExpect(jsonPath("$.recordsProcessed").value(1));
     }
 
     @Test
-    void getFieldNames_WithMultipleFields_Success() throws Exception {
+    void updateLookup_LookupNotFound_ReturnsNotFound() throws Exception {
         // Arrange
-        String lookupName = "tech-components";
-        List<String> fieldNames = Arrays.asList(
-            "Product Name",
-            "Product Version",
-            "Adoption Status",
-            "Product Category",
-            "End-of-Life Date"
+        String lookupName = "non-existent";
+        MockMultipartFile file = new MockMultipartFile(
+            "lookupFile",
+            "test.csv",
+            "text/csv",
+            "name,age\nJohn,30".getBytes()
         );
 
-        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+        when(lookupService.updateLookup(eq(lookupName), any(UpdateLookupDTO.class)))
+            .thenThrow(new NotFoundException("Lookup with name '" + lookupName + "' not found"));
 
         // Act & Assert
-        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length()").value(5))
-            .andExpect(jsonPath("$[0]").value("Product Name"))
-            .andExpect(jsonPath("$[1]").value("Product Version"))
-            .andExpect(jsonPath("$[2]").value("Adoption Status"))
-            .andExpect(jsonPath("$[3]").value("Product Category"))
-            .andExpect(jsonPath("$[4]").value("End-of-Life Date"));
+        mockMvc.perform(multipart("/api/v1/lookups/{lookupName}", lookupName)
+                .file(file)
+                .param("description", "Updated description")
+                .with(request -> {
+                    request.setMethod("PUT");
+                    return request;
+                }))
+            .andExpect(status().isNotFound());
     }
 
     @Test
-    void getFieldNames_WithSpecialCharacters_Success() throws Exception {
+    void updateLookup_OnlyDescription_Success() throws Exception {
         // Arrange
-        String lookupName = "special-lookup";
-        List<String> fieldNames = Arrays.asList(
-            "field_with_underscore",
-            "field-with-dash",
-            "field with spaces",
-            "field.with.dots"
-        );
+        String lookupName = "test-lookup";
 
-        when(lookupService.getFieldNames(lookupName)).thenReturn(fieldNames);
+        LookupDTO expectedResponse = LookupDTO.builder()
+            .success(true)
+            .lookupName(lookupName)
+            .recordsProcessed(5)
+            .message("CSV file processed and stored successfully")
+            .build();
+
+        when(lookupService.updateLookup(eq(lookupName), any(UpdateLookupDTO.class)))
+            .thenReturn(expectedResponse);
 
         // Act & Assert
-        mockMvc.perform(get("/api/v1/lookups/{lookupName}/get-field-names", lookupName))
+        mockMvc.perform(multipart("/api/v1/lookups/{lookupName}", lookupName)
+                .param("description", "Updated description only")
+                .with(request -> {
+                    request.setMethod("PUT");
+                    return request;
+                }))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$").isArray())
-            .andExpect(jsonPath("$.length()").value(4))
-            .andExpect(jsonPath("$[0]").value("field_with_underscore"))
-            .andExpect(jsonPath("$[1]").value("field-with-dash"))
-            .andExpect(jsonPath("$[2]").value("field with spaces"))
-            .andExpect(jsonPath("$[3]").value("field.with.dots"));
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.lookupName").value(lookupName));
     }
 }
