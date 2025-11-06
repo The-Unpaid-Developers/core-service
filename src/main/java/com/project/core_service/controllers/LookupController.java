@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
+import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.dto.CreateLookupDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
@@ -52,7 +53,7 @@ public class LookupController {
     }
 
     @GetMapping
-    public ResponseEntity<LookupDTO> getAllLookups() {
+    public ResponseEntity<List<LookupWODataDTO>> getAllLookups() {
         return ResponseEntity.ok(lookupService.getAllLookups());
     }
 
@@ -72,7 +73,8 @@ public class LookupController {
     }
 
     @DeleteMapping("/{lookupName}")
-    public ResponseEntity<LookupDTO> deleteLookup(@PathVariable String lookupName) {
-        return ResponseEntity.ok(lookupService.deleteLookup(lookupName));
+    public ResponseEntity<Void> deleteLookup(@PathVariable String lookupName) {
+        lookupService.deleteLookup(lookupName);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -10,6 +10,7 @@ import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.dto.CreateLookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
+import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
@@ -102,11 +103,13 @@ public class LookupService {
         saveToMongoDB(lookup);
 
         // Return response
-        return LookupDTO.builder()
-                .success(true)
+        return LookupDTO.builder().id(lookup.getId())
                 .lookupName(lookup.getLookupName())
-                .recordsProcessed(lookup.getRecordCount())
-                .message("CSV file processed and stored successfully")
+                .description(lookup.getDescription())
+                .data(lookup.getData())
+                .fieldDescriptions(lookup.getFieldDescriptions())
+                .uploadedAt(lookup.getUploadedAt())
+                .recordCount(lookup.getRecordCount())
                 .build();
     }
 
@@ -263,22 +266,24 @@ public class LookupService {
         return fieldDescriptions;
     }
 
-    public LookupDTO getAllLookups() {
+    public List<LookupWODataDTO> getAllLookups() {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
 
-        List<Lookup> lookups = new ArrayList<>();
+        List<LookupWODataDTO> lookups = new ArrayList<>();
 
         // Fetch all documents and convert to Lookup objects
         for (Document doc : collection.find()) {
             Lookup lookup = documentToLookup(doc);
-            lookups.add(lookup);
+            lookups.add(LookupWODataDTO.builder()
+                    .id(lookup.getId())
+                    .lookupName(lookup.getLookupName())
+                    .uploadedAt(lookup.getUploadedAt())
+                    .recordCount(lookup.getRecordCount())
+                    .description(lookup.getDescription())
+                    .build());
         }
 
-        return LookupDTO.builder()
-                .success(true)
-                .totalLookups(lookups.size())
-                .lookups(lookups)
-                .build();
+        return lookups;
     }
 
     public Lookup findLookupByName(String lookupName) {
@@ -298,13 +303,17 @@ public class LookupService {
     public LookupDTO getLookupByName(String lookupName) {
         Lookup lookup = findLookupByName(lookupName);
 
-        return LookupDTO.builder()
-                .success(true)
-                .lookups(new ArrayList<>(List.of(lookup)))
+        return LookupDTO.builder().id(lookup.getId())
+                .lookupName(lookup.getLookupName())
+                .description(lookup.getDescription())
+                .data(lookup.getData())
+                .fieldDescriptions(lookup.getFieldDescriptions())
+                .uploadedAt(lookup.getUploadedAt())
+                .recordCount(lookup.getRecordCount())
                 .build();
     }
 
-    public LookupDTO deleteLookup(String lookupName) {
+    public void deleteLookup(String lookupName) {
         MongoCollection<Document> collection = mongoDatabase.getCollection(collectionName);
 
         long deletedCount = collection.deleteOne(Filters.eq(ID_FIELD, lookupName)).getDeletedCount();
@@ -312,12 +321,6 @@ public class LookupService {
         if (deletedCount == 0) {
             throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
         }
-
-        return LookupDTO.builder()
-                .success(true)
-                .lookupName(lookupName)
-                .message("Lookup deleted successfully")
-                .build();
     }
 
     private Lookup documentToLookup(Document doc) {
@@ -638,11 +641,13 @@ public class LookupService {
         saveToMongoDB(existingLookup);
 
         // Return response
-        return LookupDTO.builder()
-                .success(true)
+        return LookupDTO.builder().id(existingLookup.getId())
                 .lookupName(existingLookup.getLookupName())
-                .recordsProcessed(existingLookup.getRecordCount())
-                .message("CSV file processed and stored successfully")
+                .description(existingLookup.getDescription())
+                .data(existingLookup.getData())
+                .fieldDescriptions(existingLookup.getFieldDescriptions())
+                .uploadedAt(existingLookup.getUploadedAt())
+                .recordCount(existingLookup.getRecordCount())
                 .build();
     }
 }
