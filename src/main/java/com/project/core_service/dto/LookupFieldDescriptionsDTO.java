@@ -22,15 +22,10 @@ import com.mongodb.lang.NonNull;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class LookupContextDTO {
-    /*
-     * description of the lookup
-     */
-    @NonNull
-    private String description;
+public class LookupFieldDescriptionsDTO {
     /*
      * fields description map
      */
     @NonNull
-    private Map<String, String> fieldsDescription;
+    private Map<String, String> fieldDescriptions;
 }

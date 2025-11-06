@@ -7,8 +7,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
-import com.project.core_service.dto.LookupContextDTO;
+import com.project.core_service.dto.LookupFieldDescriptionsDTO;
+import com.project.core_service.dto.CreateLookupDTO;
 import com.project.core_service.dto.TechComponentLookupDTO;
+import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.services.LookupService;
 
 import java.util.List;
@@ -28,17 +30,25 @@ public class LookupController {
         this.lookupService = lookupService;
     }
 
-    @PostMapping("/upload")
-    public ResponseEntity<LookupDTO> uploadCsvFile(
-            @RequestParam("file") MultipartFile file,
-            @RequestParam("lookupName") String lookupName) {
-        return ResponseEntity.ok(lookupService.processCsvFile(file, lookupName));
+    @PostMapping
+    public ResponseEntity<LookupDTO> createLookup(@ModelAttribute CreateLookupDTO createLookupDTO) {
+        return ResponseEntity.ok(lookupService.createLookup(createLookupDTO));
     }
 
-    @PostMapping("/{lookupName}/add-lookup-context")
-    public ResponseEntity<LookupContextDTO> addLookupContext(@PathVariable String lookupName,
-                                                              @RequestBody LookupContextDTO lookupContextDTO) {
-        return ResponseEntity.ok(lookupService.addLookupContext(lookupName, lookupContextDTO));
+    @GetMapping("/{lookupName}/field-descriptions")
+    public ResponseEntity<LookupFieldDescriptionsDTO> getFieldDescriptions(@PathVariable String lookupName) {
+        return ResponseEntity.ok(lookupService.getFieldDescriptionsDTO(lookupName));
+    }
+
+    @PutMapping("/{lookupName}/field-descriptions")
+    public ResponseEntity<LookupFieldDescriptionsDTO> updateFieldDescriptions(@PathVariable String lookupName,
+                                                              @RequestBody LookupFieldDescriptionsDTO lookupContextDTO) {
+        return ResponseEntity.ok(lookupService.updateFieldDescriptions(lookupName, lookupContextDTO));
+    }
+
+    @PutMapping("/{lookupName}")
+    public ResponseEntity<LookupDTO> updateLookup(@PathVariable String lookupName, @ModelAttribute UpdateLookupDTO updateLookupDTO) {
+        return ResponseEntity.ok(lookupService.updateLookup(lookupName, updateLookupDTO));
     }
 
     @GetMapping
@@ -64,10 +74,5 @@ public class LookupController {
     @DeleteMapping("/{lookupName}")
     public ResponseEntity<LookupDTO> deleteLookup(@PathVariable String lookupName) {
         return ResponseEntity.ok(lookupService.deleteLookup(lookupName));
-    }
-
-    @GetMapping("/{lookupName}/get-field-names")
-    public ResponseEntity<List<String>> getFieldNames(@PathVariable String lookupName) {
-        return ResponseEntity.ok(lookupService.getFieldNames(lookupName));
     }
 }
