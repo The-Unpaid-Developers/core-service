@@ -5,12 +5,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
 import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.dto.CreateLookupDTO;
-import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.services.LookupService;
 
@@ -55,16 +53,6 @@ public class LookupController {
     @GetMapping
     public ResponseEntity<List<LookupWODataDTO>> getAllLookups() {
         return ResponseEntity.ok(lookupService.getAllLookups());
-    }
-
-    @GetMapping("/business-capabilities")
-    public ResponseEntity<List<BusinessCapabilityLookupDTO>> getBusinessCapabilities() {
-        return ResponseEntity.ok(lookupService.getBusinessCapabilities());
-    }
-
-    @GetMapping("/tech-components")
-    public ResponseEntity<List<TechComponentLookupDTO>> getTechComponents() {
-        return ResponseEntity.ok(lookupService.getTechComponents());
     }
 
     @GetMapping("/{lookupName}")

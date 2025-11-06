@@ -6,11 +6,9 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
-import com.project.core_service.dto.BusinessCapabilityLookupDTO;
 import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
 import com.project.core_service.dto.LookupWODataDTO;
-import com.project.core_service.dto.TechComponentLookupDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
 import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
@@ -236,79 +234,6 @@ class LookupServiceTest {
         assertTrue(exception.getMessage().contains("not found"));
     }
 
-    // ===== Business Capabilities Tests =====
-
-    @Test
-    void getBusinessCapabilities_Success() {
-        // Arrange
-        Document businessCapDoc = createBusinessCapabilitiesDocument();
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(businessCapDoc);
-
-        // Act
-        List<BusinessCapabilityLookupDTO> result = lookupService.getBusinessCapabilities();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.size());
-
-        BusinessCapabilityLookupDTO firstCapability = result.get(0);
-        assertEquals("Policy Management", firstCapability.getL1());
-        assertEquals("Policy Administration", firstCapability.getL2());
-        assertEquals("Policy Issuance", firstCapability.getL3());
-    }
-
-    @Test
-    void getBusinessCapabilities_NotFound_ThrowsNotFoundException() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(null);
-
-        // Act & Assert
-        NotFoundException exception = assertThrows(NotFoundException.class,
-            () -> lookupService.getBusinessCapabilities());
-
-        assertEquals("Business capabilities lookup not found", exception.getMessage());
-    }
-
-    // ===== Tech Components Tests =====
-
-    @Test
-    void getTechComponents_Success() {
-        // Arrange
-        Document techComponentsDoc = createTechComponentsDocument();
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(techComponentsDoc);
-
-        // Act
-        List<TechComponentLookupDTO> result = lookupService.getTechComponents();
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(3, result.size());
-
-        TechComponentLookupDTO firstComponent = result.get(0);
-        assertEquals("Spring Boot", firstComponent.getProductName());
-        assertEquals("3.2", firstComponent.getProductVersion());
-    }
-
-    @Test
-    void getTechComponents_NotFound_ThrowsNotFoundException() {
-        // Arrange
-        when(mongoDatabase.getCollection(collectionName)).thenReturn(mongoCollection);
-        when(mongoCollection.find(any(Bson.class))).thenReturn(findIterable);
-        when(findIterable.first()).thenReturn(null);
-
-        // Act & Assert
-        NotFoundException exception = assertThrows(NotFoundException.class,
-            () -> lookupService.getTechComponents());
-
-        assertEquals("Tech components lookup not found", exception.getMessage());
-    }
-
     // ===== Update Field Descriptions Tests =====
 
     @Test
@@ -491,42 +416,6 @@ class LookupServiceTest {
 
         Map<String, String> fieldDescriptions = Map.of("field1", "Field 1 description", "field2", "Field 2 description");
         doc.put("fieldDescriptions", fieldDescriptions);
-
-        return doc;
-    }
-
-    private Document createBusinessCapabilitiesDocument() {
-        List<Map<String, String>> businessCapData = Arrays.asList(
-            Map.of("L1", "Policy Management", "L2", "Policy Administration", "L3", "Policy Issuance"),
-            Map.of("L1", "Claims Management", "L2", "Claims Processing", "L3", "First Notice of Loss"),
-            Map.of("L1", "Customer Management", "L2", "Customer Onboarding", "L3", "Customer Registration")
-        );
-
-        Document doc = new Document();
-        doc.put("id", "business-capabilities");
-        doc.put("lookupName", "business-capabilities");
-        doc.put("data", businessCapData);
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 3);
-        doc.put("description", "Business capabilities lookup");
-
-        return doc;
-    }
-
-    private Document createTechComponentsDocument() {
-        List<Map<String, String>> techComponentData = Arrays.asList(
-            Map.of("Product Name", "Spring Boot", "Product Version", "3.2"),
-            Map.of("Product Name", "Node.js", "Product Version", "20.x"),
-            Map.of("Product Name", ".NET Core", "Product Version", "8")
-        );
-
-        Document doc = new Document();
-        doc.put("id", "tech_eol");
-        doc.put("lookupName", "tech_eol");
-        doc.put("data", techComponentData);
-        doc.put("uploadedAt", new Date());
-        doc.put("recordCount", 3);
-        doc.put("description", "Tech components lookup");
 
         return doc;
     }
