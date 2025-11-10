@@ -1,0 +1,725 @@
+{
+  "info": {
+    "_postman_id": "core-service-collection",
+    "name": "Core Service API",
+    "description": "Complete API collection for Core Service - AWG Access Service with MongoDB backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": ["{{base_url}}"],
+              "path": ["health"]
+            },
+            "description": "Simple health check endpoint to verify service is running"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dropdowns",
+      "item": [
+        {
+          "name": "Get Business Capabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dropdowns/business-capabilities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dropdowns", "business-capabilities"]
+            },
+            "description": "Retrieves all business capabilities for dropdown selection"
+          }
+        },
+        {
+          "name": "Get Tech Components",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dropdowns/tech-components",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dropdowns", "tech-components"]
+            },
+            "description": "Retrieves all technology components for dropdown selection"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lifecycle Management",
+      "item": [
+        {
+          "name": "Transition Document State",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentId\": \"<solution-review-id>\",\n  \"operation\": \"SUBMIT\",\n  \"modifiedBy\": \"john.doe@example.com\",\n  \"comment\": \"Ready for review\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lifecycle/transition",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lifecycle", "transition"]
+            },
+            "description": "Transitions a solution review through lifecycle states. Operations: SUBMIT, APPROVE, REJECT, ACTIVATE, MARK_OUTDATED"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lookups",
+      "item": [
+        {
+          "name": "Get All Lookups",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookups"]
+            },
+            "description": "Retrieves all lookup tables (without data)"
+          }
+        },
+        {
+          "name": "Get Lookup By Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups/:lookupName",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookups", ":lookupName"],
+              "variable": [
+                {
+                  "key": "lookupName",
+                  "value": "business-capabilities"
+                }
+              ]
+            },
+            "description": "Retrieves a specific lookup table by name with all data"
+          }
+        },
+        {
+          "name": "Get Field Descriptions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups/:lookupName/field-descriptions",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lookups",
+                ":lookupName",
+                "field-descriptions"
+              ],
+              "variable": [
+                {
+                  "key": "lookupName",
+                  "value": "business-capabilities"
+                }
+              ]
+            },
+            "description": "Retrieves field descriptions/context for a lookup table"
+          }
+        },
+        {
+          "name": "Create Lookup",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "lookupName",
+                  "value": "my-lookup-table",
+                  "type": "text"
+                },
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "path/to/file.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookups"]
+            },
+            "description": "Creates a new lookup table by uploading a CSV file"
+          }
+        },
+        {
+          "name": "Update Lookup",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "path/to/file.csv"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups/:lookupName",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookups", ":lookupName"],
+              "variable": [
+                {
+                  "key": "lookupName",
+                  "value": "business-capabilities"
+                }
+              ]
+            },
+            "description": "Updates an existing lookup table with new CSV data"
+          }
+        },
+        {
+          "name": "Update Field Descriptions",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lookupName\": \"business-capabilities\",\n  \"fieldDescriptions\": [\n    {\n      \"fieldName\": \"L1\",\n      \"description\": \"Level 1 Business Capability\"\n    },\n    {\n      \"fieldName\": \"L2\",\n      \"description\": \"Level 2 Business Capability\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups/:lookupName/field-descriptions",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "lookups",
+                ":lookupName",
+                "field-descriptions"
+              ],
+              "variable": [
+                {
+                  "key": "lookupName",
+                  "value": "business-capabilities"
+                }
+              ]
+            },
+            "description": "Updates field descriptions for a lookup table"
+          }
+        },
+        {
+          "name": "Delete Lookup",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookups/:lookupName",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookups", ":lookupName"],
+              "variable": [
+                {
+                  "key": "lookupName",
+                  "value": "my-lookup-table"
+                }
+              ]
+            },
+            "description": "Deletes a lookup table"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Queries",
+      "item": [
+        {
+          "name": "Get All Queries",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries"]
+            },
+            "description": "Retrieves all stored queries"
+          }
+        },
+        {
+          "name": "Get Queries (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries/paging?page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries", "paging"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieves queries with pagination support"
+          }
+        },
+        {
+          "name": "Get Query By Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries/:name",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries", ":name"],
+              "variable": [
+                {
+                  "key": "name",
+                  "value": "my-query"
+                }
+              ]
+            },
+            "description": "Retrieves a specific query by name"
+          }
+        },
+        {
+          "name": "Create Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"active-solutions\",\n  \"mongoQuery\": \"{\\\"documentState\\\": \\\"ACTIVE\\\"}\",\n  \"description\": \"Query to find all active solution reviews\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries"]
+            },
+            "description": "Creates a new MongoDB query that can be executed later"
+          }
+        },
+        {
+          "name": "Update Query",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mongoQuery\": \"{\\\"documentState\\\": \\\"ACTIVE\\\", \\\"archived\\\": false}\",\n  \"description\": \"Updated query to find active, non-archived solutions\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries/:name",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries", ":name"],
+              "variable": [
+                {
+                  "key": "name",
+                  "value": "active-solutions"
+                }
+              ]
+            },
+            "description": "Updates an existing query"
+          }
+        },
+        {
+          "name": "Delete Query",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries/:name",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries", ":name"],
+              "variable": [
+                {
+                  "key": "name",
+                  "value": "active-solutions"
+                }
+              ]
+            },
+            "description": "Deletes a stored query"
+          }
+        },
+        {
+          "name": "Execute Query",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"collection\": \"solution_reviews\",\n  \"limit\": 10,\n  \"skip\": 0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/queries/:name/execute",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "queries", ":name", "execute"],
+              "variable": [
+                {
+                  "key": "name",
+                  "value": "active-solutions"
+                }
+              ]
+            },
+            "description": "Executes a stored query against the database"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Solution Reviews",
+      "item": [
+        {
+          "name": "Get All Solution Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review"]
+            },
+            "description": "Retrieves all solution reviews"
+          }
+        },
+        {
+          "name": "Get Solution Reviews (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/paging?page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "paging"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieves solution reviews with pagination"
+          }
+        },
+        {
+          "name": "Get Solution Review By ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "solution-review-id"
+                }
+              ]
+            },
+            "description": "Retrieves a specific solution review by ID"
+          }
+        },
+        {
+          "name": "Get Solution Reviews By System Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/system?systemCode=SYS001",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "system"],
+              "query": [
+                {
+                  "key": "systemCode",
+                  "value": "SYS001"
+                }
+              ]
+            },
+            "description": "Retrieves all solution reviews for a specific system code"
+          }
+        },
+        {
+          "name": "Get System View (Paginated)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/system-view?page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "system-view"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieves paginated system view of solution reviews"
+          }
+        },
+        {
+          "name": "Get Solution Reviews By State",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/by-state?documentState=ACTIVE&page=0&size=10",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "by-state"],
+              "query": [
+                {
+                  "key": "documentState",
+                  "value": "ACTIVE",
+                  "description": "States: DRAFT, SUBMITTED, APPROVED, ACTIVE, OUTDATED"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Retrieves solution reviews filtered by document state with pagination"
+          }
+        },
+        {
+          "name": "Get System Dependencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/system-dependencies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "system-dependencies"]
+            },
+            "description": "Retrieves active solution reviews with system dependencies (for diagram)"
+          }
+        },
+        {
+          "name": "Get Business Capabilities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/business-capabilities",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "business-capabilities"]
+            },
+            "description": "Retrieves active solution reviews with business capability data (for diagram)"
+          }
+        },
+        {
+          "name": "Create Solution Review (New)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"solutionDetails\": {\n    \"solutionName\": \"Customer Portal\",\n    \"projectName\": \"Digital Transformation\",\n    \"solutionReviewCode\": \"SR-2024-001\",\n    \"solutionArchitectName\": \"Jane Smith\",\n    \"deliveryProjectManagerName\": \"John Doe\",\n    \"itBusinessPartner\": \"Alice Johnson\"\n  },\n  \"businessUnit\": {\n    \"businessUnitName\": \"Digital Services\",\n    \"businessUnitHead\": \"Bob Wilson\"\n  },\n  \"businessDriver\": {\n    \"strategicObjective\": \"Improve customer experience\",\n    \"businessPriority\": \"HIGH\",\n    \"expectedBenefits\": \"Increase customer satisfaction by 25%\"\n  },\n  \"valueOutcome\": \"Enhanced digital customer engagement\",\n  \"applicationUsers\": [\n    {\n      \"userType\": \"Customer\",\n      \"userCount\": 10000,\n      \"accessLevel\": \"Public\"\n    }\n  ],\n  \"concerns\": []\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/:systemCode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", ":systemCode"],
+              "variable": [
+                {
+                  "key": "systemCode",
+                  "value": "SYS001"
+                }
+              ]
+            },
+            "description": "Creates a new solution review with full solution overview details"
+          }
+        },
+        {
+          "name": "Create Solution Review (From Existing)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/existing/:systemCode",
+              "host": ["{{base_url}}"],
+              "path": [
+                "api",
+                "v1",
+                "solution-review",
+                "existing",
+                ":systemCode"
+              ],
+              "variable": [
+                {
+                  "key": "systemCode",
+                  "value": "SYS001"
+                }
+              ]
+            },
+            "description": "Creates a new solution review based on existing active review for the system"
+          }
+        },
+        {
+          "name": "Update Solution Review",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"<solution-review-id>\",\n  \"systemCode\": \"SYS001\",\n  \"solutionOverview\": {\n    \"solutionDetails\": {\n      \"solutionName\": \"Updated Customer Portal\",\n      \"projectName\": \"Digital Transformation\",\n      \"solutionReviewCode\": \"SR-2024-001\",\n      \"solutionArchitectName\": \"Jane Smith\",\n      \"deliveryProjectManagerName\": \"John Doe\",\n      \"itBusinessPartner\": \"Alice Johnson\"\n    },\n    \"businessUnit\": {\n      \"businessUnitName\": \"Digital Services\",\n      \"businessUnitHead\": \"Bob Wilson\"\n    },\n    \"businessDriver\": {\n      \"strategicObjective\": \"Improve customer experience\",\n      \"businessPriority\": \"HIGH\",\n      \"expectedBenefits\": \"Increase customer satisfaction by 30%\"\n    },\n    \"valueOutcome\": \"Enhanced digital customer engagement\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review"]
+            },
+            "description": "Updates an existing solution review"
+          }
+        },
+        {
+          "name": "Update Solution Review Concerns",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"<solution-review-id>\",\n  \"solutionOverview\": {\n    \"concerns\": [\n      {\n        \"concernType\": \"Security\",\n        \"description\": \"Need to implement MFA\",\n        \"raisedBy\": \"security.team@example.com\",\n        \"status\": \"OPEN\"\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/concerns",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", "concerns"]
+            },
+            "description": "Updates concerns in a SUBMITTED solution review"
+          }
+        },
+        {
+          "name": "Delete Solution Review",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/solution-review/:id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "solution-review", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "solution-review-id"
+                }
+              ]
+            },
+            "description": "Deletes a solution review by ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "OpenAPI Documentation",
+      "item": [
+        {
+          "name": "Swagger UI",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/swagger-ui/index.html",
+              "host": ["{{base_url}}"],
+              "path": ["swagger-ui", "index.html"]
+            },
+            "description": "Opens the Swagger UI for interactive API documentation"
+          }
+        },
+        {
+          "name": "OpenAPI Spec (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/v3/api-docs",
+              "host": ["{{base_url}}"],
+              "path": ["v3", "api-docs"]
+            },
+            "description": "Returns the OpenAPI specification in JSON format"
+          }
+        }
+      ]
+    }
+  ]
+}
