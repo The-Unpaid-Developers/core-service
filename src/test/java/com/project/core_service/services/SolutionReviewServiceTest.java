@@ -13,9 +13,6 @@ import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.business_capabilities.BusinessCapability;
-import com.project.core_service.models.business_capabilities.L1Capability;
-import com.project.core_service.models.business_capabilities.L2Capability;
-import com.project.core_service.models.business_capabilities.L3Capability;
 import com.project.core_service.models.integration_flow.CounterpartSystemRole;
 import com.project.core_service.models.integration_flow.IntegrationFlow;
 import com.project.core_service.models.integration_flow.IntegrationMethod;
@@ -991,16 +988,16 @@ class SolutionReviewServiceTest {
         List<BusinessCapability> businessCapabilities = List.of(
                 BusinessCapability.builder()
                         .id("bc-1")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Customer management capabilities")
                         .build(),
                 BusinessCapability.builder()
                         .id("bc-2")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Order processing capabilities")
                         .build());
 
@@ -1069,25 +1066,25 @@ class SolutionReviewServiceTest {
         List<BusinessCapability> businessCapabilities1 = List.of(
                 BusinessCapability.builder()
                         .id("bc-1")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Customer management capabilities")
                         .build());
 
         List<BusinessCapability> businessCapabilities2 = List.of(
                 BusinessCapability.builder()
                         .id("bc-2")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Order processing capabilities")
                         .build(),
                 BusinessCapability.builder()
                         .id("bc-3")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Inventory management capabilities")
                         .build());
 

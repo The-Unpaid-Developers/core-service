@@ -15,11 +15,11 @@ public class BusinessCapability {
     @Id
     private String id;
 
-    private L1Capability l1Capability;
+    private String l1Capability;
 
-    private L2Capability l2Capability;
+    private String l2Capability;
 
-    private L3Capability l3Capability;
+    private String l3Capability;
 
     private String remarks;
     
