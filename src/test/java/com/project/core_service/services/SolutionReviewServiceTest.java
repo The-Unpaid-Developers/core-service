@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.project.core_service.dto.CleanSolutionReviewDTO;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
@@ -42,6 +43,8 @@ class SolutionReviewServiceTest {
 
     @Mock
     private SolutionReviewRepository solutionReviewRepository;
+    @Mock
+    private com.project.core_service.client.ChatbotServiceClient chatbotServiceClient;
     @InjectMocks
     private SolutionReviewService service;
 
@@ -122,7 +125,7 @@ class SolutionReviewServiceTest {
         Page<SolutionReview> page = new PageImpl<>(List.of(review));
         when(solutionReviewRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Page<SolutionReview> result = service.getSolutionReviews(Pageable.unpaged());
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviews(Pageable.unpaged());
 
         assertEquals(1, result.getTotalElements());
     }
@@ -132,7 +135,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllBySystemCode("SYS-123"))
                 .thenReturn(List.of(review));
 
-        List<SolutionReview> result = service.getSolutionReviewsBySystemCode("SYS-123");
+        List<CleanSolutionReviewDTO> result = service.getSolutionReviewsBySystemCode("SYS-123");
 
         assertEquals(1, result.size());
         assertEquals("SYS-123", result.get(0).getSystemCode());
@@ -142,7 +145,7 @@ class SolutionReviewServiceTest {
     void getAllSolutionReviews() {
         when(solutionReviewRepository.findAll(any(Sort.class))).thenReturn(List.of(review));
 
-        List<SolutionReview> result = service.getAllSolutionReviews();
+        List<CleanSolutionReviewDTO> result = service.getAllSolutionReviews();
 
         assertEquals(1, result.size());
     }
@@ -168,7 +171,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findBySystemCode(eq("SYS-456"), any(Sort.class))).thenReturn(List.of());
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -197,7 +200,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(latestReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -218,7 +221,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findBySystemCode(eq("SYS-456"), any(Sort.class))).thenReturn(List.of());
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(0, result.getTotalElements());
@@ -246,7 +249,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(5, result.getTotalElements()); // Total across all pages
@@ -268,7 +271,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -293,7 +296,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(currentReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements()); // Total items available
@@ -320,7 +323,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(activeReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -356,7 +359,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(newerReview, olderReview)); // Sorted by lastModifiedAt DESC
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -400,17 +403,17 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of()); // No reviews
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(2, result.getTotalElements()); // Only SYS-123 and SYS-456 have reviews
         assertEquals(2, result.getContent().size());
 
         // Find reviews by system code
-        SolutionReview sys123Result = result.getContent().stream()
+        CleanSolutionReviewDTO sys123Result = result.getContent().stream()
                 .filter(r -> "SYS-123".equals(r.getSystemCode()))
                 .findFirst().orElse(null);
-        SolutionReview sys456Result = result.getContent().stream()
+        CleanSolutionReviewDTO sys456Result = result.getContent().stream()
                 .filter(r -> "SYS-456".equals(r.getSystemCode()))
                 .findFirst().orElse(null);
 
@@ -439,7 +442,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(currentReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -473,7 +476,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertEquals(2, result.getTotalElements());
@@ -493,7 +496,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(emptyPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -519,7 +522,7 @@ class SolutionReviewServiceTest {
             when(solutionReviewRepository.findByDocumentState(state, pageable)).thenReturn(page);
 
             // Act
-            Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(state.name(), pageable);
+            Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(state.name(), pageable);
 
             // Assert
             assertEquals(1, result.getTotalElements());
@@ -559,7 +562,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(lowerCaseState, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(lowerCaseState, pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -584,7 +587,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertEquals(12, result.getTotalElements()); // Total items
@@ -616,24 +619,32 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void getSolutionReviewsByDocumentState_ShouldPassThroughRepositoryResult() {
+    void getSolutionReviewsByDocumentState_ShouldDelegateToRepository() {
         // Arrange - This test verifies that the service method delegates to repository
         // after validation
-        Pageable pageable = PageRequest.of(2, 3);
+        Pageable pageable = PageRequest.of(0, 10);
         String documentStateStr = "SUBMITTED";
 
-        @SuppressWarnings("unchecked")
-        Page<SolutionReview> mockPage = mock(Page.class);
+        SolutionReview submittedReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .build();
+
+        Page<SolutionReview> mockPage = new PageImpl<>(List.of(submittedReview), pageable, 1);
         when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable))
                 .thenReturn(mockPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
-        assertSame(mockPage, result); // Should return exactly what repository returns
-        verify(solutionReviewRepository, times(1)).findByDocumentState(DocumentState.SUBMITTED, pageable);
-        verifyNoMoreInteractions(solutionReviewRepository);
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.SUBMITTED, result.getContent().get(0).getDocumentState());
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.SUBMITTED, pageable);
     }
 
     // Tests for getSystemDependencySolutionReviews method

@@ -1,9 +1,11 @@
 package com.project.core_service.controllers;
 
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
+import com.project.core_service.dto.SearchQueryDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
+import com.project.core_service.dto.CleanSolutionReviewDTO;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.services.SolutionReviewService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,7 +54,7 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a list of all solution reviews
      */
     @GetMapping
-    public ResponseEntity<List<SolutionReview>> getAllSolutionReviews() {
+    public ResponseEntity<List<CleanSolutionReviewDTO>> getAllSolutionReviews() {
         return ResponseEntity.ok(solutionReviewService.getAllSolutionReviews());
     }
 
@@ -64,7 +66,7 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews
      */
     @GetMapping("/paging")
-    public ResponseEntity<Page<SolutionReview>> getSolutionReviews(@RequestParam int page, @RequestParam int size) {
+    public ResponseEntity<Page<CleanSolutionReviewDTO>> getSolutionReviews(@RequestParam int page, @RequestParam int size) {
         Pageable pageable = PageRequest.of(page, size);
         return ResponseEntity.ok(solutionReviewService.getSolutionReviews(pageable));
     }
@@ -76,7 +78,7 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews
      */
     @GetMapping("/system")
-    public ResponseEntity<List<SolutionReview>> getSolutionReviewsBySystemCode(@RequestParam String systemCode) {
+    public ResponseEntity<List<CleanSolutionReviewDTO>> getSolutionReviewsBySystemCode(@RequestParam String systemCode) {
         return ResponseEntity.ok(solutionReviewService.getSolutionReviewsBySystemCode(systemCode));
     }
 
@@ -88,13 +90,12 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews
      */
     @GetMapping("/system-view")
-    public ResponseEntity<Page<SolutionReview>> getPaginatedSystemView(
+    public ResponseEntity<Page<CleanSolutionReviewDTO>> getPaginatedSystemView(
             @RequestParam int page,
             @RequestParam int size
     ) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<SolutionReview> systemView = solutionReviewService.getPaginatedSystemView(pageable);
-        return ResponseEntity.ok(systemView);
+        return ResponseEntity.ok(solutionReviewService.getPaginatedSystemView(pageable));
     }
 
     /**
@@ -106,7 +107,7 @@ public class SolutionReviewController {
      * @return a {@link ResponseEntity} containing a paginated list of solution reviews with the specified document state
      */
     @GetMapping("/by-state")
-    public ResponseEntity<Page<SolutionReview>> getSolutionReviewsByDocumentState(
+    public ResponseEntity<Page<CleanSolutionReviewDTO>> getSolutionReviewsByDocumentState(
             @RequestParam String documentState,
             @RequestParam int page,
             @RequestParam int size
@@ -197,4 +198,11 @@ public class SolutionReviewController {
         solutionReviewService.deleteSolutionReview(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PostMapping("/search")
+    public ResponseEntity<List<CleanSolutionReviewDTO>> searchSolutionReviews(@RequestBody SearchQueryDTO searchQueryDTO) {
+        List<CleanSolutionReviewDTO> results = solutionReviewService.searchSolutionReviews(searchQueryDTO);
+        return ResponseEntity.ok(results);
+    }
 }
+

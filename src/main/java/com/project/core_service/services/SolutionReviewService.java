@@ -1,5 +1,9 @@
 package com.project.core_service.services;
 
+import com.project.core_service.client.ChatbotServiceClient;
+import com.project.core_service.dto.ChatbotTranslateResponseDTO;
+import com.project.core_service.dto.CleanSolutionReviewDTO;
+import com.project.core_service.dto.SearchQueryDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
@@ -23,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -39,11 +44,13 @@ import java.util.stream.Collectors;
 @Service
 public class SolutionReviewService {
     private final SolutionReviewRepository solutionReviewRepository;
+    private final ChatbotServiceClient chatbotServiceClient;
 
 
     @Autowired
-    public SolutionReviewService(SolutionReviewRepository solutionReviewRepository) {
+    public SolutionReviewService(SolutionReviewRepository solutionReviewRepository, ChatbotServiceClient chatbotServiceClient) {
         this.solutionReviewRepository = solutionReviewRepository;
+        this.chatbotServiceClient = chatbotServiceClient;
     }
 
     /**
@@ -57,13 +64,25 @@ public class SolutionReviewService {
         return solutionReviewRepository.findById(id);
     }
 
+    private CleanSolutionReviewDTO toCleanDTO(SolutionReview review) {
+        CleanSolutionReviewDTO dto = new CleanSolutionReviewDTO();
+        dto.setId(review.getId());
+        dto.setSystemCode(review.getSystemCode());
+        dto.setDocumentState(review.getDocumentState());
+        dto.setSolutionOverview(review.getSolutionOverview());
+        return dto;
+    }
+
     /**
      * Retrieves all {@link SolutionReview} entries.
      *
      * @return a {@link List} of all solution reviews
      */
-    public List<SolutionReview> getAllSolutionReviews() {
-        return solutionReviewRepository.findAll(Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+    public List<CleanSolutionReviewDTO> getAllSolutionReviews() {
+        List<SolutionReview> reviews = solutionReviewRepository.findAll(Sort.by(Sort.Direction.DESC, "lastModifiedAt"));
+        return reviews.stream()
+                .map(this::toCleanDTO)
+                .toList();
     }
 
     /**
@@ -72,8 +91,9 @@ public class SolutionReviewService {
      * @param pageable the pagination information
      * @return a {@link Page} of solution reviews
      */
-    public Page<SolutionReview> getSolutionReviews(Pageable pageable) {
-        return solutionReviewRepository.findAll(pageable);
+    public Page<CleanSolutionReviewDTO> getSolutionReviews(Pageable pageable) {
+        Page<SolutionReview> reviewsPage = solutionReviewRepository.findAll(pageable);
+        return reviewsPage.map(this::toCleanDTO);
     }
 
     public Optional<SolutionReview> getActiveSolutionReviewBySystemCode(String systemCode) {
@@ -87,8 +107,11 @@ public class SolutionReviewService {
      * @param systemCode the system code used for filtering
      * @return a {@link List} of solution reviews for the given system code
      */
-    public List<SolutionReview> getSolutionReviewsBySystemCode(String systemCode) {
-        return solutionReviewRepository.findAllBySystemCode(systemCode);
+    public List<CleanSolutionReviewDTO> getSolutionReviewsBySystemCode(String systemCode) {
+        List<SolutionReview> reviews = solutionReviewRepository.findAllBySystemCode(systemCode);
+        return reviews.stream()
+                .map(this::toCleanDTO)
+                .toList();
     }
 
     /**
@@ -102,14 +125,15 @@ public class SolutionReviewService {
      * @param pageable the pagination information
      * @return a {@link Page} of solution reviews, one per system
      */
-    public Page<SolutionReview> getPaginatedSystemView(Pageable pageable) {
+    public Page<CleanSolutionReviewDTO> getPaginatedSystemView(Pageable pageable) {
         List<String> allSystemCodes = solutionReviewRepository.findAllDistinctSystemCodes();
 
         // Get ALL representative reviews first
-        List<SolutionReview> allRepresentativeReviews = allSystemCodes.stream()
+        List<CleanSolutionReviewDTO> allRepresentativeReviews = allSystemCodes.stream()
                 .map(this::getRepresentativeReviewForSystem)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
+                .map(this::toCleanDTO)
                 .toList();
 
         // Apply pagination AFTER filtering
@@ -121,7 +145,7 @@ public class SolutionReviewService {
             return new PageImpl<>(List.of(), pageable, total);
         }
 
-        List<SolutionReview> paginatedList = allRepresentativeReviews.subList(start, end);
+        List<CleanSolutionReviewDTO> paginatedList = allRepresentativeReviews.subList(start, end);
         return new PageImpl<>(paginatedList, pageable, total);
     }
 
@@ -146,7 +170,7 @@ public class SolutionReviewService {
      * @param pageable      the pagination information
      * @return a {@link Page} of solution reviews with the specified document state
      */
-    public Page<SolutionReview> getSolutionReviewsByDocumentState(String documentStateStr, Pageable pageable) {
+    public Page<CleanSolutionReviewDTO> getSolutionReviewsByDocumentState(String documentStateStr, Pageable pageable) {
         if (documentStateStr == null || documentStateStr.trim().isEmpty()) {
             throw new IllegalArgumentException("Invalid document state: " + documentStateStr +
                     ". Valid values: " + Arrays.toString(DocumentState.values()));
@@ -158,8 +182,8 @@ public class SolutionReviewService {
             throw new IllegalArgumentException("Invalid document state: " + documentStateStr +
                     ". Valid values: " + Arrays.toString(DocumentState.values()));
         }
-
-        return solutionReviewRepository.findByDocumentState(documentState, pageable);
+        Page<SolutionReview> reviews = solutionReviewRepository.findByDocumentState(documentState, pageable);
+        return reviews.map(this::toCleanDTO);
     }
 
     /**
@@ -439,4 +463,54 @@ public class SolutionReviewService {
         validateActiveStateConstraint(systemCode, null);
     }
 
+    /**
+     * Searches for solution reviews using natural language query.
+     *
+     * <p>
+     * This method calls the chatbot microservice's /translate endpoint to convert
+     * the natural language query into a MongoDB aggregation pipeline and execute it.
+     * The results are then used to query the local database for each solution review ID,
+     * returning a list of CleanSolutionReviewDTO objects.
+     * </p>
+     *
+     * @param searchQueryDTO the DTO containing the search query
+     * @return a {@link List} of {@link CleanSolutionReviewDTO} matching the search criteria
+     */
+    public List<CleanSolutionReviewDTO> searchSolutionReviews(SearchQueryDTO searchQueryDTO) {
+        String query = searchQueryDTO.getSearchQuery();
+
+        // Call chatbot service to translate the query and execute it
+        try {
+            ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, true);
+            System.out.println("Chatbot service returned response: " + response.toString());
+
+            // Extract solution review IDs from the results
+            if (response.getResults() == null || response.getResults().isEmpty()) {
+                return List.of();
+            }
+
+            // Extract IDs from the results and query the database
+            List<String> ids = response.getResults().stream()
+                    .map(result -> (String) result.get("_id"))
+                    .filter(id -> id != null)
+                    .toList();
+
+            // Query the database for each ID and map to CleanSolutionReviewDTO
+            return ids.stream()
+                    .map(solutionReviewRepository::findById)
+                    .filter(Optional::isPresent)
+                    .map(Optional::get)
+                    .map(this::toCleanDTO)
+                    .toList();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to communicate with chatbot service: " + e.getMessage(), e);
+        }
+        
+        
+
+        // mock response 
+        // return solutionReviewRepository.findAll().stream()
+        //         .map(this::toCleanDTO)
+        //         .toList();
+    }
 }
