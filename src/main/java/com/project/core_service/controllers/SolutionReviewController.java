@@ -4,10 +4,15 @@ import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SearchQueryDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
+import com.project.core_service.commands.LifecycleTransitionCommand;
 import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
 import com.project.core_service.dto.CleanSolutionReviewDTO;
 import com.project.core_service.models.solutions_review.SolutionReview;
+import com.project.core_service.services.SolutionReviewLifecycleService;
 import com.project.core_service.services.SolutionReviewService;
+
+import jakarta.validation.Valid;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,10 +33,18 @@ import java.util.List;
 @RequestMapping("/api/v1/solution-review")
 public class SolutionReviewController {
     private final SolutionReviewService solutionReviewService;
+    private final SolutionReviewLifecycleService lifecycleService;
 
     @Autowired
-    public SolutionReviewController(SolutionReviewService solutionReviewService) {
+    public SolutionReviewController(SolutionReviewService solutionReviewService, SolutionReviewLifecycleService lifecycleService) {
         this.solutionReviewService = solutionReviewService;
+        this.lifecycleService = lifecycleService;
+    }
+
+    @PostMapping("/lifecycle/transition")
+    public ResponseEntity<String> transition(@Valid @RequestBody LifecycleTransitionCommand command) {
+        lifecycleService.executeTransition(command);
+        return ResponseEntity.ok("Transition successful");
     }
 
     /**
