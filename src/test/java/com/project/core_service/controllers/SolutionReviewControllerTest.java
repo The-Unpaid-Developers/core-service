@@ -27,11 +27,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-@WebMvcTest(LifecycleController.class)
+@WebMvcTest(SolutionReviewController.class)
 @AutoConfigureMockMvc(addFilters = false) // Disable security filters for testing
 @TestPropertySource(locations = "classpath:application-test.properties")
-@DisplayName("LifecycleController Tests")
-class LifecycleControllerTest {
+@DisplayName("SolutionReviewController Tests")
+class SolutionReviewControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -40,7 +40,7 @@ class LifecycleControllerTest {
     private SolutionReviewLifecycleService lifecycleService;
 
     @Nested
-    @DisplayName("POST /api/v1/lifecycle/transition")
+    @DisplayName("POST /api/v1/solution-review/lifecycle/transition")
     class TransitionEndpoint {
 
         @Test
@@ -58,7 +58,7 @@ class LifecycleControllerTest {
             doNothing().when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isOk())
@@ -84,7 +84,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isNotFound())
@@ -111,7 +111,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
@@ -138,7 +138,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isInternalServerError())
@@ -155,7 +155,7 @@ class LifecycleControllerTest {
             String invalidJson = "{ invalid json }";
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
                     .andExpect(status().isBadRequest());
@@ -169,7 +169,7 @@ class LifecycleControllerTest {
         void shouldReturnBadRequestWhenRequestBodyHasInvalidFields(String testCase, String requestJson,
                 String expectedErrorMessage) throws Exception {
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
@@ -241,7 +241,7 @@ class LifecycleControllerTest {
                     """;
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
@@ -256,7 +256,7 @@ class LifecycleControllerTest {
         @DisplayName("Should return 415 Unsupported Media Type when Content-Type is not JSON")
         void shouldReturnUnsupportedMediaTypeWhenContentTypeIsNotJson() throws Exception {
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.TEXT_PLAIN)
                     .content("plain text content"))
                     .andExpect(status().isUnsupportedMediaType());
@@ -290,7 +290,7 @@ class LifecycleControllerTest {
                 doNothing().when(lifecycleService).executeTransition(any());
 
                 // When & Then
-                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                         .andExpect(status().isOk())
@@ -318,7 +318,7 @@ class LifecycleControllerTest {
             doNothing().when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isOk())
@@ -331,7 +331,7 @@ class LifecycleControllerTest {
         @DisplayName("Should handle empty request body")
         void shouldHandleEmptyRequestBody() throws Exception {
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(""))
                     .andExpect(status().isBadRequest());
@@ -347,7 +347,7 @@ class LifecycleControllerTest {
         @Test
         @DisplayName("Should return 405 Method Not Allowed for GET request")
         void shouldReturnMethodNotAllowedForGetRequest() throws Exception {
-            mockMvc.perform(get("/api/v1/lifecycle/transition"))
+            mockMvc.perform(get("/api/v1/solution-review/lifecycle/transition"))
                     .andExpect(status().isMethodNotAllowed());
 
             verify(lifecycleService, never()).executeTransition(any());
@@ -364,7 +364,7 @@ class LifecycleControllerTest {
                         "comment": "Test comment"
                     }
                     """;
-            mockMvc.perform(put("/api/v1/lifecycle/transition")
+            mockMvc.perform(put("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isMethodNotAllowed());
@@ -375,7 +375,7 @@ class LifecycleControllerTest {
         @Test
         @DisplayName("Should return 405 Method Not Allowed for DELETE request")
         void shouldReturnMethodNotAllowedForDeleteRequest() throws Exception {
-            mockMvc.perform(delete("/api/v1/lifecycle/transition"))
+            mockMvc.perform(delete("/api/v1/solution-review/lifecycle/transition"))
                     .andExpect(status().isMethodNotAllowed());
 
             verify(lifecycleService, never()).executeTransition(any());
@@ -407,7 +407,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
@@ -442,7 +442,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
@@ -469,7 +469,7 @@ class LifecycleControllerTest {
             doNothing().when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isOk())
@@ -517,7 +517,7 @@ class LifecycleControllerTest {
                         """, operation, comment);
                 doNothing().when(lifecycleService).executeTransition(any());
 
-                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                         .andExpect(status().isOk())
@@ -551,7 +551,7 @@ class LifecycleControllerTest {
                         """, operation, comment);
                 doNothing().when(lifecycleService).executeTransition(any());
 
-                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestJson))
                         .andExpect(status().isOk())
@@ -581,7 +581,7 @@ class LifecycleControllerTest {
                     .when(lifecycleService).executeTransition(any());
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(requestJson))
                     .andExpect(status().isBadRequest())
