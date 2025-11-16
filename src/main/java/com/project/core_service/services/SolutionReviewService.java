@@ -16,15 +16,21 @@ import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
 import com.project.core_service.repositories.*;
+
+import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -45,12 +51,14 @@ import java.util.stream.Collectors;
 public class SolutionReviewService {
     private final SolutionReviewRepository solutionReviewRepository;
     private final ChatbotServiceClient chatbotServiceClient;
+    private final QueryService queryService;
 
 
     @Autowired
-    public SolutionReviewService(SolutionReviewRepository solutionReviewRepository, ChatbotServiceClient chatbotServiceClient) {
+    public SolutionReviewService(SolutionReviewRepository solutionReviewRepository, ChatbotServiceClient chatbotServiceClient, QueryService queryService) {
         this.solutionReviewRepository = solutionReviewRepository;
         this.chatbotServiceClient = chatbotServiceClient;
+        this.queryService = queryService;
     }
 
     /**
@@ -483,25 +491,37 @@ public class SolutionReviewService {
         try {
             ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, true);
             System.out.println("Chatbot service returned response: " + response.toString());
+            System.out.println("Mongo query: " + response.getMongoQuery());
 
-            // Extract solution review IDs from the results
-            if (response.getResults() == null || response.getResults().isEmpty()) {
-                return List.of();
-            }
-
-            // Extract IDs from the results and query the database
-            List<String> ids = response.getResults().stream()
-                    .map(result -> (String) result.get("_id"))
-                    .filter(id -> id != null)
-                    .toList();
-
-            // Query the database for each ID and map to CleanSolutionReviewDTO
-            return ids.stream()
-                    .map(solutionReviewRepository::findById)
+            // execute the returned mongo query against local database
+            return queryService.executeMongoQuery(response.getMongoQuery()).stream()
+                    .map(doc -> {
+                        String id = doc.get("_id").toString();
+                        return solutionReviewRepository.findById(id);
+                    })
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .map(this::toCleanDTO)
                     .toList();
+
+            // Extract solution review IDs from the results
+            // if (response.getResults() == null || response.getResults().isEmpty()) {
+            //     return List.of();
+            // }
+            // System.out.println("results of response: " + response.getResults().toString());
+            // // Extract IDs from the results and query the database
+            // List<String> ids = response.getResults().stream()
+            //         .map(result -> (String) result.get("id"))
+            //         .filter(id -> id != null)
+            //         .toList();
+
+            // // Query the database for each ID and map to CleanSolutionReviewDTO
+            // return ids.stream()
+            //         .map(solutionReviewRepository::findById)
+            //         .filter(Optional::isPresent)
+            //         .map(Optional::get)
+            //         .map(this::toCleanDTO)
+            //         .toList();
         } catch (Exception e) {
             throw new RuntimeException("Failed to communicate with chatbot service: " + e.getMessage(), e);
         }

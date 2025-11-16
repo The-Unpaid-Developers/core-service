@@ -69,7 +69,6 @@ public class ChatbotServiceClient {
      * @throws org.springframework.web.client.ResourceAccessException if the request times out after 30 seconds
      */
     public ChatbotTranslateResponseDTO translate(String question, boolean execute) {
-        String url = baseUrl;
 
         ChatbotTranslateRequestDTO request = ChatbotTranslateRequestDTO.builder()
                 .question(question)
@@ -82,7 +81,7 @@ public class ChatbotServiceClient {
         HttpEntity<ChatbotTranslateRequestDTO> entity = new HttpEntity<>(request, headers);
 
         return restTemplate.exchange(
-                url,
+                baseUrl,
                 HttpMethod.POST,
                 entity,
                 ChatbotTranslateResponseDTO.class
