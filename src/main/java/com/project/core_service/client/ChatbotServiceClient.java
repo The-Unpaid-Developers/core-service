@@ -11,16 +11,15 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.Duration;
-
 /**
  * Client for communicating with the Chatbot Service API.
  *
  * This client provides methods to interact with the chatbot service's REST endpoints,
  * specifically for translating natural language queries into MongoDB aggregation pipelines
  * and executing them. It uses Spring RestTemplate for synchronous HTTP communication.
- * 
- * Configured with a 30-second timeout for both connection and read operations to handle
+ *
+ * Connection pooling and timeouts are configured globally via {@link com.project.core_service.config.RestTemplateConfig}.
+ * Default timeout is 30 seconds for both connection and socket operations to handle
  * potentially long-running LLM-based query generation.
  */
 @Component
@@ -30,26 +29,26 @@ public class ChatbotServiceClient {
     private final String baseUrl;
 
     /**
-     * Constructs a new ChatbotServiceClient with the specified base URL and timeout configuration.
+     * Constructs a new ChatbotServiceClient with the specified base URL.
      *
      * The base URL is injected from application properties using the key
      * {@code services.chatbot-service.url}. This allows for easy configuration
      * across different environments (dev, staging, production).
-     * 
-     * A 30-second timeout is configured for both connection and read operations to accommodate
-     * LLM processing time while preventing indefinite hangs.
+     *
+     * The RestTemplate is configured with connection pooling and appropriate timeouts
+     * via the RestTemplateBuilder bean defined in {@link com.project.core_service.config.RestTemplateConfig}.
+     * Timeouts can be configured via application properties:
+     * - http.client.connection.timeout (default: 30000ms)
+     * - http.client.socket.timeout (default: 30000ms)
      *
      * @param baseUrl the base URL of the chatbot service, injected from application properties
-     * @param restTemplateBuilder Spring's RestTemplateBuilder for creating configured RestTemplate instances
+     * @param restTemplateBuilder Spring's RestTemplateBuilder pre-configured with connection pooling
      */
     public ChatbotServiceClient(
             @Value("${services.chatbot-service.url}") String baseUrl,
             RestTemplateBuilder restTemplateBuilder) {
         this.baseUrl = baseUrl;
-        this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(30))
-                .setReadTimeout(Duration.ofSeconds(30))
-                .build();
+        this.restTemplate = restTemplateBuilder.build();
     }
 
     /**
