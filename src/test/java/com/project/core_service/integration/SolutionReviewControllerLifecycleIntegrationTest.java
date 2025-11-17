@@ -16,7 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Integration tests for
- * {@link com.project.core_service.controllers.LifecycleController}.
+ * {@link com.project.core_service.controllers.SolutionReviewController}.
  * 
  * <p>
  * These tests verify the complete lifecycle state transition flows for solution
@@ -34,13 +34,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <li>Error handling and validation</li>
  * </ul>
  * 
- * @see com.project.core_service.controllers.LifecycleController
+ * @see com.project.core_service.controllers.SolutionReviewController
  * @see BaseIntegrationTest
  */
-@DisplayName("Lifecycle Controller Integration Tests")
+@DisplayName("Solution Review Controller Integration Tests for Lifecycle")
 @Epic("Solution Review Lifecycle Management")
 @Feature("Lifecycle State Transitions")
-class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
+class SolutionReviewControllerLifecycleIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private SolutionReviewRepository solutionReviewRepository;
@@ -74,7 +74,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Submitting for review");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -102,7 +102,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Approved after review");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -130,7 +130,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Activating solution");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -158,7 +158,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Marking as outdated");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -180,7 +180,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String reviewId = review.getId();
 
             // Step 1: DRAFT → SUBMITTED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -191,7 +191,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .isEqualTo(DocumentState.SUBMITTED);
 
             // Step 2: SUBMITTED → APPROVED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "APPROVE", TestDataFactory.TestUsers.REVIEWER,
@@ -202,7 +202,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .isEqualTo(DocumentState.APPROVED);
 
             // Step 3: APPROVED → ACTIVE
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "ACTIVATE", TestDataFactory.TestUsers.ADMIN,
@@ -213,7 +213,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .isEqualTo(DocumentState.ACTIVE);
 
             // Step 4: ACTIVE → OUTDATED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "MARK_OUTDATED", TestDataFactory.TestUsers.ADMIN,
@@ -248,7 +248,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Need to make changes");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -275,7 +275,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Found issues during final check");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk())
@@ -320,7 +320,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to create second DRAFT");
 
             // When & Then - should fail
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -353,7 +353,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to create second ACTIVE");
 
             // When & Then - should succeed as existing ACTIVE will be deactivated
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)));
 
@@ -386,7 +386,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             // First review: ACTIVE → OUTDATED
             SolutionReview review1 = createAndSaveSolutionReview(systemCode, DocumentState.ACTIVE);
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             review1.getId(), "MARK_OUTDATED",
@@ -403,7 +403,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             review2.setId("second-review-id");
             review2 = solutionReviewRepository.save(review2);
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             review2.getId(), "MARK_OUTDATED",
@@ -442,7 +442,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Invalid operation");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -467,7 +467,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to skip SUBMITTED state");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -491,7 +491,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to skip states");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -515,7 +515,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Testing invalid operation");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -535,7 +535,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Testing non-existent ID");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isNotFound())
@@ -557,7 +557,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     """;
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
                     .andExpect(status().isBadRequest());
@@ -588,7 +588,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             );
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk());
@@ -614,7 +614,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Testing case insensitivity");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk());
@@ -650,7 +650,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Testing audit trail");
 
             // When
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk());
@@ -693,7 +693,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                         TestDataFactory.TestUsers.ADMIN,
                         "Attempting operation on OUTDATED");
 
-                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(command)))
                         .andExpect(status().isBadRequest())
@@ -718,7 +718,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Invalid reverse transition");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -742,7 +742,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to skip ACTIVE");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -766,7 +766,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to skip SUBMITTED");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -790,7 +790,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to skip APPROVED");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -814,7 +814,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Invalid direct to terminal");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -838,7 +838,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Invalid state for this operation");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -862,7 +862,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Cannot unapprove active document");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -911,7 +911,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     TestDataFactory.TestUsers.ADMIN,
                     "First activation");
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command1)))
                     .andExpect(status().isOk());
@@ -923,7 +923,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     TestDataFactory.TestUsers.ADMIN,
                     "Second activation attempt");
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command2)));
 
@@ -956,21 +956,21 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String reviewId = review.getId();
 
             // When - execute rapid transitions: DRAFT → SUBMITTED → DRAFT → SUBMITTED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
                             "First submit"))))
                     .andExpect(status().isOk());
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "REMOVE_SUBMISSION",
                             TestDataFactory.TestUsers.ARCHITECT, "Remove"))))
                     .andExpect(status().isOk());
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1009,7 +1009,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Trying to create second DRAFT");
 
             // Then - should be rejected
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isBadRequest())
@@ -1034,7 +1034,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String reviewId = review.getId();
 
             // User 1 approves it
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "APPROVE", TestDataFactory.TestUsers.REVIEWER,
@@ -1042,7 +1042,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk());
 
             // User 2 tries to remove submission (should fail - it's already APPROVED)
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "REMOVE_SUBMISSION",
@@ -1071,14 +1071,14 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             SolutionReview reviewB = createAndSaveSolutionReview(systemB, DocumentState.DRAFT);
 
             // When - perform transitions on both simultaneously
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewA.getId(), "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
                             "Submit A"))))
                     .andExpect(status().isOk());
 
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewB.getId(), "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1117,7 +1117,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Attempting on missing document");
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isNotFound())
@@ -1135,7 +1135,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String reviewId = review.getId();
 
             // Submit it first
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1143,7 +1143,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk());
 
             // Try to submit again (should fail - it's already SUBMITTED)
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1174,7 +1174,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     "Transition on minimal document");
 
             // Should still work - the document state machine should handle it
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(command)))
                     .andExpect(status().isOk());
@@ -1199,7 +1199,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     """, review.getId());
 
             // When & Then - should reject due to validation
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(invalidJson))
                     .andExpect(status().isBadRequest());
@@ -1219,7 +1219,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     """; // Missing closing brace and comma
 
             // When & Then
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(malformedJson))
                     .andExpect(status().isBadRequest());
@@ -1236,7 +1236,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String reviewId = review.getId();
 
             // Transition to SUBMITTED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1244,7 +1244,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
                     .andExpect(status().isOk());
 
             // Try an operation that would be valid on DRAFT but not SUBMITTED
-            mockMvc.perform(post("/api/v1/lifecycle/transition")
+            mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(toJson(new LifecycleTransitionCommand(
                             reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -1268,7 +1268,7 @@ class LifecycleControllerIntegrationTest extends BaseIntegrationTest {
             String[] invalidOps = { "APPROVE", "ACTIVATE", "UNAPPROVE", "MARK_OUTDATED" };
 
             for (String operation : invalidOps) {
-                mockMvc.perform(post("/api/v1/lifecycle/transition")
+                mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(new LifecycleTransitionCommand(
                                 reviewId, operation,

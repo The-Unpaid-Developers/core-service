@@ -108,6 +108,12 @@
 		<groupId>com.fasterxml.jackson.core</groupId>
 		<artifactId>jackson-databind</artifactId>
 	</dependency>
+
+	<!-- Apache HttpClient 5 for connection pooling -->
+	<dependency>
+		<groupId>org.apache.httpcomponents.client5</groupId>
+		<artifactId>httpclient5</artifactId>
+	</dependency>
 	</dependencies>
 
 	<build>

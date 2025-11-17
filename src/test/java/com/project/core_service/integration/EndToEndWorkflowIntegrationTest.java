@@ -113,7 +113,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 					architect,
 					"Submitting payment processing system for architecture review");
 
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(submitCommand)))
 					.andExpect(status().isOk())
@@ -149,7 +149,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 					reviewer,
 					"All concerns addressed. Approved for activation.");
 
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(approveCommand)))
 					.andExpect(status().isOk());
@@ -168,7 +168,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 					admin,
 					"Activating payment processing system solution");
 
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(activateCommand)))
 					.andExpect(status().isOk());
@@ -234,7 +234,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 2: Submit Enhancement =====
 		Allure.step("Step 2: Submit enhancement for review", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							v2Id, "SUBMIT", architect, "Enhancement ready for review"))))
@@ -243,7 +243,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 3: Approve Enhancement =====
 		Allure.step("Step 3: Approve enhancement", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							v2Id, "APPROVE", TestDataFactory.TestUsers.REVIEWER,
@@ -253,7 +253,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 4: Mark Old Version as Outdated =====
 		Allure.step("Step 4: Mark old ACTIVE version as OUTDATED", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							v1.getId(), "MARK_OUTDATED", admin,
@@ -267,7 +267,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 5: Activate New Version =====
 		Allure.step("Step 5: Activate new enhancement version", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							v2Id, "ACTIVATE", admin, "Activating enhancement"))))
@@ -321,7 +321,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			SolutionReview review = solutionReviewRepository.findAllBySystemCode(systemCode).get(0);
 
 			// Submit immediately
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							review.getId(), "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -333,7 +333,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 2: Reject (Remove Submission) =====
 		Allure.step("Step 2: Reviewer requests changes (remove submission)", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewId, "REMOVE_SUBMISSION",
@@ -361,7 +361,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 
 		// ===== STEP 4: Re-submit =====
 		Allure.step("Step 4: Re-submit modified solution review", () -> {
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewId, "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
@@ -372,7 +372,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 		// ===== STEP 5: Approve and Activate =====
 		Allure.step("Step 5: Approve and activate", () -> {
 			// Approve
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewId, "APPROVE", TestDataFactory.TestUsers.REVIEWER,
@@ -380,7 +380,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 					.andExpect(status().isOk());
 
 			// Activate
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewId, "ACTIVATE", TestDataFactory.TestUsers.ADMIN,
@@ -414,17 +414,17 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 			SolutionReview reviewA = solutionReviewRepository.findAllBySystemCode(systemA).get(0);
 
 			// Take System A through to ACTIVE
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewA.getId(), "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,
 							"A-Submit"))));
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewA.getId(), "APPROVE", TestDataFactory.TestUsers.REVIEWER,
 							"A-Approve"))));
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewA.getId(), "ACTIVATE", TestDataFactory.TestUsers.ADMIN,
@@ -438,7 +438,7 @@ class EndToEndWorkflowIntegrationTest extends BaseIntegrationTest {
 					.content(toJson(dtoB)))
 					.andExpect(status().isCreated());
 			SolutionReview reviewB = solutionReviewRepository.findAllBySystemCode(systemB).get(0);
-			mockMvc.perform(post("/api/v1/lifecycle/transition")
+			mockMvc.perform(post("/api/v1/solution-review/lifecycle/transition")
 					.contentType(MediaType.APPLICATION_JSON)
 					.content(toJson(new LifecycleTransitionCommand(
 							reviewB.getId(), "SUBMIT", TestDataFactory.TestUsers.ARCHITECT,

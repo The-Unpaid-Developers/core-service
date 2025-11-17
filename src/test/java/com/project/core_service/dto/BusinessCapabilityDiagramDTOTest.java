@@ -1,9 +1,6 @@
 package com.project.core_service.dto;
 
 import com.project.core_service.models.business_capabilities.BusinessCapability;
-import com.project.core_service.models.business_capabilities.L1Capability;
-import com.project.core_service.models.business_capabilities.L2Capability;
-import com.project.core_service.models.business_capabilities.L3Capability;
 import com.project.core_service.models.solution_overview.*;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
@@ -65,16 +62,16 @@ class BusinessCapabilityDiagramDTOTest {
         businessCapabilities = List.of(
                 BusinessCapability.builder()
                         .id("bc-001")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Customer management")
                         .build(),
                 BusinessCapability.builder()
                         .id("bc-002")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Order processing")
                         .build());
 
@@ -179,9 +176,9 @@ class BusinessCapabilityDiagramDTOTest {
             List<BusinessCapability> newCapabilities = List.of(
                     BusinessCapability.builder()
                             .id("bc-003")
-                            .l1Capability(L1Capability.UNKNOWN)
-                            .l2Capability(L2Capability.UNKNOWN)
-                            .l3Capability(L3Capability.UNKNOWN)
+                            .l1Capability("UNKNOWN")
+                            .l2Capability("UNKNOWN")
+                            .l3Capability("UNKNOWN")
                             .remarks("New capability")
                             .build());
 
@@ -363,9 +360,9 @@ class BusinessCapabilityDiagramDTOTest {
             for (int i = 0; i < 100; i++) {
                 largeList.add(BusinessCapability.builder()
                         .id("bc-" + i)
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Capability " + i)
                         .build());
             }

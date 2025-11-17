@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -231,6 +232,58 @@ public class QueryService {
 
             AggregationResults<Document> results = mongoTemplate.aggregate(
                     aggregation, collection, Document.class);
+
+            return results.getMappedResults();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to execute aggregation pipeline: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Executes an aggregation pipeline.
+     *
+     * @param mongoQuery the aggregation pipeline to execute
+     * @return a list of documents matching the aggregation pipeline
+     * @throws NotFoundException        if no query exists with the given name
+     * @throws IllegalArgumentException if the query or parameters are invalid
+     */
+    public List<Document> executeMongoQuery(List<Map<String, Object>> mongoQuery) {
+        /*
+         * example mongoQuery:
+         * [{$match={status:active}},{$project={_id:0,id:1}}]
+         */
+        try {
+            if (mongoQuery == null || mongoQuery.isEmpty()) {
+                throw new IllegalArgumentException("Aggregation pipeline cannot be empty");
+            }
+
+            // Convert List<Map<String, Object>> to List<Document>
+            List<Document> pipelineStages = new ArrayList<>();
+            for (Map<String, Object> stage : mongoQuery) {
+                pipelineStages.add(new Document(stage));
+            }
+            System.out.println("Parsed pipeline stages: " + pipelineStages.toString());
+
+            // Build and execute the aggregation
+            List<AggregationOperation> operations = new ArrayList<>();
+
+            for (Document stage : pipelineStages) {
+                // if stage is $project and is empty, change it to {_id:1} to avoid errors and remove the current version
+                if (stage.containsKey("$project")) {
+                    Object projectObj = stage.get("$project");
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> projectMap = (Map<String, Object>) projectObj;
+                    stage.remove("$project");
+                    stage.put("$project", new Document("_id", 1));
+                }
+                operations.add(context -> stage);
+            }
+            System.out.println("Aggregation operations: " + operations.toString());
+
+            Aggregation aggregation = Aggregation.newAggregation(operations);
+
+            AggregationResults<Document> results = mongoTemplate.aggregate(
+                    aggregation, COLLECTION_FIELD, Document.class);
 
             return results.getMappedResults();
         } catch (Exception e) {

@@ -6,16 +6,16 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+import com.project.core_service.dto.CleanSolutionReviewDTO;
 import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
+import com.project.core_service.dto.SearchQueryDTO;
+import com.project.core_service.dto.ChatbotTranslateResponseDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.business_capabilities.BusinessCapability;
-import com.project.core_service.models.business_capabilities.L1Capability;
-import com.project.core_service.models.business_capabilities.L2Capability;
-import com.project.core_service.models.business_capabilities.L3Capability;
 import com.project.core_service.models.integration_flow.CounterpartSystemRole;
 import com.project.core_service.models.integration_flow.IntegrationFlow;
 import com.project.core_service.models.integration_flow.IntegrationMethod;
@@ -36,15 +36,21 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.bson.Document;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
 class SolutionReviewServiceTest {
 
     @Mock
     private SolutionReviewRepository solutionReviewRepository;
+    @Mock
+    private com.project.core_service.client.ChatbotServiceClient chatbotServiceClient;
+    @Mock
+    private QueryService queryService;
     @InjectMocks
     private SolutionReviewService service;
 
@@ -125,7 +131,7 @@ class SolutionReviewServiceTest {
         Page<SolutionReview> page = new PageImpl<>(List.of(review));
         when(solutionReviewRepository.findAll(any(Pageable.class))).thenReturn(page);
 
-        Page<SolutionReview> result = service.getSolutionReviews(Pageable.unpaged());
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviews(Pageable.unpaged());
 
         assertEquals(1, result.getTotalElements());
     }
@@ -135,7 +141,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllBySystemCode("SYS-123"))
                 .thenReturn(List.of(review));
 
-        List<SolutionReview> result = service.getSolutionReviewsBySystemCode("SYS-123");
+        List<CleanSolutionReviewDTO> result = service.getSolutionReviewsBySystemCode("SYS-123");
 
         assertEquals(1, result.size());
         assertEquals("SYS-123", result.get(0).getSystemCode());
@@ -145,7 +151,7 @@ class SolutionReviewServiceTest {
     void getAllSolutionReviews() {
         when(solutionReviewRepository.findAll(any(Sort.class))).thenReturn(List.of(review));
 
-        List<SolutionReview> result = service.getAllSolutionReviews();
+        List<CleanSolutionReviewDTO> result = service.getAllSolutionReviews();
 
         assertEquals(1, result.size());
     }
@@ -171,7 +177,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findBySystemCode(eq("SYS-456"), any(Sort.class))).thenReturn(List.of());
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -200,7 +206,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(latestReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -221,7 +227,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findBySystemCode(eq("SYS-456"), any(Sort.class))).thenReturn(List.of());
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(0, result.getTotalElements());
@@ -249,7 +255,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(5, result.getTotalElements()); // Total across all pages
@@ -271,7 +277,7 @@ class SolutionReviewServiceTest {
         when(solutionReviewRepository.findAllDistinctSystemCodes()).thenReturn(systemCodes);
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -296,7 +302,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(currentReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements()); // Total items available
@@ -323,7 +329,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(activeReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -359,7 +365,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of(newerReview, olderReview)); // Sorted by lastModifiedAt DESC
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -403,17 +409,17 @@ class SolutionReviewServiceTest {
                 .thenReturn(List.of()); // No reviews
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(2, result.getTotalElements()); // Only SYS-123 and SYS-456 have reviews
         assertEquals(2, result.getContent().size());
 
         // Find reviews by system code
-        SolutionReview sys123Result = result.getContent().stream()
+        CleanSolutionReviewDTO sys123Result = result.getContent().stream()
                 .filter(r -> "SYS-123".equals(r.getSystemCode()))
                 .findFirst().orElse(null);
-        SolutionReview sys456Result = result.getContent().stream()
+        CleanSolutionReviewDTO sys456Result = result.getContent().stream()
                 .filter(r -> "SYS-456".equals(r.getSystemCode()))
                 .findFirst().orElse(null);
 
@@ -442,7 +448,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(Optional.of(currentReview));
 
         // Act
-        Page<SolutionReview> result = service.getPaginatedSystemView(pageable);
+        Page<CleanSolutionReviewDTO> result = service.getPaginatedSystemView(pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -476,7 +482,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertEquals(2, result.getTotalElements());
@@ -496,7 +502,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(emptyPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertTrue(result.isEmpty());
@@ -522,7 +528,7 @@ class SolutionReviewServiceTest {
             when(solutionReviewRepository.findByDocumentState(state, pageable)).thenReturn(page);
 
             // Act
-            Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(state.name(), pageable);
+            Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(state.name(), pageable);
 
             // Assert
             assertEquals(1, result.getTotalElements());
@@ -562,7 +568,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(lowerCaseState, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(lowerCaseState, pageable);
 
         // Assert
         assertEquals(1, result.getTotalElements());
@@ -587,7 +593,7 @@ class SolutionReviewServiceTest {
                 .thenReturn(expectedPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
         assertEquals(12, result.getTotalElements()); // Total items
@@ -619,24 +625,32 @@ class SolutionReviewServiceTest {
     }
 
     @Test
-    void getSolutionReviewsByDocumentState_ShouldPassThroughRepositoryResult() {
+    void getSolutionReviewsByDocumentState_ShouldDelegateToRepository() {
         // Arrange - This test verifies that the service method delegates to repository
         // after validation
-        Pageable pageable = PageRequest.of(2, 3);
+        Pageable pageable = PageRequest.of(0, 10);
         String documentStateStr = "SUBMITTED";
 
-        @SuppressWarnings("unchecked")
-        Page<SolutionReview> mockPage = mock(Page.class);
+        SolutionReview submittedReview = SolutionReview.newDraftBuilder()
+                .id("rev-1")
+                .systemCode("SYS-123")
+                .solutionOverview(overview)
+                .documentState(DocumentState.SUBMITTED)
+                .build();
+
+        Page<SolutionReview> mockPage = new PageImpl<>(List.of(submittedReview), pageable, 1);
         when(solutionReviewRepository.findByDocumentState(DocumentState.SUBMITTED, pageable))
                 .thenReturn(mockPage);
 
         // Act
-        Page<SolutionReview> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
+        Page<CleanSolutionReviewDTO> result = service.getSolutionReviewsByDocumentState(documentStateStr, pageable);
 
         // Assert
-        assertSame(mockPage, result); // Should return exactly what repository returns
-        verify(solutionReviewRepository, times(1)).findByDocumentState(DocumentState.SUBMITTED, pageable);
-        verifyNoMoreInteractions(solutionReviewRepository);
+        assertNotNull(result);
+        assertEquals(1, result.getContent().size());
+        assertEquals("SYS-123", result.getContent().get(0).getSystemCode());
+        assertEquals(DocumentState.SUBMITTED, result.getContent().get(0).getDocumentState());
+        verify(solutionReviewRepository).findByDocumentState(DocumentState.SUBMITTED, pageable);
     }
 
     // Tests for getSystemDependencySolutionReviews method
@@ -991,16 +1005,16 @@ class SolutionReviewServiceTest {
         List<BusinessCapability> businessCapabilities = List.of(
                 BusinessCapability.builder()
                         .id("bc-1")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Customer management capabilities")
                         .build(),
                 BusinessCapability.builder()
                         .id("bc-2")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Order processing capabilities")
                         .build());
 
@@ -1069,25 +1083,25 @@ class SolutionReviewServiceTest {
         List<BusinessCapability> businessCapabilities1 = List.of(
                 BusinessCapability.builder()
                         .id("bc-1")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Customer management capabilities")
                         .build());
 
         List<BusinessCapability> businessCapabilities2 = List.of(
                 BusinessCapability.builder()
                         .id("bc-2")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Order processing capabilities")
                         .build(),
                 BusinessCapability.builder()
                         .id("bc-3")
-                        .l1Capability(L1Capability.UNKNOWN)
-                        .l2Capability(L2Capability.UNKNOWN)
-                        .l3Capability(L3Capability.UNKNOWN)
+                        .l1Capability("UNKNOWN")
+                        .l2Capability("UNKNOWN")
+                        .l3Capability("UNKNOWN")
                         .remarks("Inventory management capabilities")
                         .build());
 
@@ -1789,4 +1803,230 @@ class SolutionReviewServiceTest {
         assertTrue(exception.getMessage().contains("An ACTIVE document already exists"));
     }
 
+    // ==================== SEARCH SOLUTION REVIEWS TESTS ====================
+
+    @Test
+    void searchSolutionReviews_ShouldReturnMatchingResults() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find active systems");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("documentState", "ACTIVE")),
+                Map.of("$project", Map.of("_id", 1))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+        Document doc2 = new Document("_id", "rev-2");
+
+        SolutionReview review2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        when(chatbotServiceClient.translate("find active systems", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+        when(solutionReviewRepository.findById("rev-2")).thenReturn(Optional.of(review2));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(2, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("rev-2", results.get(1).getId());
+        verify(chatbotServiceClient).translate("find active systems", true);
+        verify(queryService).executeMongoQuery(mongoQuery);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldReturnEmptyListWhenNoMongoQueryReturned() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("invalid query");
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(null)
+                .build();
+
+        when(chatbotServiceClient.translate("invalid query", true)).thenReturn(chatbotResponse);
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertTrue(results.isEmpty());
+        verify(chatbotServiceClient).translate("invalid query", true);
+        verify(queryService, never()).executeMongoQuery(any());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldReturnEmptyListWhenNoResultsFound() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find nonexistent");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "NONEXISTENT"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        when(chatbotServiceClient.translate("find nonexistent", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of());
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertTrue(results.isEmpty());
+        verify(chatbotServiceClient).translate("find nonexistent", true);
+        verify(queryService).executeMongoQuery(mongoQuery);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldFilterOutNonExistentDocuments() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find all");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of())
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+        Document doc2 = new Document("_id", "rev-nonexistent");
+        Document doc3 = new Document("_id", "rev-3");
+
+        SolutionReview review3 = SolutionReview.newDraftBuilder()
+                .id("rev-3")
+                .systemCode("SYS-789")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        when(chatbotServiceClient.translate("find all", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2, doc3));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+        when(solutionReviewRepository.findById("rev-nonexistent")).thenReturn(Optional.empty());
+        when(solutionReviewRepository.findById("rev-3")).thenReturn(Optional.of(review3));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(2, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("rev-3", results.get(1).getId());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldThrowRuntimeExceptionWhenChatbotServiceFails() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test query");
+
+        when(chatbotServiceClient.translate("test query", true))
+                .thenThrow(new RuntimeException("Chatbot service unavailable"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> service.searchSolutionReviews(searchQueryDTO));
+
+        assertTrue(exception.getMessage().contains("Failed to communicate with chatbot service"));
+        verify(chatbotServiceClient).translate("test query", true);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldHandleSingleResult() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find specific");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "SYS-123"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+
+        when(chatbotServiceClient.translate("find specific", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(1, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("SYS-123", results.get(0).getSystemCode());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldMapToCleanDTOCorrectly() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "SYS-123"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+
+        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(1, results.size());
+        CleanSolutionReviewDTO dto = results.get(0);
+        assertEquals("rev-1", dto.getId());
+        assertEquals("SYS-123", dto.getSystemCode());
+        assertEquals(DocumentState.DRAFT, dto.getDocumentState());
+        assertEquals(overview, dto.getSolutionOverview());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldHandleQueryServiceException() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("invalid", "query"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery))
+                .thenThrow(new IllegalArgumentException("Invalid pipeline"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> service.searchSolutionReviews(searchQueryDTO));
+
+        assertTrue(exception.getMessage().contains("Failed to communicate with chatbot service"));
+    }
+
 }
+

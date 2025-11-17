@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -410,4 +411,202 @@ class QueryServiceTest {
         verify(queryRepository).existsById("nonExistent");
         verify(queryRepository, never()).deleteById(any());
     }
+
+    // ==================== EXECUTE MONGO QUERY WITH LIST<MAP> TESTS ====================
+
+    @Test
+    void executeMongoQueryWithList_Success() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("documentState", "ACTIVE")),
+                Map.of("$project", Map.of("_id", 1))
+        );
+
+        Document doc1 = new Document("_id", "rev-1");
+        Document doc2 = new Document("_id", "rev-2");
+        List<Document> expectedResults = List.of(doc1, doc2);
+
+        // Mock AggregationResults
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(expectedResults);
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        List<Document> results = queryService.executeMongoQuery(mongoQuery);
+
+        // Then
+        assertNotNull(results);
+        assertEquals(2, results.size());
+        assertEquals("rev-1", results.get(0).get("_id"));
+        assertEquals("rev-2", results.get(1).get("_id"));
+        verify(mongoTemplate).aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ThrowsWhenNullQuery() {
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> queryService.executeMongoQuery((List<Map<String, Object>>) null));
+
+        assertTrue(exception.getMessage().contains("Aggregation pipeline cannot be empty"));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ThrowsWhenEmptyQuery() {
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> queryService.executeMongoQuery(List.of()));
+
+        assertTrue(exception.getMessage().contains("Aggregation pipeline cannot be empty"));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldHandleSingleStage() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "SYS-123"))
+        );
+
+        Document doc1 = new Document("_id", "rev-1");
+        List<Document> expectedResults = List.of(doc1);
+
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(expectedResults);
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        List<Document> results = queryService.executeMongoQuery(mongoQuery);
+
+        // Then
+        assertNotNull(results);
+        assertEquals(1, results.size());
+        assertEquals("rev-1", results.get(0).get("_id"));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldHandleEmptyResults() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "NONEXISTENT"))
+        );
+
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(List.of());
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        List<Document> results = queryService.executeMongoQuery(mongoQuery);
+
+        // Then
+        assertNotNull(results);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldHandleProjectStage() {
+        // Given - Test the special case for $project handling
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("documentState", "ACTIVE")),
+                Map.of("$project", Map.of())  // Empty project should be replaced with {_id: 1}
+        );
+
+        Document doc1 = new Document("_id", "rev-1");
+        List<Document> expectedResults = List.of(doc1);
+
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(expectedResults);
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        List<Document> results = queryService.executeMongoQuery(mongoQuery);
+
+        // Then
+        assertNotNull(results);
+        assertEquals(1, results.size());
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldHandleMultipleStages() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("documentState", "ACTIVE")),
+                Map.of("$group", Map.of("_id", "$systemCode", "count", Map.of("$sum", 1))),
+                Map.of("$sort", Map.of("count", -1)),
+                Map.of("$limit", 10)
+        );
+
+        Document doc1 = new Document("_id", "SYS-123").append("count", 5);
+        Document doc2 = new Document("_id", "SYS-456").append("count", 3);
+        List<Document> expectedResults = List.of(doc1, doc2);
+
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(expectedResults);
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        List<Document> results = queryService.executeMongoQuery(mongoQuery);
+
+        // Then
+        assertNotNull(results);
+        assertEquals(2, results.size());
+        assertEquals("SYS-123", results.get(0).get("_id"));
+        assertEquals(5, results.get(0).get("count"));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldHandleMongoTemplateException() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("invalid", "query"))
+        );
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenThrow(new RuntimeException("MongoDB connection error"));
+
+        // When & Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> queryService.executeMongoQuery(mongoQuery));
+
+        assertTrue(exception.getMessage().contains("Failed to execute aggregation pipeline"));
+    }
+
+    @Test
+    void executeMongoQueryWithList_ShouldUseSolutionReviewsCollection() {
+        // Given
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("test", "value"))
+        );
+
+        @SuppressWarnings("unchecked")
+        AggregationResults<Document> mockResults = (AggregationResults<Document>) org.mockito.Mockito.mock(AggregationResults.class);
+        when(mockResults.getMappedResults()).thenReturn(List.of());
+
+        when(mongoTemplate.aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class)))
+                .thenReturn(mockResults);
+
+        // When
+        queryService.executeMongoQuery(mongoQuery);
+
+        // Then - Verify that "solutionReviews" collection is used
+        verify(mongoTemplate).aggregate(any(Aggregation.class), eq("solutionReviews"), eq(Document.class));
+    }
 }
+
