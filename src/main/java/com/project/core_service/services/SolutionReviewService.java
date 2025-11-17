@@ -494,6 +494,10 @@ public class SolutionReviewService {
             System.out.println("Mongo query: " + response.getMongoQuery());
 
             // execute the returned mongo query against local database
+            if (response.getMongoQuery() == null) {
+                return List.of();
+            }
+            
             return queryService.executeMongoQuery(response.getMongoQuery()).stream()
                     .map(doc -> {
                         String id = doc.get("_id").toString();
@@ -525,12 +529,5 @@ public class SolutionReviewService {
         } catch (Exception e) {
             throw new RuntimeException("Failed to communicate with chatbot service: " + e.getMessage(), e);
         }
-        
-        
-
-        // mock response 
-        // return solutionReviewRepository.findAll().stream()
-        //         .map(this::toCleanDTO)
-        //         .toList();
     }
 }

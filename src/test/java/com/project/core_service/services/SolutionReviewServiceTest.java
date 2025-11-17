@@ -11,6 +11,8 @@ import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
 import com.project.core_service.dto.SolutionReviewDTO;
 import com.project.core_service.dto.SystemDependencyDTO;
 import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
+import com.project.core_service.dto.SearchQueryDTO;
+import com.project.core_service.dto.ChatbotTranslateResponseDTO;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.business_capabilities.BusinessCapability;
@@ -34,9 +36,11 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.bson.Document;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.Map;
 
 @ExtendWith(MockitoExtension.class)
 class SolutionReviewServiceTest {
@@ -45,6 +49,8 @@ class SolutionReviewServiceTest {
     private SolutionReviewRepository solutionReviewRepository;
     @Mock
     private com.project.core_service.client.ChatbotServiceClient chatbotServiceClient;
+    @Mock
+    private QueryService queryService;
     @InjectMocks
     private SolutionReviewService service;
 
@@ -1797,4 +1803,230 @@ class SolutionReviewServiceTest {
         assertTrue(exception.getMessage().contains("An ACTIVE document already exists"));
     }
 
+    // ==================== SEARCH SOLUTION REVIEWS TESTS ====================
+
+    @Test
+    void searchSolutionReviews_ShouldReturnMatchingResults() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find active systems");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("documentState", "ACTIVE")),
+                Map.of("$project", Map.of("_id", 1))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+        Document doc2 = new Document("_id", "rev-2");
+
+        SolutionReview review2 = SolutionReview.newDraftBuilder()
+                .id("rev-2")
+                .systemCode("SYS-456")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        when(chatbotServiceClient.translate("find active systems", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+        when(solutionReviewRepository.findById("rev-2")).thenReturn(Optional.of(review2));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(2, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("rev-2", results.get(1).getId());
+        verify(chatbotServiceClient).translate("find active systems", true);
+        verify(queryService).executeMongoQuery(mongoQuery);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldReturnEmptyListWhenNoMongoQueryReturned() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("invalid query");
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(null)
+                .build();
+
+        when(chatbotServiceClient.translate("invalid query", true)).thenReturn(chatbotResponse);
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertTrue(results.isEmpty());
+        verify(chatbotServiceClient).translate("invalid query", true);
+        verify(queryService, never()).executeMongoQuery(any());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldReturnEmptyListWhenNoResultsFound() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find nonexistent");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "NONEXISTENT"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        when(chatbotServiceClient.translate("find nonexistent", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of());
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertTrue(results.isEmpty());
+        verify(chatbotServiceClient).translate("find nonexistent", true);
+        verify(queryService).executeMongoQuery(mongoQuery);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldFilterOutNonExistentDocuments() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find all");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of())
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+        Document doc2 = new Document("_id", "rev-nonexistent");
+        Document doc3 = new Document("_id", "rev-3");
+
+        SolutionReview review3 = SolutionReview.newDraftBuilder()
+                .id("rev-3")
+                .systemCode("SYS-789")
+                .solutionOverview(overview)
+                .documentState(DocumentState.ACTIVE)
+                .build();
+
+        when(chatbotServiceClient.translate("find all", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2, doc3));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+        when(solutionReviewRepository.findById("rev-nonexistent")).thenReturn(Optional.empty());
+        when(solutionReviewRepository.findById("rev-3")).thenReturn(Optional.of(review3));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(2, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("rev-3", results.get(1).getId());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldThrowRuntimeExceptionWhenChatbotServiceFails() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test query");
+
+        when(chatbotServiceClient.translate("test query", true))
+                .thenThrow(new RuntimeException("Chatbot service unavailable"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> service.searchSolutionReviews(searchQueryDTO));
+
+        assertTrue(exception.getMessage().contains("Failed to communicate with chatbot service"));
+        verify(chatbotServiceClient).translate("test query", true);
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldHandleSingleResult() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("find specific");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "SYS-123"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+
+        when(chatbotServiceClient.translate("find specific", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(1, results.size());
+        assertEquals("rev-1", results.get(0).getId());
+        assertEquals("SYS-123", results.get(0).getSystemCode());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldMapToCleanDTOCorrectly() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("systemCode", "SYS-123"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        Document doc1 = new Document("_id", "rev-1");
+
+        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
+        when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
+
+        // Act
+        List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
+
+        // Assert
+        assertEquals(1, results.size());
+        CleanSolutionReviewDTO dto = results.get(0);
+        assertEquals("rev-1", dto.getId());
+        assertEquals("SYS-123", dto.getSystemCode());
+        assertEquals(DocumentState.DRAFT, dto.getDocumentState());
+        assertEquals(overview, dto.getSolutionOverview());
+    }
+
+    @Test
+    void searchSolutionReviews_ShouldHandleQueryServiceException() {
+        // Arrange
+        SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test");
+
+        List<Map<String, Object>> mongoQuery = List.of(
+                Map.of("$match", Map.of("invalid", "query"))
+        );
+
+        ChatbotTranslateResponseDTO chatbotResponse = ChatbotTranslateResponseDTO.builder()
+                .mongoQuery(mongoQuery)
+                .build();
+
+        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(queryService.executeMongoQuery(mongoQuery))
+                .thenThrow(new IllegalArgumentException("Invalid pipeline"));
+
+        // Act & Assert
+        RuntimeException exception = assertThrows(RuntimeException.class,
+                () -> service.searchSolutionReviews(searchQueryDTO));
+
+        assertTrue(exception.getMessage().contains("Failed to communicate with chatbot service"));
+    }
+
 }
+
