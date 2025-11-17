@@ -4,6 +4,7 @@ import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.IllegalStateTransitionException;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.services.SolutionReviewLifecycleService;
+import com.project.core_service.services.SolutionReviewService;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,6 +39,9 @@ class SolutionReviewControllerTest {
 
     @MockitoBean
     private SolutionReviewLifecycleService lifecycleService;
+
+    @MockitoBean
+    private SolutionReviewService solutionReviewService;
 
     @Nested
     @DisplayName("POST /api/v1/solution-review/lifecycle/transition")
