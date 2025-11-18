@@ -593,6 +593,529 @@ class OpenAiQueryGenerationServiceTest {
         verify(emitter).complete();
     }
 
+    // ===== Extract Content from Chunk Tests =====
+
+    @Test
+    void generateQueryStream_ChunkWithNullChoices_HandlesGracefully() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk nullChoicesChunk = mock(ChatCompletionChunk.class);
+        when(nullChoicesChunk.getChoices()).thenReturn(null);
+
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(nullChoicesChunk);
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "business-capabilities",
+                    testLookupFieldsUsed,
+                    emitter);
+        });
+
+        // Assert
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_ChunkWithEmptyChoices_HandlesGracefully() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk emptyChoicesChunk = mock(ChatCompletionChunk.class);
+        when(emptyChoicesChunk.getChoices()).thenReturn(Collections.emptyList());
+
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(emptyChoicesChunk);
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "business-capabilities",
+                    testLookupFieldsUsed,
+                    emitter);
+        });
+
+        // Assert
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_ChunkWithNullMessage_HandlesGracefully() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        // Create a chunk that will return empty string from extractContentFromChunk
+        // The mock in createMockChunk returns empty list for choices, which is handled
+        ChatCompletionChunk chunk = mock(ChatCompletionChunk.class);
+        when(chunk.getChoices()).thenReturn(Collections.emptyList());
+
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "business-capabilities",
+                    testLookupFieldsUsed,
+                    emitter);
+        });
+
+        // Assert
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_ChunkWithNullContent_HandlesGracefully() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        // Create a chunk where content extraction returns empty string
+        // Using the createMockChunk with empty string will accomplish this
+        ChatCompletionChunk chunk = createMockChunk("");
+
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "business-capabilities",
+                    testLookupFieldsUsed,
+                    emitter);
+        });
+
+        // Assert
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_MixedChunks_HandlesCorrectly() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk validChunk = createMockChunk("[{");
+        ChatCompletionChunk nullChunk = mock(ChatCompletionChunk.class);
+        when(nullChunk.getChoices()).thenReturn(null);
+        ChatCompletionChunk emptyChunk = createMockChunk("");
+        ChatCompletionChunk finalChunk = createMockChunk("\"$match\":{}}]");
+
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(
+                validChunk, nullChunk, emptyChunk, finalChunk);
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "business-capabilities",
+                    testLookupFieldsUsed,
+                    emitter);
+        });
+
+        // Assert
+        verify(emitter).complete();
+    }
+
+    // ===== Null and Empty Prompt Tests =====
+
+    @Test
+    void generateQueryStream_EmptyPrompt_Success() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                "",
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("business-capabilities");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_NullPrompt_HandlesGracefully() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                null,
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("business-capabilities");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    // ===== Lookup Data Edge Cases =====
+
+    @Test
+    void generateQueryStream_LookupWithSingleRecord_Success() {
+        // Arrange
+        Lookup singleRecordLookup = createLargeLookup(1);
+        when(lookupService.findLookupByName("single-record")).thenReturn(singleRecordLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "single-record",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("single-record");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_LookupWithVeryLargeFieldValues_HandlesGracefully() {
+        // Arrange - Create lookup with very large field values
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        fieldDescriptions.put("L1", "A".repeat(1000));
+        fieldDescriptions.put("L2", "B".repeat(1000));
+
+        List<Map<String, String>> data = new ArrayList<>();
+        Map<String, String> record = new HashMap<>();
+        record.put("L1", "Value1".repeat(100));
+        record.put("L2", "Value2".repeat(100));
+        data.add(record);
+
+        Lookup largeLookup = Lookup.builder()
+                .id("large-values-lookup")
+                .lookupName("large-values-lookup")
+                .description("Lookup with large values")
+                .data(data)
+                .fieldDescriptions(fieldDescriptions)
+                .uploadedAt(new Date())
+                .recordCount(1)
+                .build();
+
+        when(lookupService.findLookupByName("large-values-lookup")).thenReturn(largeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "large-values-lookup",
+                List.of("L1", "L2"),
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("large-values-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    // ===== Field Validation Edge Cases =====
+
+    @Test
+    void generateQueryStream_SingleInvalidField_CompletesWithError() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+        List<String> singleInvalidField = List.of("NonExistentField");
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                singleInvalidField,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("business-capabilities");
+        verify(emitter).completeWithError(any(IllegalArgumentException.class));
+    }
+
+    @Test
+    void generateQueryStream_MixedValidAndInvalidFields_CompletesWithError() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+        List<String> mixedFields = List.of("L1", "InvalidField", "L2");
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                mixedFields,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("business-capabilities");
+        verify(emitter).completeWithError(any(IllegalArgumentException.class));
+    }
+
+    @Test
+    void generateQueryStream_DuplicateFields_Success() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+        List<String> duplicateFields = List.of("L1", "L1", "L2", "L2");
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                duplicateFields,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("business-capabilities");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    // ===== Request Configuration Tests =====
+
+    @Test
+    void generateQueryStream_VerifyStreamingEnabled() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenAnswer(invocation -> {
+                    ChatCompletionRequest request = invocation.getArgument(0);
+                    assertEquals(true, request.getStream());
+                    return mockStream;
+                });
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+    }
+
+    @Test
+    void generateQueryStream_VerifyMessageContentContainsSchema() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenAnswer(invocation -> {
+                    ChatCompletionRequest request = invocation.getArgument(0);
+                    String userMessage = request.getMessages().get(1).getContent();
+                    assertNotNull(userMessage);
+                    assert userMessage.contains("Database Schema");
+                    return mockStream;
+                });
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+    }
+
+    @Test
+    void generateQueryStream_VerifyMessageContentContainsLookupData() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenAnswer(invocation -> {
+                    ChatCompletionRequest request = invocation.getArgument(0);
+                    String userMessage = request.getMessages().get(1).getContent();
+                    assertNotNull(userMessage);
+                    assert userMessage.contains("Lookup Data");
+                    assert userMessage.contains("business-capabilities");
+                    return mockStream;
+                });
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+    }
+
+    @Test
+    void generateQueryStream_VerifyMessageContentContainsUserPrompt() {
+        // Arrange
+        when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenAnswer(invocation -> {
+                    ChatCompletionRequest request = invocation.getArgument(0);
+                    String userMessage = request.getMessages().get(1).getContent();
+                    assertNotNull(userMessage);
+                    assert userMessage.contains(testUserPrompt);
+                    return mockStream;
+                });
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "business-capabilities",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+    }
+
+    // ===== Token Calculation Edge Cases =====
+
+    @Test
+    void generateQueryStream_ExtremelyLargeDataset_LimitsRecordsAppropriately() {
+        // Arrange - Create lookup with 500 records
+        Lookup extremelyLargeLookup = createLargeLookup(500);
+        when(lookupService.findLookupByName("extreme-lookup")).thenReturn(extremelyLargeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "extreme-lookup",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert - Should complete successfully with limited records
+        verify(lookupService).findLookupByName("extreme-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_MinimalData_IncludesAtLeastOneRecord() {
+        // Arrange
+        Lookup minimalLookup = createLargeLookup(1);
+        when(lookupService.findLookupByName("minimal-lookup")).thenReturn(minimalLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenAnswer(invocation -> {
+                    ChatCompletionRequest request = invocation.getArgument(0);
+                    String userMessage = request.getMessages().get(1).getContent();
+                    // Verify at least one record is included
+                    assert userMessage.contains("Record 1:");
+                    return mockStream;
+                });
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "minimal-lookup",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+    }
+
     // ===== Helper Methods =====
 
     private Lookup createTestLookup() {

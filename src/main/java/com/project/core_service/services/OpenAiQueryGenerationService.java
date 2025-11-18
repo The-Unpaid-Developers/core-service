@@ -221,7 +221,6 @@ public class OpenAiQueryGenerationService {
             openAiService.streamChatCompletion(chatCompletionRequest)
                     .doOnError(throwable -> {
                         log.error("Error during OpenAI streaming", throwable);
-                        emitter.completeWithError(throwable);
                     })
                     .blockingForEach(chunk -> {
                         String content = extractContentFromChunk(chunk);

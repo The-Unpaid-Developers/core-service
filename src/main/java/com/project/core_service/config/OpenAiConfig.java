@@ -16,6 +16,6 @@ public class OpenAiConfig {
 
     @Bean
     public OpenAiService openAiService() {
-        return new OpenAiService(apiKey, Duration.ofSeconds(180));
+        return new OpenAiService(apiKey, Duration.ofSeconds(90));
     }
 }
