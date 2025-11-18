@@ -60,6 +60,9 @@ class OpenAiQueryGenerationServiceTest {
         String testSchema = "id: Unique identifier\nsystemCode: System code\ndocumentState: Document state";
         ReflectionTestUtils.setField(openAiQueryGenerationService, "schemaContent", testSchema);
 
+        // Set up model name (externalized configuration)
+        ReflectionTestUtils.setField(openAiQueryGenerationService, "modelName", "gpt-5.1");
+
         // Set up test lookup data
         testLookup = createTestLookup();
         testLookupFieldsUsed = List.of("L1", "L2");
@@ -290,6 +293,7 @@ class OpenAiQueryGenerationServiceTest {
         when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
                 .thenAnswer(invocation -> {
                     ChatCompletionRequest request = invocation.getArgument(0);
+                    // Verify that the externalized model name is used
                     assertEquals("gpt-5.1", request.getModel());
                     return mockStream;
                 });
@@ -348,8 +352,10 @@ class OpenAiQueryGenerationServiceTest {
                     ChatCompletionRequest request = invocation.getArgument(0);
                     assertNotNull(request.getMessages());
                     assertEquals(2, request.getMessages().size());
-                    assertEquals(ChatMessageRole.SYSTEM.value(), request.getMessages().get(0).getRole());
-                    assertEquals(ChatMessageRole.USER.value(), request.getMessages().get(1).getRole());
+                    assertEquals(ChatMessageRole.SYSTEM.value(),
+                            request.getMessages().get(0).getRole());
+                    assertEquals(ChatMessageRole.USER.value(),
+                            request.getMessages().get(1).getRole());
                     return mockStream;
                 });
 
@@ -435,6 +441,35 @@ class OpenAiQueryGenerationServiceTest {
         verify(emitter).completeWithError(any(IllegalArgumentException.class));
     }
 
+    @Test
+    void generateQueryStream_InconsistentSchemaAcrossRecords_HandlesGracefully() {
+        // Arrange - Create lookup with inconsistent schema
+        Lookup inconsistentLookup = createLookupWithInconsistentSchema();
+        when(lookupService.findLookupByName("inconsistent-lookup")).thenReturn(inconsistentLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act - Request fields that exist in first record but may be missing in others
+        assertDoesNotThrow(() -> {
+            openAiQueryGenerationService.generateQueryStream(
+                    testUserPrompt,
+                    "inconsistent-lookup",
+                    List.of("L1", "L2", "L3"),
+                    emitter);
+        });
+
+        // Assert - Should complete successfully without errors
+        verify(lookupService).findLookupByName("inconsistent-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
     // ===== Helper Methods =====
 
     private Lookup createTestLookup() {
@@ -509,13 +544,57 @@ class OpenAiQueryGenerationServiceTest {
                 .build();
     }
 
+    private Lookup createLookupWithInconsistentSchema() {
+        Map<String, String> fieldDescriptions = new HashMap<>();
+        fieldDescriptions.put("L1", "Level 1 capability");
+        fieldDescriptions.put("L2", "Level 2 capability");
+        fieldDescriptions.put("L3", "Level 3 capability");
+
+        List<Map<String, String>> data = new ArrayList<>();
+
+        // Record 1: Has all fields (L1, L2, L3)
+        Map<String, String> record1 = new HashMap<>();
+        record1.put("L1", "Finance");
+        record1.put("L2", "Payments");
+        record1.put("L3", "Digital Payments");
+        data.add(record1);
+
+        // Record 2: Missing L2 field (inconsistent schema)
+        Map<String, String> record2 = new HashMap<>();
+        record2.put("L1", "Risk");
+        record2.put("L3", "Risk Management");
+        // L2 is intentionally missing
+        data.add(record2);
+
+        // Record 3: Missing L3 field (inconsistent schema)
+        Map<String, String> record3 = new HashMap<>();
+        record3.put("L1", "Operations");
+        record3.put("L2", "Back Office");
+        // L3 is intentionally missing
+        data.add(record3);
+
+        // Record 4: Has all fields again
+        Map<String, String> record4 = new HashMap<>();
+        record4.put("L1", "Technology");
+        record4.put("L2", "Infrastructure");
+        record4.put("L3", "Cloud Services");
+        data.add(record4);
+
+        return Lookup.builder()
+                .id("inconsistent-lookup")
+                .lookupName("inconsistent-lookup")
+                .description("Lookup with inconsistent schema across records")
+                .data(data)
+                .fieldDescriptions(fieldDescriptions)
+                .uploadedAt(new Date())
+                .recordCount(4)
+                .build();
+    }
+
     private ChatCompletionChunk createMockChunk(String content) {
         ChatCompletionChunk chunk = mock(ChatCompletionChunk.class);
         ChatMessage message = new ChatMessage();
         message.setContent(content);
-
-        // Create a mock for the inner Choice class
-        Object choice = mock(Object.class);
 
         // For the test, we'll just return a simple structure
         // In practice, the actual OpenAI library structure will work

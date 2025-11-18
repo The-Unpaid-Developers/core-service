@@ -4,6 +4,7 @@ import com.project.core_service.dto.GenerateQueryRequestDTO;
 import com.project.core_service.services.OpenAiQueryGenerationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -11,6 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import jakarta.validation.Valid;
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
 @RequestMapping("/api/v1/ai")
@@ -19,10 +21,13 @@ import java.io.IOException;
 public class AiController {
 
     private final OpenAiQueryGenerationService openAiQueryGenerationService;
+    private final Long timeoutMs;
 
     @Autowired
-    public AiController(OpenAiQueryGenerationService openAiQueryGenerationService) {
+    public AiController(OpenAiQueryGenerationService openAiQueryGenerationService,
+            @Value("${openai.timeout.ms}") Long timeoutMs) {
         this.openAiQueryGenerationService = openAiQueryGenerationService;
+        this.timeoutMs = timeoutMs;
     }
 
     /**
@@ -36,8 +41,8 @@ public class AiController {
     public SseEmitter generateQuery(@Valid @RequestBody GenerateQueryRequestDTO request) {
         log.info("Received query generation request for lookup: {}", request.getLookupName());
 
-        // Create SSE emitter with 5 minute timeout
-        SseEmitter emitter = new SseEmitter(300000L);
+        // Create SSE emitter with configured timeout
+        SseEmitter emitter = new SseEmitter(timeoutMs);
 
         // Handle completion and timeout
         emitter.onCompletion(() -> log.info("Query generation stream completed"));
@@ -47,8 +52,8 @@ public class AiController {
         });
         emitter.onError(e -> log.error("Query generation stream error", e));
 
-        // Generate query asynchronously
-        new Thread(() -> {
+        // Generate query asynchronously using CompletableFuture with ForkJoinPool
+        CompletableFuture.runAsync(() -> {
             try {
                 openAiQueryGenerationService.generateQueryStream(
                         request.getUserPrompt(),
@@ -56,7 +61,7 @@ public class AiController {
                         request.getLookupFieldsUsed(),
                         emitter);
             } catch (Exception e) {
-                log.error("Error in query generation thread", e);
+                log.error("Error in query generation task", e);
                 try {
                     emitter.send(SseEmitter.event()
                             .name("error")
@@ -66,7 +71,7 @@ public class AiController {
                 }
                 emitter.completeWithError(e);
             }
-        }).start();
+        });
 
         return emitter;
     }

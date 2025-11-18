@@ -8,6 +8,7 @@ import com.theokanning.openai.service.OpenAiService;
 import com.project.core_service.models.lookup.Lookup;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
@@ -28,21 +29,29 @@ public class OpenAiQueryGenerationService {
 
     private final OpenAiService openAiService;
     private final LookupService lookupService;
+    private final String modelName;
     private String schemaContent;
 
     @Autowired
-    public OpenAiQueryGenerationService(OpenAiService openAiService, LookupService lookupService) {
+    public OpenAiQueryGenerationService(OpenAiService openAiService,
+            LookupService lookupService,
+            @Value("${openai.model.name}") String modelName) {
         this.openAiService = openAiService;
         this.lookupService = lookupService;
+        this.modelName = modelName;
         this.schemaContent = loadSchemaFromResources();
     }
 
     /**
-     * Load the schema.txt file from resources at service initialization
+     * Load the schema.txt file from resources at service initialization.
+     * Note: try-with-resources ensures the BufferedReader (and underlying
+     * InputStream) is properly closed.
      */
     private String loadSchemaFromResources() {
         try {
             ClassPathResource resource = new ClassPathResource("schema.txt");
+            // BufferedReader's close() will automatically close the underlying
+            // InputStreamReader and InputStream
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(resource.getInputStream(), StandardCharsets.UTF_8))) {
                 return reader.lines().collect(Collectors.joining("\n"));
@@ -76,7 +85,7 @@ public class OpenAiQueryGenerationService {
             messages.add(new ChatMessage(ChatMessageRole.USER.value(), userMessage));
 
             ChatCompletionRequest chatCompletionRequest = ChatCompletionRequest.builder()
-                    .model("gpt-5.1")
+                    .model(modelName)
                     .messages(messages)
                     .temperature(0.1) // Low temperature for more deterministic output
                     .stream(true)
@@ -171,8 +180,8 @@ public class OpenAiQueryGenerationService {
 
             // FILTERING HAPPENS HERE: Only include fields in lookupFieldsUsed
             for (String field : lookupFieldsUsed) {
-                // No need for getOrDefault - we've already validated fields exist
-                String value = record.get(field);
+                // Use getOrDefault to handle records with inconsistent schemas gracefully
+                String value = record.getOrDefault(field, "(not set)");
                 formatted.append("  ").append(field).append(": ").append(value).append("\n");
             }
             formatted.append("\n");
