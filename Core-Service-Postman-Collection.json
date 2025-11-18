@@ -691,6 +691,33 @@
       ]
     },
     {
+      "name": "AI",
+      "item": [
+        {
+          "name": "Generate MongoDB Query (Streaming)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userPrompt\": \"Give me all business capabilities where L1 consists of Customer Management\",\n  \"lookupName\": \"business-capabilities\",\n  \"lookupFieldsUsed\": [\"L1\", \"L2\"]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/ai/generate-query",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "ai", "generate-query"]
+            },
+            "description": "Generates a MongoDB aggregation query using OpenAI based on natural language prompt. Returns a Server-Sent Events (SSE) stream of the generated query. Requires userPrompt (natural language query), lookupName (target lookup table), and lookupFieldsUsed (array of field names to use in the query)."
+          }
+        }
+      ]
+    },
+    {
       "name": "OpenAPI Documentation",
       "item": [
         {
