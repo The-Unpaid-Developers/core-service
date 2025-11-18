@@ -369,11 +369,12 @@ public class OpenAiQueryGenerationService {
                 1. Generate ONLY a valid JSON array representing the MongoDB aggregation pipeline
                 2. Do NOT include any explanations, comments, or additional text
                 3. The output must be valid JSON that can be directly parsed and executed
-                4. Use proper MongoDB aggregation operators like $match, $group, $project, $sort, $lookup, etc.
+                4. Use proper MongoDB aggregation operators like $match, $group, $project, $sort, $lookup, etc, and make sure it is read-only.
                 5. Consider the schema structure carefully - arrays are denoted with []
                 6. For nested fields, use dot notation (e.g., "solutionOverview.businessUnit")
                 7. For array fields, use appropriate operators like $unwind, $elemMatch, etc.
                 8. Ensure the pipeline is efficient and follows MongoDB best practices
+                9. All the lookups are stored in the same collection named 'lookups', so use $lookup from 'lookups' collection accordingly, then match '_id' to the lookup name and 'data' is the array of lookup data.
 
                 The output should start with '[' and end with ']'.
                 """;

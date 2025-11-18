@@ -497,8 +497,12 @@ public class SolutionReviewService {
             if (response.getMongoQuery() == null) {
                 return List.of();
             }
+
+            List<Document> results = queryService.executeMongoQuery(response.getMongoQuery());
+            System.out.println("Results from executed mongo query: " + results.toString());
+            System.out.println("Number of results: " + results.size());
             
-            return queryService.executeMongoQuery(response.getMongoQuery()).stream()
+            return results.stream()
                     .map(doc -> {
                         String id = doc.get("_id").toString();
                         return solutionReviewRepository.findById(id);

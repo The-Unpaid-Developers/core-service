@@ -270,9 +270,6 @@ public class QueryService {
             for (Document stage : pipelineStages) {
                 // if stage is $project and is empty, change it to {_id:1} to avoid errors and remove the current version
                 if (stage.containsKey("$project")) {
-                    Object projectObj = stage.get("$project");
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> projectMap = (Map<String, Object>) projectObj;
                     stage.remove("$project");
                     stage.put("$project", new Document("_id", 1));
                 }
