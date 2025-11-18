@@ -1,0 +1,98 @@
+id: Unique identifier for the solution review record.
+systemCode: Unique code associated with the record (e.g. sys-005).
+documentState: State of the document (e.g., DRAFT, SUBMITTED, APPROVED, ACTIVE, OUTDATED).
+createdAt: Creation timestamp.
+lastModifiedAt: Last modification timestamp.
+createdBy: Creator identifier.
+lastModifiedBy: Modifier identifier.
+solutionOverview.id: Unique identifier for the solution overview.
+solutionOverview.solutionDetails.solutionName: Name of the solution.
+solutionOverview.solutionDetails.projectName: Project name associated with the solution.
+solutionOverview.solutionDetails.solutionReviewCode: Unique identifier for solution review entry (e.g. AWG-2025-001)
+solutionOverview.solutionDetails.solutionArchitectName: Name of the solution architect.
+solutionOverview.solutionDetails.deliveryProjectManagerName: Name of the delivery project manager.
+solutionOverview.solutionDetails.itBusinessPartner: Name of the IT business partner.
+solutionOverview.reviewedBy: Reviewer information (nullable).
+solutionOverview.reviewType: Type of review (e.g., NEW_BUILD, ENHANCEMENT).
+solutionOverview.approvalStatus: Approval status (e.g. PENDING, APPROVED, APPROVED_WITH_CONDITIONS, REJECTED).
+solutionOverview.reviewStatus: Current review status (e.g. DRAFT, IN_REVIEW, COMPLETED).
+solutionOverview.conditions: Special conditions (nullable).
+solutionOverview.businessUnit: Business unit linked to the solution. All caps (e.g. PAYMENTS, RISK)
+solutionOverview.businessDriver: Key business driver (e.g., REGULATORY, COST, GROWTH).
+solutionOverview.valueOutcome: Value or outcome description.
+solutionOverview.applicationUsers[]: Array of users of the application.
+solutionOverview.concerns[].id: Unique identifier for the concern.
+solutionOverview.concerns[].type: Type of concern (e.g., RISK, ISSUE).
+solutionOverview.concerns[].description: Description of the concern.
+solutionOverview.concerns[].impact: Impact of the concern.
+solutionOverview.concerns[].disposition: Mitigation or handling plan.
+solutionOverview.concerns[].status: Current status of the concern.
+businessCapabilities[].id: Unique identifier, 24 hexadecimal value.
+businessCapabilities[].capability: Its business capabilities, such as billing, payments, finance
+businessCapabilities[].remarks: Additional notes (nullable).
+systemComponents[].id: Unique identifier. 
+systemComponents[].name: Name of the system component.
+systemComponents[].status: Status (e.g., EXISTING, NEW).
+systemComponents[].role: Role of the component (e.g., BACK_END, FRONT_END).
+systemComponents[].hostedOn: Hosting platform (e.g., CLOUD, ON_PREM).
+systemComponents[].hostingRegion: Region of hosting.
+systemComponents[].solutionType: Type of solution (e.g., BESPOKE, COTS).
+systemComponents[].languageFramework.language.name: Programming language name.
+systemComponents[].languageFramework.language.version: Programming language version.
+systemComponents[].languageFramework.framework.name: Framework name.
+systemComponents[].languageFramework.framework.version: Framework version.
+systemComponents[].isOwnedByUs: Boolean flag if owned internally.
+systemComponents[].isCICDUsed: Boolean flag if CI/CD is used.
+systemComponents[].customizationLevel: Customization level (e.g., MINOR, MAJOR).
+systemComponents[].upgradeStrategy: Upgrade approach.
+systemComponents[].upgradeFrequency: Frequency of upgrades.
+systemComponents[].isSubscription: Boolean flag for subscription model.
+systemComponents[].isInternetFacing: Boolean flag for internet exposure.
+systemComponents[].availabilityRequirement: Availability requirement (e.g., HIGH).
+systemComponents[].latencyRequirement: Latency requirement (ms).
+systemComponents[].throughputRequirement: Throughput requirement (requests/sec).
+systemComponents[].scalabilityMethod: Method for scaling (e.g., HORIZONTAL_AUTO).
+systemComponents[].backupSite: Backup site strategy.
+systemComponents[].securityDetails.authenticationMethod: Authentication method.
+systemComponents[].securityDetails.authorizationModel: Authorization model.
+systemComponents[].securityDetails.isAuditLoggingEnabled: Whether audit logging is enabled.
+systemComponents[].securityDetails.sensitiveDataElements[]: Sensitive data elements.
+systemComponents[].securityDetails.dataEncryptionAtRest: Data encryption at rest flag.
+systemComponents[].securityDetails.encryptionAlgorithmForDataAtRest: Algorithm for encryption at rest.
+systemComponents[].securityDetails.hasIpWhitelisting: Whether IP whitelisting is enabled.
+systemComponents[].securityDetails.ssl: SSL enabled flag.
+systemComponents[].securityDetails.payloadEncryptionAlgorithm: Payload encryption algorithm.
+systemComponents[].securityDetails.digitalCertificate: Digital certificate.
+systemComponents[].securityDetails.keyStore: Key store used.
+systemComponents[].securityDetails.vulnerabilityAssessmentFrequency: Vulnerability assessment frequency.
+systemComponents[].securityDetails.penetrationTestingFrequency: Penetration testing frequency.
+integrationFlows[].id: Unique identifier.
+integrationFlows[].componentName: Related component (nullable).
+integrationFlows[].counterpartSystemCode: External system code.
+integrationFlows[].counterpartSystemRole: Role (e.g., PRODUCER, CONSUMER).
+integrationFlows[].integrationMethod: Method of integration (e.g., API, MQ).
+integrationFlows[].frequency: Frequency of integration.
+integrationFlows[].purpose: Purpose of integration.
+dataAssets[].id: Unique identifier.
+dataAssets[].componentName: Related component (nullable).
+dataAssets[].dataDomain: Domain of data.
+dataAssets[].dataClassification: Classification of data (e.g., CONFIDENTIAL).
+dataAssets[].dataOwnedBy: Department the data is owned by (e.g. Finance, Risk)
+dataAssets[].dataEntities[]: Array of data entities.
+dataAssets[].masteredIn: Master source of truth.
+technologyComponents[].id: Unique identifier.
+technologyComponents[].productName: Name of the technology component (e.g., PostgreSQL).
+technologyComponents[].productVersion: Version of the technology component.
+technologyComponents[].usage: Usage type (e.g., INFRASTRUCTURE, TOOL).
+enterpriseTools[].id: Unique identifier.
+enterpriseTools[].tool.id: Tool identifier.
+enterpriseTools[].tool.name: Tool name.
+enterpriseTools[].tool.type: Tool type.
+enterpriseTools[].onboarded: Check if onboarded: True or False 
+enterpriseTools[].integrationDetails: Integration information.
+enterpriseTools[].issues: Issues noted.
+processCompliances[].id: Unique identifier.
+processCompliances[].standardGuideline: Standard or guideline referenced.
+processCompliances[].compliant: Boolean flag for compliance.
+processCompliances[].description: Description of compliance.
+
