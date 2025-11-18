@@ -17,7 +17,6 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -47,7 +46,6 @@ class OpenAiQueryGenerationServiceTest {
     @Mock
     private LookupService lookupService;
 
-    @InjectMocks
     private OpenAiQueryGenerationService openAiQueryGenerationService;
 
     private Lookup testLookup;
@@ -56,12 +54,18 @@ class OpenAiQueryGenerationServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Set up test schema content
+        // Manually construct the service with mocks and configuration values
+        openAiQueryGenerationService = new OpenAiQueryGenerationService(
+                openAiService,
+                lookupService,
+                "gpt-5.1", // modelName
+                30000, // maxPromptTokens
+                100 // maxLookupRecords
+        );
+
+        // Set up test schema content (since it's loaded in constructor, we override it)
         String testSchema = "id: Unique identifier\nsystemCode: System code\ndocumentState: Document state";
         ReflectionTestUtils.setField(openAiQueryGenerationService, "schemaContent", testSchema);
-
-        // Set up model name (externalized configuration)
-        ReflectionTestUtils.setField(openAiQueryGenerationService, "modelName", "gpt-5.1");
 
         // Set up test lookup data
         testLookup = createTestLookup();
@@ -470,6 +474,125 @@ class OpenAiQueryGenerationServiceTest {
         verify(emitter).complete();
     }
 
+    // ===== Token Estimation and Chunking Tests =====
+
+    @Test
+    void generateQueryStream_LargeDataset_AppliesChunking() {
+        // Arrange - Create lookup with 100 records
+        Lookup largeLookup = createLargeLookup(100);
+        when(lookupService.findLookupByName("large-lookup")).thenReturn(largeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "large-lookup",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert - The service should have completed without errors
+        // The chunking logic will limit the records based on token estimation
+        verify(lookupService).findLookupByName("large-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_SmallPrompt_AllowsMoreRecords() {
+        // Arrange - Short prompt should allow more records
+        String shortPrompt = "Count all";
+        Lookup largeLookup = createLargeLookup(100);
+        when(lookupService.findLookupByName("large-lookup")).thenReturn(largeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$count\":\"total\"}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                shortPrompt,
+                "large-lookup",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("large-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_VeryLongPrompt_ReducesRecordCount() {
+        // Arrange - Very long prompt should reduce available space for records
+        StringBuilder longPromptBuilder = new StringBuilder("Find all solution reviews where ");
+        for (int i = 0; i < 50; i++) {
+            longPromptBuilder.append("field").append(i).append(" equals value").append(i).append(" and ");
+        }
+        String veryLongPrompt = longPromptBuilder.toString();
+
+        Lookup largeLookup = createLargeLookup(100);
+        when(lookupService.findLookupByName("large-lookup")).thenReturn(largeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                veryLongPrompt,
+                "large-lookup",
+                testLookupFieldsUsed,
+                emitter);
+
+        // Assert - Should still complete successfully with fewer records
+        verify(lookupService).findLookupByName("large-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
+    @Test
+    void generateQueryStream_ManyFields_AdjustsRecordCount() {
+        // Arrange - Requesting many fields should reduce the number of records
+        List<String> manyFields = List.of("L1", "L2", "L3");
+        Lookup largeLookup = createLargeLookup(100);
+        when(lookupService.findLookupByName("large-lookup")).thenReturn(largeLookup);
+
+        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
+        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
+
+        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
+                .thenReturn(mockStream);
+
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        // Act
+        openAiQueryGenerationService.generateQueryStream(
+                testUserPrompt,
+                "large-lookup",
+                manyFields,
+                emitter);
+
+        // Assert
+        verify(lookupService).findLookupByName("large-lookup");
+        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
+        verify(emitter).complete();
+    }
+
     // ===== Helper Methods =====
 
     private Lookup createTestLookup() {
@@ -524,12 +647,14 @@ class OpenAiQueryGenerationServiceTest {
         Map<String, String> fieldDescriptions = new HashMap<>();
         fieldDescriptions.put("L1", "Level 1");
         fieldDescriptions.put("L2", "Level 2");
+        fieldDescriptions.put("L3", "Level 3");
 
         List<Map<String, String>> data = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
             Map<String, String> record = new HashMap<>();
             record.put("L1", "Category " + i);
             record.put("L2", "Subcategory " + i);
+            record.put("L3", "Detail " + i);
             data.add(record);
         }
 

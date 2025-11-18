@@ -30,15 +30,26 @@ public class OpenAiQueryGenerationService {
     private final OpenAiService openAiService;
     private final LookupService lookupService;
     private final String modelName;
+    private final int maxPromptTokens;
+    private final int maxLookupRecords;
     private String schemaContent;
+
+    // Rough estimation: 1 token ≈ 4 characters (OpenAI's approximation)
+    private static final int CHARS_PER_TOKEN = 4;
+    // Reserve tokens for system prompt, user prompt structure, and response
+    private static final int RESERVED_TOKENS = 1000;
 
     @Autowired
     public OpenAiQueryGenerationService(OpenAiService openAiService,
             LookupService lookupService,
-            @Value("${openai.model.name}") String modelName) {
+            @Value("${openai.model.name}") String modelName,
+            @Value("${openai.max.prompt.tokens}") int maxPromptTokens,
+            @Value("${openai.max.lookup.records}") int maxLookupRecords) {
         this.openAiService = openAiService;
         this.lookupService = lookupService;
         this.modelName = modelName;
+        this.maxPromptTokens = maxPromptTokens;
+        this.maxLookupRecords = maxLookupRecords;
         this.schemaContent = loadSchemaFromResources();
     }
 
@@ -63,6 +74,116 @@ public class OpenAiQueryGenerationService {
     }
 
     /**
+     * Estimates the number of tokens in a text string.
+     * Uses a rough approximation: 1 token ≈ 4 characters.
+     * This is based on OpenAI's guideline for English text.
+     * 
+     * @param text The text to estimate tokens for
+     * @return Estimated number of tokens
+     */
+    private int estimateTokens(String text) {
+        if (text == null || text.isEmpty()) {
+            return 0;
+        }
+        return (int) Math.ceil(text.length() / (double) CHARS_PER_TOKEN);
+    }
+
+    /**
+     * Calculates the available tokens for lookup data after accounting for:
+     * - System prompt
+     * - Schema content
+     * - User prompt structure
+     * - Reserved tokens for response
+     * 
+     * @param userPrompt The user's query prompt
+     * @return Available tokens for lookup data
+     */
+    private int calculateAvailableTokensForLookup(String userPrompt) {
+        int systemPromptTokens = estimateTokens(buildSystemPrompt());
+        int schemaTokens = estimateTokens(schemaContent);
+        int userPromptTokens = estimateTokens(userPrompt);
+        int baseStructureTokens = 200; // For formatting text like "=== User Query ===" etc.
+
+        int usedTokens = systemPromptTokens + schemaTokens + userPromptTokens +
+                baseStructureTokens + RESERVED_TOKENS;
+
+        int availableTokens = maxPromptTokens - usedTokens;
+
+        log.debug("Token allocation - System: {}, Schema: {}, UserPrompt: {}, Reserved: {}, Available for lookup: {}",
+                systemPromptTokens, schemaTokens, userPromptTokens, RESERVED_TOKENS, availableTokens);
+
+        return Math.max(0, availableTokens);
+    }
+
+    /**
+     * Dynamically determines how many lookup records to include based on:
+     * 1. Available token budget
+     * 2. Size of individual records
+     * 3. Number of fields being used
+     * 
+     * @param lookup           The lookup data
+     * @param lookupFieldsUsed Fields to include
+     * @param availableTokens  Available tokens for lookup data
+     * @return Number of records to include
+     */
+    private int calculateOptimalRecordCount(Lookup lookup, List<String> lookupFieldsUsed,
+            int availableTokens) {
+        List<Map<String, String>> data = lookup.getData();
+        if (data == null || data.isEmpty()) {
+            return 0;
+        }
+
+        // Estimate tokens for field descriptions
+        StringBuilder fieldDescSample = new StringBuilder();
+        for (String field : lookupFieldsUsed) {
+            String desc = lookup.getFieldDescriptions().getOrDefault(field, "No description available");
+            fieldDescSample.append("- ").append(field).append(": ").append(desc).append("\n");
+        }
+        int fieldDescTokens = estimateTokens(fieldDescSample.toString());
+
+        // Calculate tokens for overhead (headers, formatting)
+        int overheadTokens = estimateTokens("=== Lookup Data: " + lookup.getLookupName() +
+                " ===\n\nDescription: " + lookup.getDescription() +
+                "\n\nField Descriptions:\n") + 100;
+
+        // Remaining tokens for actual records
+        int tokensForRecords = availableTokens - fieldDescTokens - overheadTokens;
+        if (tokensForRecords <= 0) {
+            log.warn("Not enough tokens for lookup records. Defaulting to 1 record.");
+            return 1;
+        }
+
+        // Estimate average token size per record by sampling first record
+        StringBuilder sampleRecord = new StringBuilder("Record 1:\n");
+        Map<String, String> firstRecord = data.get(0);
+        for (String field : lookupFieldsUsed) {
+            String value = firstRecord.getOrDefault(field, "(not set)");
+            sampleRecord.append("  ").append(field).append(": ").append(value).append("\n");
+        }
+        int tokensPerRecord = estimateTokens(sampleRecord.toString());
+
+        if (tokensPerRecord <= 0) {
+            tokensPerRecord = 50; // Fallback minimum
+        }
+
+        // Calculate max records that fit in token budget
+        int calculatedMaxRecords = tokensForRecords / tokensPerRecord;
+
+        // Apply constraints
+        int finalRecordCount = Math.min(
+                Math.min(calculatedMaxRecords, maxLookupRecords), // Don't exceed config limit
+                data.size() // Don't exceed actual data size
+        );
+
+        log.info("Lookup chunking - Total records: {}, Fields: {}, Available tokens: {}, " +
+                "Tokens per record: {}, Including {} records",
+                data.size(), lookupFieldsUsed.size(), availableTokens,
+                tokensPerRecord, finalRecordCount);
+
+        return Math.max(1, finalRecordCount); // Always include at least 1 record
+    }
+
+    /**
      * Generate MongoDB aggregation query using OpenAI with streaming
      * 
      * @param userPrompt       The user's natural language query
@@ -75,7 +196,11 @@ public class OpenAiQueryGenerationService {
         try {
             Lookup lookup = lookupService.findLookupByName(lookupName);
 
-            String formattedLookupData = filterAndFormatLookupData(lookup, lookupFieldsUsed);
+            // Calculate available tokens and determine optimal record count
+            int availableTokens = calculateAvailableTokensForLookup(userPrompt);
+            int optimalRecordCount = calculateOptimalRecordCount(lookup, lookupFieldsUsed, availableTokens);
+
+            String formattedLookupData = filterAndFormatLookupData(lookup, lookupFieldsUsed, optimalRecordCount);
 
             String systemPrompt = buildSystemPrompt();
             String userMessage = buildUserMessage(userPrompt, formattedLookupData);
@@ -129,7 +254,7 @@ public class OpenAiQueryGenerationService {
         return "";
     }
 
-    private String filterAndFormatLookupData(Lookup lookup, List<String> lookupFieldsUsed) {
+    private String filterAndFormatLookupData(Lookup lookup, List<String> lookupFieldsUsed, int maxRecords) {
         // Validate that all requested fields exist in the lookup data
         validateLookupFields(lookup, lookupFieldsUsed);
 
@@ -141,7 +266,8 @@ public class OpenAiQueryGenerationService {
         appendFieldDescriptions(formatted, lookup.getFieldDescriptions(), lookupFieldsUsed);
 
         // Add data records with ONLY the requested fields (filtering #2)
-        appendFilteredDataRecords(formatted, lookup.getData(), lookupFieldsUsed);
+        // Now uses dynamic maxRecords based on token estimation
+        appendFilteredDataRecords(formatted, lookup.getData(), lookupFieldsUsed, maxRecords);
 
         return formatted.toString();
     }
@@ -165,12 +291,19 @@ public class OpenAiQueryGenerationService {
      * This is the second filtering step - we only send the fields specified in
      * lookupFieldsUsed.
      * This significantly reduces token usage by excluding unwanted fields.
+     * The number of records is dynamically determined based on token estimation.
      * 
      * Example: If lookup has 10 fields but user only wants 2, we save ~80% of
      * tokens.
+     * 
+     * @param formatted        StringBuilder to append to
+     * @param data             Lookup data records
+     * @param lookupFieldsUsed Fields to include
+     * @param maxRecords       Maximum number of records to include (dynamically
+     *                         calculated)
      */
     private void appendFilteredDataRecords(StringBuilder formatted, List<Map<String, String>> data,
-            List<String> lookupFieldsUsed) {
+            List<String> lookupFieldsUsed, int maxRecords) {
         formatted.append("Data Records (showing only fields: ").append(String.join(", ", lookupFieldsUsed))
                 .append("):\n");
 
@@ -186,9 +319,11 @@ public class OpenAiQueryGenerationService {
             }
             formatted.append("\n");
 
-            // Limit to first 50 records to avoid token limits
-            if (count >= 50) {
-                formatted.append("... (showing first 50 records out of ").append(data.size()).append(" total)\n");
+            // Limit to dynamically calculated maxRecords to avoid token limits
+            if (count >= maxRecords) {
+                formatted.append("... (showing first ").append(maxRecords)
+                        .append(" records out of ").append(data.size())
+                        .append(" total to stay within token limits)\n");
                 break;
             }
         }
