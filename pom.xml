@@ -114,6 +114,12 @@
 		<groupId>org.apache.httpcomponents.client5</groupId>
 		<artifactId>httpclient5</artifactId>
 	</dependency>
+	<!-- OpenAI API Client -->
+	<dependency>
+		<groupId>com.theokanning.openai-gpt3-java</groupId>
+		<artifactId>service</artifactId>
+		<version>0.18.2</version>
+	</dependency>
 	</dependencies>
 
 	<build>
