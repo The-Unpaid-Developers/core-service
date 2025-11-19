@@ -260,7 +260,7 @@ public class QueryService {
             // Convert List<Map<String, Object>> to List<Document>
             List<Document> pipelineStages = new ArrayList<>();
             for (Map<String, Object> stage : mongoQuery) {
-                pipelineStages.add(new Document(stage));
+                pipelineStages.add(convertToDocument(stage));
             }
             System.out.println("Parsed pipeline stages: " + pipelineStages.toString());
 
@@ -272,6 +272,21 @@ public class QueryService {
                 if (stage.containsKey("$project")) {
                     stage.remove("$project");
                     stage.put("$project", new Document("_id", 1));
+                }
+                if (stage.containsKey("$match")) {
+                    /*
+                     * Convert simple string matches to case-insensitive regex contains
+                     * Example: {"$match": { "createdBy": "robert" }}
+                     * Becomes: {"$match": { "createdBy": {"$regex": "robert", "$options": "i"} }}
+                     *
+                     * Preserves complex operators like $or, $and, $not, $size, $elemMatch, etc.
+                     */
+                    Object matchExpr = stage.get("$match");
+                    if (matchExpr instanceof Document) {
+                        Document matchDoc = (Document) matchExpr;
+                        Document processedMatch = processMatchDocument(matchDoc);
+                        stage.put("$match", processedMatch);
+                    }
                 }
                 operations.add(context -> stage);
             }
@@ -344,5 +359,178 @@ public class QueryService {
                         "Query contains forbidden operation: " + forbidden + ". Only read operations are allowed.");
             }
         }
+    }
+
+    /**
+     * Recursively converts a Map to a Document, ensuring all nested Maps are also converted.
+     *
+     * @param map the map to convert
+     * @return a Document with all nested Maps converted to Documents
+     */
+    private Document convertToDocument(Map<String, Object> map) {
+        Document document = new Document();
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            document.put(entry.getKey(), convertValue(entry.getValue()));
+        }
+        return document;
+    }
+
+    /**
+     * Recursively converts values, handling Maps and Lists.
+     *
+     * @param value the value to convert
+     * @return the converted value (Document for Map, List for List, or original value)
+     */
+    @SuppressWarnings("unchecked")
+    private Object convertValue(Object value) {
+        if (value instanceof Map) {
+            return convertToDocument((Map<String, Object>) value);
+        } else if (value instanceof List) {
+            List<Object> list = (List<Object>) value;
+            List<Object> convertedList = new ArrayList<>();
+            for (Object item : list) {
+                convertedList.add(convertValue(item));
+            }
+            return convertedList;
+        }
+        return value;
+    }
+
+    /**
+     * Processes a $match document to convert simple string matches to case-insensitive regex.
+     * Preserves MongoDB operators and complex queries.
+     *
+     * @param matchDoc the match document to process
+     * @return processed match document with regex patterns for string matches
+     */
+    private Document processMatchDocument(Document matchDoc) {
+        Document result = new Document();
+
+        for (Map.Entry<String, Object> entry : matchDoc.entrySet()) {
+            String key = entry.getKey();
+            Object value = entry.getValue();
+
+            // Process based on the key type
+            if (key.startsWith("$")) {
+                // This is a MongoDB operator ($or, $and, $nor, $not, etc.)
+                result.put(key, processOperatorValue(key, value));
+            } else {
+                // This is a field name
+                result.put(key, processFieldValue(value));
+            }
+        }
+
+        return result;
+    }
+
+    /**
+     * Processes MongoDB operator values (e.g., $or, $and, $not).
+     *
+     * @param operator the operator name
+     * @param value the operator value
+     * @return processed operator value
+     */
+    @SuppressWarnings("unchecked")
+    private Object processOperatorValue(String operator, Object value) {
+        switch (operator) {
+            case "$or":
+            case "$and":
+            case "$nor":
+                // These operators contain arrays of conditions
+                if (value instanceof List) {
+                    List<Object> conditions = (List<Object>) value;
+                    List<Object> processedConditions = new ArrayList<>();
+                    for (Object condition : conditions) {
+                        if (condition instanceof Document) {
+                            processedConditions.add(processMatchDocument((Document) condition));
+                        } else {
+                            processedConditions.add(condition);
+                        }
+                    }
+                    return processedConditions;
+                }
+                return value;
+
+            case "$not":
+                // $not contains a single condition
+                if (value instanceof Document) {
+                    return processFieldValue(value);
+                }
+                return value;
+
+            default:
+                // For other operators ($size, $exists, $type, etc.), return as is
+                return value;
+        }
+    }
+
+    /**
+     * Processes a field value in a match query.
+     * Converts simple strings to regex, handles nested operators.
+     *
+     * @param value the field value
+     * @return processed value
+     */
+    @SuppressWarnings("unchecked")
+    private Object processFieldValue(Object value) {
+        if (value instanceof String) {
+            // Simple string match - convert to case-insensitive regex (contains)
+            String stringValue = (String) value;
+            return new Document("$regex", stringValue)
+                    .append("$options", "i");
+        } else if (value instanceof Document) {
+            Document docValue = (Document) value;
+
+            // Check if this is already an operator document
+            boolean hasOperator = false;
+            for (String key : docValue.keySet()) {
+                if (key.startsWith("$")) {
+                    hasOperator = true;
+                    break;
+                }
+            }
+
+            if (hasOperator) {
+                // This is an operator document (e.g., {$gt: 5}, {$elemMatch: {...}})
+                Document result = new Document();
+                for (Map.Entry<String, Object> entry : docValue.entrySet()) {
+                    String key = entry.getKey();
+                    Object val = entry.getValue();
+
+                    if (key.equals("$elemMatch") || key.equals("$not")) {
+                        // Recursively process $elemMatch and $not
+                        if (val instanceof Document) {
+                            result.put(key, processMatchDocument((Document) val));
+                        } else {
+                            result.put(key, val);
+                        }
+                    } else {
+                        // Keep other operators as is ($size, $gt, $lt, $in, $nin, etc.)
+                        result.put(key, val);
+                    }
+                }
+                return result;
+            } else {
+                // This is a nested document without operators - recursively process
+                return processMatchDocument(docValue);
+            }
+        } else if (value instanceof List) {
+            // Process list items
+            List<Object> listValue = (List<Object>) value;
+            List<Object> result = new ArrayList<>();
+            for (Object item : listValue) {
+                if (item instanceof String) {
+                    // Convert string items in arrays to regex
+                    result.add(new Document("$regex", (String) item)
+                            .append("$options", "i"));
+                } else {
+                    result.add(item);
+                }
+            }
+            return result;
+        }
+
+        // For numbers, booleans, nulls, etc., return as is
+        return value;
     }
 }
