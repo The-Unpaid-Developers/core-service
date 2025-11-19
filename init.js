@@ -1,6 +1,6 @@
 use('solutions')
 
-db.createCollection("solutions", {
+db.createCollection("solutionReviews", {
   collation: { locale: "en", strength: 2 }
 })
 
