@@ -489,7 +489,7 @@ public class SolutionReviewService {
 
         // Call chatbot service to translate the query and execute it
         try {
-            ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, true);
+            ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, false);
             System.out.println("Chatbot service returned response: " + response.toString());
             System.out.println("Mongo query: " + response.getMongoQuery());
 
