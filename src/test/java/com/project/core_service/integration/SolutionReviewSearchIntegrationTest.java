@@ -86,7 +86,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find active systems", true))
+            when(chatbotServiceClient.translate("find active systems", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -100,7 +100,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .andExpect(jsonPath("$[*].systemCode", hasItems(systemCode1, systemCode2)))
                     .andExpect(jsonPath("$[*].documentState", everyItem(is("ACTIVE"))));
 
-            verify(chatbotServiceClient).translate("find active systems", true);
+            verify(chatbotServiceClient).translate("find active systems", false);
         }
 
         @Test
@@ -126,7 +126,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find approved systems", true))
+            when(chatbotServiceClient.translate("find approved systems", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -152,7 +152,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(null)
                     .build();
 
-            when(chatbotServiceClient.translate("invalid query format", true))
+            when(chatbotServiceClient.translate("invalid query format", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -189,7 +189,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find system " + targetSystemCode, true))
+            when(chatbotServiceClient.translate("find system " + targetSystemCode, false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -225,7 +225,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find all", true))
+            when(chatbotServiceClient.translate("find all", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -251,7 +251,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .searchQuery("test query")
                     .build();
 
-            when(chatbotServiceClient.translate("test query", true))
+            when(chatbotServiceClient.translate("test query", false))
                     .thenThrow(new RuntimeException("Chatbot service unavailable"));
 
             // When & Then
@@ -289,7 +289,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find draft or active", true))
+            when(chatbotServiceClient.translate("find draft or active", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
@@ -325,7 +325,7 @@ class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
                     .mongoQuery(mongoQuery)
                     .build();
 
-            when(chatbotServiceClient.translate("find all", true))
+            when(chatbotServiceClient.translate("find all", false))
                     .thenReturn(chatbotResponse);
 
             // When & Then
