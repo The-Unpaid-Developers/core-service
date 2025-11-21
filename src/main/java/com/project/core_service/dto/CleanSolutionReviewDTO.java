@@ -1,5 +1,7 @@
 package com.project.core_service.dto;
 
+import java.time.LocalDateTime;
+
 import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.solutions_review.DocumentState;
 
@@ -16,4 +18,9 @@ public class CleanSolutionReviewDTO {
     private String systemCode;
     private DocumentState documentState;
     private SolutionOverview solutionOverview;
+
+    private LocalDateTime createdAt;
+    private LocalDateTime lastModifiedAt;
+    private String createdBy;
+    private String lastModifiedBy;
 }
