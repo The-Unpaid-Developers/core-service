@@ -1829,7 +1829,7 @@ class SolutionReviewServiceTest {
                 .documentState(DocumentState.ACTIVE)
                 .build();
 
-        when(chatbotServiceClient.translate("find active systems", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("find active systems", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2));
         when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
         when(solutionReviewRepository.findById("rev-2")).thenReturn(Optional.of(review2));
@@ -1841,7 +1841,7 @@ class SolutionReviewServiceTest {
         assertEquals(2, results.size());
         assertEquals("rev-1", results.get(0).getId());
         assertEquals("rev-2", results.get(1).getId());
-        verify(chatbotServiceClient).translate("find active systems", true);
+        verify(chatbotServiceClient).translate("find active systems", false);
         verify(queryService).executeMongoQuery(mongoQuery);
     }
 
@@ -1854,14 +1854,14 @@ class SolutionReviewServiceTest {
                 .mongoQuery(null)
                 .build();
 
-        when(chatbotServiceClient.translate("invalid query", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("invalid query", false)).thenReturn(chatbotResponse);
 
         // Act
         List<CleanSolutionReviewDTO> results = service.searchSolutionReviews(searchQueryDTO);
 
         // Assert
         assertTrue(results.isEmpty());
-        verify(chatbotServiceClient).translate("invalid query", true);
+        verify(chatbotServiceClient).translate("invalid query", false);
         verify(queryService, never()).executeMongoQuery(any());
     }
 
@@ -1878,7 +1878,7 @@ class SolutionReviewServiceTest {
                 .mongoQuery(mongoQuery)
                 .build();
 
-        when(chatbotServiceClient.translate("find nonexistent", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("find nonexistent", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of());
 
         // Act
@@ -1886,7 +1886,7 @@ class SolutionReviewServiceTest {
 
         // Assert
         assertTrue(results.isEmpty());
-        verify(chatbotServiceClient).translate("find nonexistent", true);
+        verify(chatbotServiceClient).translate("find nonexistent", false);
         verify(queryService).executeMongoQuery(mongoQuery);
     }
 
@@ -1914,7 +1914,7 @@ class SolutionReviewServiceTest {
                 .documentState(DocumentState.ACTIVE)
                 .build();
 
-        when(chatbotServiceClient.translate("find all", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("find all", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1, doc2, doc3));
         when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
         when(solutionReviewRepository.findById("rev-nonexistent")).thenReturn(Optional.empty());
@@ -1934,7 +1934,7 @@ class SolutionReviewServiceTest {
         // Arrange
         SearchQueryDTO searchQueryDTO = new SearchQueryDTO("test query");
 
-        when(chatbotServiceClient.translate("test query", true))
+        when(chatbotServiceClient.translate("test query", false))
                 .thenThrow(new RuntimeException("Chatbot service unavailable"));
 
         // Act & Assert
@@ -1942,7 +1942,7 @@ class SolutionReviewServiceTest {
                 () -> service.searchSolutionReviews(searchQueryDTO));
 
         assertTrue(exception.getMessage().contains("Failed to communicate with chatbot service"));
-        verify(chatbotServiceClient).translate("test query", true);
+        verify(chatbotServiceClient).translate("test query", false);
     }
 
     @Test
@@ -1960,7 +1960,7 @@ class SolutionReviewServiceTest {
 
         Document doc1 = new Document("_id", "rev-1");
 
-        when(chatbotServiceClient.translate("find specific", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("find specific", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
         when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
 
@@ -1988,7 +1988,7 @@ class SolutionReviewServiceTest {
 
         Document doc1 = new Document("_id", "rev-1");
 
-        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("test", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery)).thenReturn(List.of(doc1));
         when(solutionReviewRepository.findById("rev-1")).thenReturn(Optional.of(review));
 
@@ -2017,7 +2017,7 @@ class SolutionReviewServiceTest {
                 .mongoQuery(mongoQuery)
                 .build();
 
-        when(chatbotServiceClient.translate("test", true)).thenReturn(chatbotResponse);
+        when(chatbotServiceClient.translate("test", false)).thenReturn(chatbotResponse);
         when(queryService.executeMongoQuery(mongoQuery))
                 .thenThrow(new IllegalArgumentException("Invalid pipeline"));
 

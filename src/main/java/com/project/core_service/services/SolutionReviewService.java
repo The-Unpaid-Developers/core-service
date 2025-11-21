@@ -64,6 +64,10 @@ public class SolutionReviewService {
         dto.setSystemCode(review.getSystemCode());
         dto.setDocumentState(review.getDocumentState());
         dto.setSolutionOverview(review.getSolutionOverview());
+        dto.setCreatedAt(review.getCreatedAt());
+        dto.setLastModifiedAt(review.getLastModifiedAt());
+        dto.setCreatedBy(review.getCreatedBy());
+        dto.setLastModifiedBy(review.getLastModifiedBy());
         return dto;
     }
 
