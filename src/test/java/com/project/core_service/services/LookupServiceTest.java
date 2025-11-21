@@ -10,7 +10,6 @@ import com.project.core_service.dto.LookupDTO;
 import com.project.core_service.dto.LookupFieldDescriptionsDTO;
 import com.project.core_service.dto.LookupWODataDTO;
 import com.project.core_service.dto.UpdateLookupDTO;
-import com.project.core_service.exceptions.CsvProcessingException;
 import com.project.core_service.exceptions.InvalidFileException;
 import com.project.core_service.exceptions.NotFoundException;
 import org.bson.Document;
@@ -158,8 +157,8 @@ class LookupServiceTest {
         // Assert
         assertNotNull(result);
         assertEquals(2, result.size());
-        assertEquals("lookup1", result.get(0).getId());
-        assertEquals("Lookup 1", result.get(0).getLookupName());
+        assertEquals("lookup1", result.getFirst().getId());
+        assertEquals("Lookup 1", result.getFirst().getLookupName());
     }
 
     // ===== Get Lookup By Name Tests =====

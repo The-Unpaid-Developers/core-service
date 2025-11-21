@@ -121,6 +121,24 @@ public class RestExceptionHandler extends ResponseEntityExceptionHandler {
         return new ResponseEntity<>(body, new HttpHeaders(), status);
     }
 
+
+    /**
+     * Handles uncaught {@link SSEException}s.
+     *
+     * @param ex the runtime exception
+     * @return a {@link ResponseEntity} with error details
+     */
+    @ExceptionHandler({ SSEException.class })
+    public ResponseEntity<Object> handleSSEException(NotFoundException ex) {
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put(TIMESTAMP, new Date());
+        body.put(STATUS, status);
+        String message = ex.getMessage();
+        body.put(MESSAGE, message != null ? message : "Error sending SSE event");
+        return new ResponseEntity<>(body, new HttpHeaders(), status);
+    }
+
     /**
      * Handles uncaught {@link IllegalStateTransitionException}s.
      *

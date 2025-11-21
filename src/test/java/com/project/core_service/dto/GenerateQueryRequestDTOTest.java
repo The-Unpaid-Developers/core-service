@@ -16,6 +16,8 @@ import jakarta.validation.ValidatorFactory;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 /**
  * Unit tests for {@link GenerateQueryRequestDTO}.
@@ -26,8 +28,9 @@ class GenerateQueryRequestDTOTest {
 
     @BeforeAll
     static void setUp() {
-        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
-        validator = factory.getValidator();
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            validator = factory.getValidator();
+        }
     }
 
     @Test
@@ -56,11 +59,12 @@ class GenerateQueryRequestDTOTest {
         assertTrue(violations.isEmpty());
     }
 
-    @Test
-    void validation_NullUserPrompt_HasViolation() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void validation_UserPrompt_HasViolation(String arg) {
         // Arrange
         GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
-                .userPrompt(null)
+                .userPrompt(arg)
                 .lookupName("business-capabilities")
                 .lookupFieldsUsed(Arrays.asList("L1", "L2"))
                 .build();
@@ -74,30 +78,13 @@ class GenerateQueryRequestDTOTest {
                 .anyMatch(v -> v.getPropertyPath().toString().equals("userPrompt")));
     }
 
-    @Test
-    void validation_EmptyUserPrompt_HasViolation() {
-        // Arrange
-        GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
-                .userPrompt("")
-                .lookupName("business-capabilities")
-                .lookupFieldsUsed(Arrays.asList("L1", "L2"))
-                .build();
-
-        // Act
-        Set<ConstraintViolation<GenerateQueryRequestDTO>> violations = validator.validate(dto);
-
-        // Assert
-        assertFalse(violations.isEmpty());
-        assertTrue(violations.stream()
-                .anyMatch(v -> v.getPropertyPath().toString().equals("userPrompt")));
-    }
-
-    @Test
-    void validation_NullLookupName_HasViolation() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void validation_NullLookupName_HasViolation(String arg) {
         // Arrange
         GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
                 .userPrompt("Test prompt")
-                .lookupName(null)
+                .lookupName(arg)
                 .lookupFieldsUsed(Arrays.asList("L1", "L2"))
                 .build();
 
@@ -110,49 +97,14 @@ class GenerateQueryRequestDTOTest {
                 .anyMatch(v -> v.getPropertyPath().toString().equals("lookupName")));
     }
 
-    @Test
-    void validation_EmptyLookupName_HasViolation() {
-        // Arrange
-        GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
-                .userPrompt("Test prompt")
-                .lookupName("")
-                .lookupFieldsUsed(Arrays.asList("L1", "L2"))
-                .build();
-
-        // Act
-        Set<ConstraintViolation<GenerateQueryRequestDTO>> violations = validator.validate(dto);
-
-        // Assert
-        assertFalse(violations.isEmpty());
-        assertTrue(violations.stream()
-                .anyMatch(v -> v.getPropertyPath().toString().equals("lookupName")));
-    }
-
-    @Test
-    void validation_NullLookupFields_HasViolation() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void validation_NullLookupFields_HasViolation(List<String> arg) {
         // Arrange
         GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
                 .userPrompt("Test prompt")
                 .lookupName("business-capabilities")
-                .lookupFieldsUsed(null)
-                .build();
-
-        // Act
-        Set<ConstraintViolation<GenerateQueryRequestDTO>> violations = validator.validate(dto);
-
-        // Assert
-        assertFalse(violations.isEmpty());
-        assertTrue(violations.stream()
-                .anyMatch(v -> v.getPropertyPath().toString().equals("lookupFieldsUsed")));
-    }
-
-    @Test
-    void validation_EmptyLookupFields_HasViolation() {
-        // Arrange
-        GenerateQueryRequestDTO dto = GenerateQueryRequestDTO.builder()
-                .userPrompt("Test prompt")
-                .lookupName("business-capabilities")
-                .lookupFieldsUsed(List.of())
+                .lookupFieldsUsed(arg)
                 .build();
 
         // Act
@@ -233,7 +185,7 @@ class GenerateQueryRequestDTOTest {
         // Assert
         assertNotNull(dto);
         assertEquals(1, dto.getLookupFieldsUsed().size());
-        assertEquals("L1", dto.getLookupFieldsUsed().get(0));
+        assertEquals("L1", dto.getLookupFieldsUsed().getFirst());
 
         // Validate
         Set<ConstraintViolation<GenerateQueryRequestDTO>> violations = validator.validate(dto);

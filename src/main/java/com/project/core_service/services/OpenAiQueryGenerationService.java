@@ -1,5 +1,6 @@
 package com.project.core_service.services;
 
+import com.project.core_service.exceptions.SSEException;
 import com.theokanning.openai.completion.chat.ChatCompletionChunk;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatMessage;
@@ -32,7 +33,22 @@ public class OpenAiQueryGenerationService {
     private final String modelName;
     private final int maxPromptTokens;
     private final int maxLookupRecords;
-    private String schemaContent;
+    private final String schemaContent;
+    private final String systemPrompt = """
+    You are an expert MongoDB query generator. Your task is to generate valid MongoDB aggregation pipelines for the 'solutionReviews' collection based on user requirements.
+
+    Important Guidelines:
+    1. Generate ONLY a valid JSON array representing the MongoDB aggregation pipeline
+    2. Do NOT include any explanations, comments, or additional text
+    3. The output must be valid JSON that can be directly parsed and executed
+    4. Use proper MongoDB aggregation operators like $match, $group, $project, $sort, $lookup, etc.
+    5. Consider the schema structure carefully - arrays are denoted with []
+    6. For nested fields, use dot notation (e.g., "solutionOverview.businessUnit")
+    7. For array fields, use appropriate operators like $unwind, $elemMatch, etc.
+    8. Ensure the pipeline is efficient and follows MongoDB best practices
+
+    The output should start with '[' and end with ']'.
+    """;
 
     // Rough estimation: 1 token ≈ 4 characters (OpenAI's approximation)
     private static final int CHARS_PER_TOKEN = 4;
@@ -99,7 +115,7 @@ public class OpenAiQueryGenerationService {
      * @return Available tokens for lookup data
      */
     private int calculateAvailableTokensForLookup(String userPrompt) {
-        int systemPromptTokens = estimateTokens(buildSystemPrompt());
+        int systemPromptTokens = estimateTokens(systemPrompt);
         int schemaTokens = estimateTokens(schemaContent);
         int userPromptTokens = estimateTokens(userPrompt);
         int baseStructureTokens = 200; // For formatting text like "=== User Query ===" etc.
@@ -129,7 +145,7 @@ public class OpenAiQueryGenerationService {
     private int calculateOptimalRecordCount(Lookup lookup, List<String> lookupFieldsUsed,
             int availableTokens) {
         List<Map<String, String>> data = lookup.getData();
-        if (data == null || data.isEmpty()) {
+        if (data.isEmpty()) {
             return 0;
         }
 
@@ -155,7 +171,7 @@ public class OpenAiQueryGenerationService {
 
         // Estimate average token size per record by sampling first record
         StringBuilder sampleRecord = new StringBuilder("Record 1:\n");
-        Map<String, String> firstRecord = data.get(0);
+        Map<String, String> firstRecord = data.getFirst();
         for (String field : lookupFieldsUsed) {
             String value = firstRecord.getOrDefault(field, "(not set)");
             sampleRecord.append("  ").append(field).append(": ").append(value).append("\n");
@@ -202,7 +218,6 @@ public class OpenAiQueryGenerationService {
 
             String formattedLookupData = filterAndFormatLookupData(lookup, lookupFieldsUsed, optimalRecordCount);
 
-            String systemPrompt = buildSystemPrompt();
             String userMessage = buildUserMessage(userPrompt, formattedLookupData);
 
             List<ChatMessage> messages = new ArrayList<>();
@@ -219,9 +234,7 @@ public class OpenAiQueryGenerationService {
             log.info("Sending request to OpenAI API for query generation");
 
             openAiService.streamChatCompletion(chatCompletionRequest)
-                    .doOnError(throwable -> {
-                        log.error("Error during OpenAI streaming", throwable);
-                    })
+                    .doOnError(throwable -> log.error("Error during OpenAI streaming", throwable))
                     .blockingForEach(chunk -> {
                         String content = extractContentFromChunk(chunk);
                         if (content != null && !content.isEmpty()) {
@@ -229,7 +242,7 @@ public class OpenAiQueryGenerationService {
                                 emitter.send(SseEmitter.event().data(content));
                             } catch (IOException e) {
                                 log.error("Error sending SSE event", e);
-                                throw new RuntimeException(e);
+                                throw new SSEException(e);
                             }
                         }
                     });
@@ -245,7 +258,7 @@ public class OpenAiQueryGenerationService {
 
     private String extractContentFromChunk(ChatCompletionChunk chunk) {
         if (chunk.getChoices() != null && !chunk.getChoices().isEmpty()) {
-            var choice = chunk.getChoices().get(0);
+            var choice = chunk.getChoices().getFirst();
             if (choice.getMessage() != null && choice.getMessage().getContent() != null) {
                 return choice.getMessage().getContent();
             }
@@ -291,10 +304,8 @@ public class OpenAiQueryGenerationService {
      * lookupFieldsUsed.
      * This significantly reduces token usage by excluding unwanted fields.
      * The number of records is dynamically determined based on token estimation.
-     * 
      * Example: If lookup has 10 fields but user only wants 2, we save ~80% of
      * tokens.
-     * 
      * @param formatted        StringBuilder to append to
      * @param data             Lookup data records
      * @param lookupFieldsUsed Fields to include
@@ -307,13 +318,13 @@ public class OpenAiQueryGenerationService {
                 .append("):\n");
 
         int count = 0;
-        for (Map<String, String> record : data) {
+        for (Map<String, String> rec : data) {
             formatted.append("Record ").append(++count).append(":\n");
 
             // FILTERING HAPPENS HERE: Only include fields in lookupFieldsUsed
             for (String field : lookupFieldsUsed) {
                 // Use getOrDefault to handle records with inconsistent schemas gracefully
-                String value = record.getOrDefault(field, "(not set)");
+                String value = rec.getOrDefault(field, "(not set)");
                 formatted.append("  ").append(field).append(": ").append(value).append("\n");
             }
             formatted.append("\n");
@@ -338,12 +349,12 @@ public class OpenAiQueryGenerationService {
      */
     private void validateLookupFields(Lookup lookup, List<String> lookupFieldsUsed) {
         List<Map<String, String>> data = lookup.getData();
-        if (data == null || data.isEmpty()) {
+        if (data.isEmpty()) {
             throw new IllegalArgumentException(
                     "Lookup '" + lookup.getLookupName() + "' contains no data records");
         }
 
-        Set<String> availableFields = data.get(0).keySet();
+        Set<String> availableFields = data.getFirst().keySet();
         List<String> invalidFields = new ArrayList<>();
 
         for (String requestedField : lookupFieldsUsed) {
@@ -359,24 +370,6 @@ public class OpenAiQueryGenerationService {
                             String.join(", ", invalidFields),
                             String.join(", ", availableFields)));
         }
-    }
-
-    private String buildSystemPrompt() {
-        return """
-                You are an expert MongoDB query generator. Your task is to generate valid MongoDB aggregation pipelines for the 'solutionReviews' collection based on user requirements.
-
-                Important Guidelines:
-                1. Generate ONLY a valid JSON array representing the MongoDB aggregation pipeline
-                2. Do NOT include any explanations, comments, or additional text
-                3. The output must be valid JSON that can be directly parsed and executed
-                4. Use proper MongoDB aggregation operators like $match, $group, $project, $sort, $lookup, etc.
-                5. Consider the schema structure carefully - arrays are denoted with []
-                6. For nested fields, use dot notation (e.g., "solutionOverview.businessUnit")
-                7. For array fields, use appropriate operators like $unwind, $elemMatch, etc.
-                8. Ensure the pipeline is efficient and follows MongoDB best practices
-
-                The output should start with '[' and end with ']'.
-                """;
     }
 
     private String buildUserMessage(String userPrompt, String formattedLookupData) {

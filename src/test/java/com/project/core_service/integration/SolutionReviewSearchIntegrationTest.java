@@ -15,7 +15,6 @@ import org.springframework.http.MediaType;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -43,9 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Epic("Solution Review Management")
 @Feature("Natural Language Search")
 class SolutionReviewSearchIntegrationTest extends BaseIntegrationTest {
-
-    @Autowired
-    private SolutionReviewRepository solutionReviewRepository;
 
     @MockitoBean
     private ChatbotServiceClient chatbotServiceClient;

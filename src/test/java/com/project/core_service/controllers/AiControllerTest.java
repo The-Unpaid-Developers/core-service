@@ -1,5 +1,6 @@
 package com.project.core_service.controllers;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,7 +11,9 @@ import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +28,6 @@ import com.project.core_service.services.OpenAiQueryGenerationService;
 
 /**
  * Unit tests for {@link AiController}.
- * 
  * Note: Validation tests for @NotNull and @NotEmpty constraints are handled
  * by Spring's Bean Validation framework. These constraints are validated before
  * the controller method is invoked, returning 400 Bad Request automatically.
@@ -160,7 +162,7 @@ class AiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void generateQuery_ServiceThrowsException_HandlesErrorGracefully() throws Exception {
+    void generateQuery_ServiceThrowsException_HandlesErrorGracefully() {
         // Arrange
         lenient().doThrow(new NotFoundException("Lookup not found"))
                 .when(openAiQueryGenerationService).generateQueryStream(
@@ -180,7 +182,7 @@ class AiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void generateQuery_ServiceThrowsRuntimeException_HandlesErrorGracefully() throws Exception {
+    void generateQuery_ServiceThrowsRuntimeException_HandlesErrorGracefully() {
         // Arrange
         lenient().doThrow(new RuntimeException("OpenAI API Error"))
                 .when(openAiQueryGenerationService).generateQueryStream(
@@ -198,7 +200,7 @@ class AiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void generateQuery_ServiceThrowsIllegalArgumentException_HandlesErrorGracefully() throws Exception {
+    void generateQuery_ServiceThrowsIllegalArgumentException_HandlesErrorGracefully() {
         // Arrange
         lenient().doThrow(new IllegalArgumentException("Invalid field"))
                 .when(openAiQueryGenerationService).generateQueryStream(
@@ -244,11 +246,14 @@ class AiControllerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void generateQuery_ExecutesAsynchronously_VerifyServiceCalled() throws Exception {
+    void generateQuery_ExecutesAsynchronously_VerifyServiceCalled() {
         // Arrange
         doAnswer(invocation -> {
             // Simulate async execution
-            Thread.sleep(50);
+            await()
+                    .timeout(51, TimeUnit.MILLISECONDS)
+                    .pollDelay(50, TimeUnit.MILLISECONDS)
+                    .untilAsserted(() -> Assertions.assertTrue(true));
             return null;
         }).when(openAiQueryGenerationService).generateQueryStream(
                 any(String.class),
@@ -262,7 +267,10 @@ class AiControllerTest {
         // Assert
         assertNotNull(result);
         // Give async task time to execute
-        Thread.sleep(100);
+        await()
+                .timeout(101, TimeUnit.MILLISECONDS)
+                .pollDelay(100, TimeUnit.MILLISECONDS)
+                .untilAsserted(() -> Assertions.assertTrue(true));
         verify(openAiQueryGenerationService).generateQueryStream(
                 eq(validRequest.getUserPrompt()),
                 eq(validRequest.getLookupName()),
@@ -271,7 +279,7 @@ class AiControllerTest {
     }
 
     @Test
-    void generateQuery_MultipleRequests_HandlesIndependently() throws Exception {
+    void generateQuery_MultipleRequests_HandlesIndependently() {
         // Arrange
         GenerateQueryRequestDTO request1 = GenerateQueryRequestDTO.builder()
                 .userPrompt("Query 1")
@@ -320,7 +328,7 @@ class AiControllerTest {
         GenerateQueryRequestDTO shortPromptRequest = GenerateQueryRequestDTO.builder()
                 .userPrompt("Show all")
                 .lookupName("business-capabilities")
-                .lookupFieldsUsed(Arrays.asList("L1"))
+                .lookupFieldsUsed(List.of("L1"))
                 .build();
 
         // Act
@@ -333,13 +341,9 @@ class AiControllerTest {
     @Test
     void generateQuery_MaxLengthPrompt_Success() {
         // Arrange - Create a very long prompt (simulating max length)
-        StringBuilder longPrompt = new StringBuilder();
-        for (int i = 0; i < 1000; i++) {
-            longPrompt.append("Find all solution reviews with complex criteria. ");
-        }
 
         GenerateQueryRequestDTO maxLengthRequest = GenerateQueryRequestDTO.builder()
-                .userPrompt(longPrompt.toString())
+                .userPrompt("Find all solution reviews with complex criteria. ".repeat(1000))
                 .lookupName("business-capabilities")
                 .lookupFieldsUsed(Arrays.asList("L1", "L2"))
                 .build();

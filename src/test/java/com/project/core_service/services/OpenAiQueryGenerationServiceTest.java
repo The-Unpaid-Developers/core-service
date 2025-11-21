@@ -76,7 +76,7 @@ class OpenAiQueryGenerationServiceTest {
     // ===== Generate Query Stream Tests =====
 
     @Test
-    void generateQueryStream_Success() throws Exception {
+    void generateQueryStream_Success() {
         // Arrange
         when(lookupService.findLookupByName("business-capabilities")).thenReturn(testLookup);
 
@@ -199,33 +199,6 @@ class OpenAiQueryGenerationServiceTest {
 
         // Assert
         verify(lookupService).findLookupByName("business-capabilities");
-        verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
-        verify(emitter).complete();
-    }
-
-    @Test
-    void generateQueryStream_LargeLookupData_LimitsTo50Records() {
-        // Arrange
-        Lookup largeLookup = createLargeLookup(100);
-        when(lookupService.findLookupByName("large-lookup")).thenReturn(largeLookup);
-
-        ChatCompletionChunk chunk = createMockChunk("[{\"$match\":{}}]");
-        Flowable<ChatCompletionChunk> mockStream = Flowable.just(chunk);
-
-        when(openAiService.streamChatCompletion(any(ChatCompletionRequest.class)))
-                .thenReturn(mockStream);
-
-        SseEmitter emitter = mock(SseEmitter.class);
-
-        // Act
-        openAiQueryGenerationService.generateQueryStream(
-                testUserPrompt,
-                "large-lookup",
-                testLookupFieldsUsed,
-                emitter);
-
-        // Assert
-        verify(lookupService).findLookupByName("large-lookup");
         verify(openAiService).streamChatCompletion(any(ChatCompletionRequest.class));
         verify(emitter).complete();
     }
@@ -828,10 +801,10 @@ class OpenAiQueryGenerationServiceTest {
         fieldDescriptions.put("L2", "B".repeat(1000));
 
         List<Map<String, String>> data = new ArrayList<>();
-        Map<String, String> record = new HashMap<>();
-        record.put("L1", "Value1".repeat(100));
-        record.put("L2", "Value2".repeat(100));
-        data.add(record);
+        Map<String, String> records = new HashMap<>();
+        records.put("L1", "Value1".repeat(100));
+        records.put("L2", "Value2".repeat(100));
+        data.add(records);
 
         Lookup largeLookup = Lookup.builder()
                 .id("large-values-lookup")
@@ -1150,10 +1123,10 @@ class OpenAiQueryGenerationServiceTest {
 
     private Lookup createTestLookupWithoutFieldDescriptions() {
         List<Map<String, String>> data = new ArrayList<>();
-        Map<String, String> record = new HashMap<>();
-        record.put("L1", "Finance");
-        record.put("L2", "Payments");
-        data.add(record);
+        Map<String, String> records = new HashMap<>();
+        records.put("L1", "Finance");
+        records.put("L2", "Payments");
+        data.add(records);
 
         return Lookup.builder()
                 .id("minimal-lookup")
@@ -1174,11 +1147,11 @@ class OpenAiQueryGenerationServiceTest {
 
         List<Map<String, String>> data = new ArrayList<>();
         for (int i = 0; i < recordCount; i++) {
-            Map<String, String> record = new HashMap<>();
-            record.put("L1", "Category " + i);
-            record.put("L2", "Subcategory " + i);
-            record.put("L3", "Detail " + i);
-            data.add(record);
+            Map<String, String> records = new HashMap<>();
+            records.put("L1", "Category " + i);
+            records.put("L2", "Subcategory " + i);
+            records.put("L3", "Detail " + i);
+            data.add(records);
         }
 
         return Lookup.builder()

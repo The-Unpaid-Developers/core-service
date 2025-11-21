@@ -74,7 +74,7 @@ class LookupTest {
     void lookup_EqualsAndHashCode_Success() {
         // Arrange
         Date date = new Date();
-        List<Map<String, String>> data = Arrays.asList(Map.of("key", "value"));
+        List<Map<String, String>> data = List.of(Map.of("key", "value"));
         Map<String, String> fieldsDesc = Map.of("key", "Key description");
 
         Lookup lookup1 = Lookup.builder()
@@ -191,48 +191,18 @@ class LookupTest {
     @Test
     void lookup_NullLookupName_ThrowsException() {
         // Act & Assert
-        assertThrows(NullPointerException.class, () -> {
-            Lookup.builder()
-                .id("test")
-                .lookupName(null)
-                .data(List.of())
-                .uploadedAt(new Date())
-                .recordCount(0)
-                .description("Test")
-                .fieldDescriptions(Map.of())
-                .build();
-        });
+        assertThrows(NullPointerException.class, () -> Lookup.builder().lookupName(null));
     }
 
     @Test
     void lookup_NullData_ThrowsException() {
         // Act & Assert
-        assertThrows(NullPointerException.class, () -> {
-            Lookup.builder()
-                .id("test")
-                .lookupName("test-lookup")
-                .data(null)
-                .uploadedAt(new Date())
-                .recordCount(0)
-                .description("Test")
-                .fieldDescriptions(Map.of())
-                .build();
-        });
+        assertThrows(NullPointerException.class, () -> Lookup.builder().data(null));
     }
 
     @Test
     void lookup_NullDescription_ThrowsException() {
         // Act & Assert
-        assertThrows(NullPointerException.class, () -> {
-            Lookup.builder()
-                .id("test")
-                .lookupName("test-lookup")
-                .data(List.of())
-                .uploadedAt(new Date())
-                .recordCount(0)
-                .description(null)
-                .fieldDescriptions(Map.of())
-                .build();
-        });
+        assertThrows(NullPointerException.class, () -> Lookup.builder().description(null));
     }
 }
