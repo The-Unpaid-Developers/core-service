@@ -1,39 +1,24 @@
 package com.project.core_service.services;
 
 import com.project.core_service.client.ChatbotServiceClient;
-import com.project.core_service.dto.ChatbotTranslateResponseDTO;
-import com.project.core_service.dto.CleanSolutionReviewDTO;
-import com.project.core_service.dto.SearchQueryDTO;
-import com.project.core_service.dto.SystemDependencyDTO;
-import com.project.core_service.dto.BusinessCapabilityDiagramDTO;
-import com.project.core_service.dto.NewSolutionOverviewRequestDTO;
-import com.project.core_service.dto.SolutionReviewDTO;
+import com.project.core_service.dto.*;
 import com.project.core_service.exceptions.IllegalOperationException;
 import com.project.core_service.exceptions.NotFoundException;
-import com.project.core_service.models.enterprise_tools.EnterpriseTool;
-import com.project.core_service.models.enterprise_tools.Tool;
 import com.project.core_service.models.solution_overview.SolutionOverview;
 import com.project.core_service.models.solutions_review.DocumentState;
 import com.project.core_service.models.solutions_review.SolutionReview;
-import com.project.core_service.repositories.*;
-
-import org.bson.Document;
+import com.project.core_service.repositories.SolutionReviewRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.AggregationOperation;
-import org.springframework.data.mongodb.core.aggregation.AggregationResults;
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -47,6 +32,7 @@ import java.util.stream.Collectors;
  * layer between the controller and repository.
  * </p>
  */
+@Slf4j
 @Service
 public class SolutionReviewService {
     private final SolutionReviewRepository solutionReviewRepository;
@@ -66,7 +52,7 @@ public class SolutionReviewService {
      *
      * @param id the identifier of the solution review
      * @return an {@link Optional} containing the solution review if found,
-     *         or empty if no review exists for the given ID
+     * or empty if no review exists for the given ID
      */
     public Optional<SolutionReview> getSolutionReviewById(String id) {
         return solutionReviewRepository.findById(id);
@@ -179,7 +165,7 @@ public class SolutionReviewService {
      * with pagination.
      *
      * @param documentStateStr the document state used for filtering
-     * @param pageable      the pagination information
+     * @param pageable         the pagination information
      * @return a {@link Page} of solution reviews with the specified document state
      */
     public Page<CleanSolutionReviewDTO> getSolutionReviewsByDocumentState(String documentStateStr, Pageable pageable) {
@@ -332,7 +318,7 @@ public class SolutionReviewService {
     /**
      * Updates concerns in an existing {@link SolutionReview} that is in SUBMITTED
      * state.
-     *
+     * <p>
      * The solution review must be in SUBMITTED state for this operation to be
      * allowed.
      *
@@ -385,7 +371,7 @@ public class SolutionReviewService {
         solutionReviewRepository.deleteById(id);
     }
 
-    private <T> void updateIfNotEmpty(List<T> entities,  Consumer<List<T>> setter) {
+    private <T> void updateIfNotEmpty(List<T> entities, Consumer<List<T>> setter) {
         if (entities != null && !entities.isEmpty()) {
             setter.accept(entities);
         }
@@ -396,7 +382,7 @@ public class SolutionReviewService {
     /**
      * Validates that only one document exists in exclusive states (DRAFT,
      * SUBMITTED, APPROVED) for the given system code.
-     * 
+     *
      * @param systemCode the system code to validate
      * @param excludeId  optional document ID to exclude from the check (for
      *                   updates)
@@ -420,8 +406,8 @@ public class SolutionReviewService {
                     .collect(Collectors.joining(", "));
             throw new IllegalOperationException(
                     String.format("Cannot create/update document for system %s. " +
-                            "Documents already exist in exclusive states: %s. " +
-                            "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.",
+                                    "Documents already exist in exclusive states: %s. " +
+                                    "Only one document can be in DRAFT, SUBMITTED, or APPROVED state at a time.",
                             systemCode, existingStates));
         }
     }
@@ -429,7 +415,7 @@ public class SolutionReviewService {
     /**
      * Validates that only one document exists in exclusive states for the given
      * system code.
-     * 
+     *
      * @param systemCode the system code to validate
      * @throws IllegalOperationException if constraint is violated
      */
@@ -439,7 +425,7 @@ public class SolutionReviewService {
 
     /**
      * Validates that only one ACTIVE document exists for the given system code.
-     * 
+     *
      * @param systemCode the system code to validate
      * @param excludeId  optional document ID to exclude from the check (for
      *                   updates)
@@ -459,15 +445,15 @@ public class SolutionReviewService {
         if (!activeDocs.isEmpty()) {
             throw new IllegalOperationException(
                     String.format("Cannot create/update document for system %s. " +
-                            "An ACTIVE document already exists. " +
-                            "Only one document can be in ACTIVE state at a time.",
+                                    "An ACTIVE document already exists. " +
+                                    "Only one document can be in ACTIVE state at a time.",
                             systemCode));
         }
     }
 
     /**
      * Validates that only one ACTIVE document exists for the given system code.
-     * 
+     *
      * @param systemCode the system code to validate
      * @throws IllegalOperationException if constraint is violated
      */
@@ -493,20 +479,16 @@ public class SolutionReviewService {
 
         // Call chatbot service to translate the query and execute it
         try {
-            ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, false);
-            System.out.println("Chatbot service returned response: " + response.toString());
-            System.out.println("Mongo query: " + response.getMongoQuery());
+            ChatbotTranslateResponseDTO response = chatbotServiceClient.translate(query, true);
+            log.info("Chatbot service returned response: {}", response);
+            log.info("Mongo query: {}", response.getMongoQuery());
 
             // execute the returned mongo query against local database
             if (response.getMongoQuery() == null) {
                 return List.of();
             }
 
-            List<Document> results = queryService.executeMongoQuery(response.getMongoQuery());
-            System.out.println("Results from executed mongo query: " + results.toString());
-            System.out.println("Number of results: " + results.size());
-            
-            return results.stream()
+            return queryService.executeMongoQuery(response.getMongoQuery()).stream()
                     .map(doc -> {
                         String id = doc.get("_id").toString();
                         return solutionReviewRepository.findById(id);
@@ -515,27 +497,8 @@ public class SolutionReviewService {
                     .map(Optional::get)
                     .map(this::toCleanDTO)
                     .toList();
-
-            // Extract solution review IDs from the results
-            // if (response.getResults() == null || response.getResults().isEmpty()) {
-            //     return List.of();
-            // }
-            // System.out.println("results of response: " + response.getResults().toString());
-            // // Extract IDs from the results and query the database
-            // List<String> ids = response.getResults().stream()
-            //         .map(result -> (String) result.get("id"))
-            //         .filter(id -> id != null)
-            //         .toList();
-
-            // // Query the database for each ID and map to CleanSolutionReviewDTO
-            // return ids.stream()
-            //         .map(solutionReviewRepository::findById)
-            //         .filter(Optional::isPresent)
-            //         .map(Optional::get)
-            //         .map(this::toCleanDTO)
-            //         .toList();
         } catch (Exception e) {
-            throw new RuntimeException("Failed to communicate with chatbot service: " + e.getMessage(), e);
+            throw new IllegalStateException("Failed to communicate with chatbot service: " + e.getMessage(), e);
         }
     }
 }

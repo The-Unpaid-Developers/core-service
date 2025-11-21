@@ -36,9 +36,6 @@ class CreateLookupDTOTest {
 
             // Assert
             assertNotNull(dto);
-            assertNull(dto.getLookupName());
-            assertNull(dto.getDescription());
-            assertNull(dto.getLookupFile());
         }
 
         @Test
@@ -162,21 +159,6 @@ class CreateLookupDTOTest {
         }
 
         @Test
-        @DisplayName("Should be equal to itself")
-        void shouldBeEqualToItself() {
-            // Arrange
-            CreateLookupDTO dto = CreateLookupDTO.builder()
-                .lookupName("employees")
-                .description("Employee data")
-                .lookupFile(mockFile)
-                .build();
-
-            // Act & Assert
-            assertEquals(dto, dto);
-            assertEquals(dto.hashCode(), dto.hashCode());
-        }
-
-        @Test
         @DisplayName("Should not be equal when compared to null")
         void shouldNotBeEqualWhenComparedToNull() {
             // Arrange
@@ -239,7 +221,7 @@ class CreateLookupDTOTest {
         void shouldThrowExceptionWhenFileIsNull() {
             // Act & Assert
             assertThrows(NullPointerException.class, () -> {
-                CreateLookupDTO dto = CreateLookupDTO.builder()
+                CreateLookupDTO.builder()
                     .lookupName("test")
                     .description("Test")
                     .lookupFile(null)

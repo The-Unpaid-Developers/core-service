@@ -1,7 +1,5 @@
 package com.project.core_service.dto;
 
-import com.mongodb.lang.NonNull;
-import com.project.core_service.models.lookup.Lookup;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

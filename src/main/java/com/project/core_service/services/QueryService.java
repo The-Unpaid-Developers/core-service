@@ -6,6 +6,7 @@ import com.project.core_service.dto.UpdateQueryRequestDTO;
 import com.project.core_service.exceptions.NotFoundException;
 import com.project.core_service.models.query.Query;
 import com.project.core_service.repositories.QueryRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,6 +32,7 @@ import java.util.Optional;
  * </p>
  */
 @Service
+@Slf4j
 public class QueryService {
 
     private final QueryRepository queryRepository;
@@ -86,15 +88,15 @@ public class QueryService {
             throw new IllegalArgumentException("Query request cannot be null");
         }
 
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
+        if (request.getName().trim().isEmpty()) {
             throw new IllegalArgumentException("Query name cannot be null or empty");
         }
 
-        if (request.getMongoQuery() == null || request.getMongoQuery().trim().isEmpty()) {
+        if (request.getMongoQuery().trim().isEmpty()) {
             throw new IllegalArgumentException("Query string cannot be null or empty");
         }
 
-        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+        if (request.getDescription().trim().isEmpty()) {
             throw new IllegalArgumentException("Query description cannot be null or empty");
         }
 
@@ -195,7 +197,6 @@ public class QueryService {
             }
 
             // Parse as a list of pipeline stages
-            @SuppressWarnings("unchecked")
             List<Document> pipelineStages = Document.parse("{\"stages\": " + queryString + "}")
                     .getList("stages", Document.class);
 
@@ -262,7 +263,7 @@ public class QueryService {
             for (Map<String, Object> stage : mongoQuery) {
                 pipelineStages.add(new Document(stage));
             }
-            System.out.println("Parsed pipeline stages: " + pipelineStages.toString());
+            log.info("Parsed pipeline stages: {}", pipelineStages);
 
             // Build and execute the aggregation
             List<AggregationOperation> operations = new ArrayList<>();
@@ -275,7 +276,7 @@ public class QueryService {
                 }
                 operations.add(context -> stage);
             }
-            System.out.println("Aggregation operations: " + operations.toString());
+            log.info("Aggregation operations: {}", operations);
 
             Aggregation aggregation = Aggregation.newAggregation(operations);
 

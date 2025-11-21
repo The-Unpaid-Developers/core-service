@@ -1,21 +1,12 @@
 package com.project.core_service.controllers;
 
+import com.project.core_service.dto.*;
+import com.project.core_service.services.LookupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import com.project.core_service.dto.LookupDTO;
-import com.project.core_service.dto.LookupFieldDescriptionsDTO;
-import com.project.core_service.dto.LookupWODataDTO;
-import com.project.core_service.dto.CreateLookupDTO;
-import com.project.core_service.dto.UpdateLookupDTO;
-import com.project.core_service.services.LookupService;
 
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 
 
 @RestController
@@ -41,7 +32,7 @@ public class LookupController {
 
     @PutMapping("/{lookupName}/field-descriptions")
     public ResponseEntity<LookupFieldDescriptionsDTO> updateFieldDescriptions(@PathVariable String lookupName,
-                                                              @RequestBody LookupFieldDescriptionsDTO lookupContextDTO) {
+                                                                              @RequestBody LookupFieldDescriptionsDTO lookupContextDTO) {
         return ResponseEntity.ok(lookupService.updateFieldDescriptions(lookupName, lookupContextDTO));
     }
 

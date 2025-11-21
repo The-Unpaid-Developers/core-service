@@ -450,7 +450,7 @@ class QueryServiceTest {
         // When & Then
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.executeMongoQuery((List<Map<String, Object>>) null));
+                () -> queryService.executeMongoQuery(null));
 
         assertTrue(exception.getMessage().contains("Aggregation pipeline cannot be empty"));
     }
@@ -458,9 +458,10 @@ class QueryServiceTest {
     @Test
     void executeMongoQueryWithList_ThrowsWhenEmptyQuery() {
         // When & Then
+        List<Map<String, Object>> list = List.of();
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> queryService.executeMongoQuery(List.of()));
+                () -> queryService.executeMongoQuery(list));
 
         assertTrue(exception.getMessage().contains("Aggregation pipeline cannot be empty"));
     }
@@ -518,7 +519,8 @@ class QueryServiceTest {
         // Given - Test the special case for $project handling
         List<Map<String, Object>> mongoQuery = List.of(
                 Map.of("$match", Map.of("documentState", "ACTIVE")),
-                Map.of("$project", Map.of())  // Empty project should be replaced with {_id: 1}
+                // Empty project should be replaced with {_id: 1}
+                Map.of("$project", Map.of())
         );
 
         Document doc1 = new Document("_id", "rev-1");

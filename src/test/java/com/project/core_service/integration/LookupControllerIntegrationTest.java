@@ -55,8 +55,8 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         // Verify data was stored in MongoDB
         List<Lookup> lookups = mongoTemplate.findAll(Lookup.class, "lookups");
         assertThat(lookups).hasSize(1);
-        assertThat(lookups.get(0).getLookupName()).isEqualTo("employees");
-        assertThat(lookups.get(0).getRecordCount()).isEqualTo(2);
+        assertThat(lookups.getFirst().getLookupName()).isEqualTo("employees");
+        assertThat(lookups.getFirst().getRecordCount()).isEqualTo(2);
     }
 
     @Test
@@ -188,7 +188,7 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         // Verify initial state
         List<Lookup> initialLookups = mongoTemplate.findAll(Lookup.class, "lookups");
         assertThat(initialLookups).hasSize(1);
-        assertThat(initialLookups.get(0).getRecordCount()).isEqualTo(2);
+        assertThat(initialLookups.getFirst().getRecordCount()).isEqualTo(2);
 
         // Act - Update with new data
         String newCsvContent = "name,age,department\nBob,35,Sales\nAlice,28,HR\nCharlie,32,IT";
@@ -212,9 +212,8 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         // Assert - Verify update
         List<Lookup> updatedLookups = mongoTemplate.findAll(Lookup.class, "lookups");
         assertThat(updatedLookups).hasSize(1);
-        assertThat(updatedLookups.get(0).getRecordCount()).isEqualTo(3);
-        assertThat(updatedLookups.get(0).getData()).hasSize(3);
-    }
+        assertThat(updatedLookups.getFirst().getRecordCount()).isEqualTo(3);
+        assertThat(updatedLookups.getFirst().getData()).hasSize(3); }
 
     @Test
     @DisplayName("Should return 404 when updating non-existent lookup")
@@ -278,7 +277,7 @@ class LookupControllerIntegrationTest extends BaseIntegrationTest {
         assertThat(savedLookup).isNotNull();
         assertThat(savedLookup.getFieldDescriptions()).isNotNull();
         assertThat(savedLookup.getFieldDescriptions()).hasSize(3);
-        assertThat(savedLookup.getFieldDescriptions().get("name")).isEqualTo("Employee full name");
+        assertThat(savedLookup.getFieldDescriptions().get("name").equals("Employee full name")).isTrue();
     }
 
     @Test

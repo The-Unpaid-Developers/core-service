@@ -55,18 +55,18 @@ public class LookupService {
     }
 
     public LookupDTO createLookup(CreateLookupDTO createLookupDTO) {
-        if (createLookupDTO.getLookupName() == null || createLookupDTO.getLookupName().trim().isEmpty()) {
+        if (createLookupDTO.getLookupName().trim().isEmpty()) {
             throw new IllegalArgumentException("lookupName parameter is required and cannot be empty");
         }
 
-        if (createLookupDTO.getDescription() == null || createLookupDTO.getDescription().trim().isEmpty()) {
+        if (createLookupDTO.getDescription().trim().isEmpty()) {
             throw new IllegalArgumentException("description parameter is required and cannot be empty");
         }
 
         List<Map<String, String>> lookupData = processCsvFileToData(createLookupDTO.getLookupFile());
         // new fieldDescriptions with empty descriptions
         Map<String, String> newfieldDescriptions = generateFieldDescMap(
-                new ArrayList<>(lookupData.get(0).keySet())
+                new ArrayList<>(lookupData.getFirst().keySet())
         );
 
         // Create and return the lookup object
@@ -103,6 +103,9 @@ public class LookupService {
         // Validate file type
         String contentType = lookupFile.getContentType();
         String fileName = lookupFile.getOriginalFilename();
+        if (fileName == null) {
+            throw new IllegalArgumentException("File name can't be null");
+        }
         if (!fileName.toLowerCase().endsWith(".csv") &&
             !"text/csv".equals(contentType)) {
             throw new InvalidFileException("File must be a CSV file");
@@ -276,9 +279,7 @@ public class LookupService {
             throw new NotFoundException("Lookup with name '" + lookupName + "' not found");
         }
 
-        Lookup lookup = documentToLookup(doc);
-
-        return lookup;
+        return documentToLookup(doc);
     }
 
     public LookupDTO getLookupByName(String lookupName) {
@@ -320,9 +321,8 @@ public class LookupService {
             // Handle fieldDescriptions (Map<String, String>)
             Object fieldDescObj = doc.get(FIELD_DESCRIPTIONS_FIELD);
             Map<String, String> fieldDescriptions = null;
-            if (fieldDescObj instanceof Map) {
+            if (fieldDescObj instanceof Map<?, ?> rawMap) {
                 fieldDescriptions = new HashMap<>();
-                Map<?, ?> rawMap = (Map<?, ?>) fieldDescObj;
                 for (Map.Entry<?, ?> entry : rawMap.entrySet()) {
                     String key = entry.getKey() != null ? entry.getKey().toString() : "";
                     String value = entry.getValue() != null ? entry.getValue().toString() : "";
@@ -337,7 +337,7 @@ public class LookupService {
                     .uploadedAt(uploadedAt)
                     .recordCount(recordCount != null ? recordCount : 0)
                     .description(description)
-                    .fieldDescriptions(fieldDescriptions)
+                    .fieldDescriptions(fieldDescriptions == null ? new HashMap<>() : fieldDescriptions)
                     .build();
 
         } catch (Exception e) {
@@ -351,7 +351,7 @@ public class LookupService {
     /**
      * Safely extracts and validates a List<Map<String, String>> from a MongoDB document field.
      * This method provides type-safe extraction without using unchecked casts.
-     * 
+     *
      * @param dataObj The object retrieved from the MongoDB document
      * @param contextName A descriptive name for error messages (e.g., "business capabilities")
      * @return A validated List<Map<String, String>> or null if the data is null
@@ -365,7 +365,7 @@ public class LookupService {
         // Check if it's a List
         if (!(dataObj instanceof List)) {
             throw new CsvProcessingException(
-                String.format("Invalid data structure in %s: expected List but got %s", 
+                String.format("Invalid data structure in %s: expected List but got %s",
                     contextName, dataObj.getClass().getSimpleName())
             );
         }
@@ -452,11 +452,8 @@ public class LookupService {
             Map<String, String> mergedDescriptions = new HashMap<>();
 
             for (String fieldName : newFieldDescriptions.keySet()) {
-                if (existingFieldDescriptions.containsKey(fieldName)) {
-                    mergedDescriptions.put(fieldName, existingFieldDescriptions.get(fieldName));
-                } else {
-                    mergedDescriptions.put(fieldName, ""); // Default empty description
-                }
+                // Default empty description
+                mergedDescriptions.put(fieldName, existingFieldDescriptions.getOrDefault(fieldName, ""));
             }
             return mergedDescriptions;
         } catch (NotFoundException e) {
@@ -480,7 +477,7 @@ public class LookupService {
 
                     // new fieldDescriptions with empty descriptions
             Map<String, String> newfieldDescriptions = generateFieldDescMap(
-                    new ArrayList<>(lookupData.get(0).keySet())
+                    new ArrayList<>(lookupData.getFirst().keySet())
             );
             // merge field descriptions if lookup exists
             Map<String, String> mergedFieldDescriptions = mergeFieldDescriptions(
